@@ -43,6 +43,7 @@ GBACore.prototype.compile = function(instruction) {
 	if (i == 0x02000000 || instruction & 0x00000090 != 0x00000090) {
 		// Data processing/FSR transfer
 		var opcode = instruction & 0x01E00000;
+		var innerOp = null;
 		var s = instruction & 0x00100000;
 		var rn = (instruction & 0x000F0000) >> 16;
 		var rd = (instruction & 0x0000F000) >> 12;
@@ -213,7 +214,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00000000:
 			// AND
 			op = function() {
-				shiftOp();
 				this.gprs[rd] = this.gprs[rn] & this.shifterOperand;
 				if (s) {
 					if (this.gprs[rd] & 0x80000000) {
@@ -237,7 +237,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00200000:
 			// EOR
 			op = function() {
-				shiftOp();
 				this.gprs[rd] = this.gprs[rn] ^ this.shifterOperand;
 				if (s) {
 					if (this.gprs[rd] & 0x80000000) {
@@ -261,7 +260,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00400000:
 			// SUB
 			op = function() {
-				shiftOp();
 				var d = this.gprs[rn] - this.shifterOperand;
 				if (s) {
 					if (d & 0x80000000) {
@@ -292,7 +290,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00600000:
 			// RSB
 			op = function() {
-				shiftOp();
 				var d = this.shifterOperand - this.gprs[rn];
 				if (s) {
 					if (d & 0x80000000) {
@@ -323,7 +320,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00800000:
 			// ADD
 			op = function() {
-				shiftOp();
 				var d = (this.gprs[rn] >>> 0) + (this.shifterOperand >>> 0);
 				if (s) {
 					if (d & 0x80000000) {
@@ -355,7 +351,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00A00000:
 			// ADC
 			op = function() {
-				shiftOp();
 				var shifterOperand = (this.shifterOperand >>> 0) + !!(this.cpsr * this.C);
 				var d = (this.gprs[rn] >>> 0) + shifterOperand;
 				if (s) {
@@ -388,7 +383,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00C00000:
 			// SBC
 			op = function() {
-				shiftOp();
 				var shifterOperand = (this.shifterOperand >>> 0) + !(this.cpsr * this.C);
 				var d = (this.gprs[rn] >>> 0) - shifterOperand;
 				if (s) {
@@ -420,7 +414,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00E00000:
 			// RSC
 			op = function() {
-				shiftOp();
 				var n = (this.gprs[rn] >>> 0) + !(this.cpsr * this.C);
 				var d = (this.shifterOperand >>> 0) - n;
 				if (s) {
@@ -452,7 +445,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01000000:
 			// TST
 			op = function() {
-				shiftOp();
 				var aluOut = this.gprs[rn] & this.shifterOperand;
 				if (aluOut & 0x80000000) {
 					this.cpsr |= this.N;
@@ -474,7 +466,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01200000:
 			// TEQ
 			op = function() {
-				shiftOp();
 				var aluOut = this.gprs[rn] ^ this.shifterOperand;
 				if (aluOut & 0x80000000) {
 					this.cpsr |= this.N;
@@ -496,7 +487,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01400000:
 			// CMP
 			op = function() {
-				shiftOp();
 				var aluOut = this.gprs[rn] - this.shifterOperand;
 				if (aluOut & 0x80000000) {
 					this.cpsr |= this.N;
@@ -524,7 +514,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01600000:
 			// CMN
 			op = function() {
-				shiftOp();
 				var aluOut = (this.gprs[rn] >>> 0) + (this.shifterOperand >>> 0);
 				if (aluOut & 0x80000000) {
 					this.cpsr |= this.N;
@@ -553,7 +542,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01800000:
 			// ORR
 			op = function() {
-				shiftOp();
 				this.gprs[rd] = this.gprs[rn] | this.shifterOperand;
 				if (s) {
 					if (this.gprs[rd] & 0x80000000) {
@@ -572,7 +560,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01A00000:
 			// MOV
 			op = function() {
-				shiftOp();
 				this.gprs[rd] = this.shifterOperand;
 				if (s) {
 					if (this.gprs[rd] & 0x80000000) {
@@ -620,7 +607,6 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01E00000:
 			// MVN
 			op = function() {
-				shiftOp();
 				this.gprs[rd] = ~this.shifterOperand;
 				if (s) {
 					if (this.gprs[rd] & 0x80000000) {
@@ -641,6 +627,11 @@ GBACore.prototype.compile = function(instruction) {
 				}
 			}
 			break;
+		}
+		op = function() {
+			shiftOp();
+			innerOp();
+			this.advancePC();
 		}
 	} else if (instruction & 0x0FFFFFF0 == 0x012FFF10) {
 		// BX
