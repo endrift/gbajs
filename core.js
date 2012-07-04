@@ -11,6 +11,9 @@ GBACore = function() {
 	this.BASE_CART2 = 0x0C000000;
 	this.BASE_CART_SRAM = 0x0E000000;
 
+	this.BASE_MASK = 0x0F000000;
+	this.BASE_OFFSET = 24;
+
 	this.SIZE_BIOS = 0x00004000;
 	this.SIZE_WORKING_RAM = 0x00040000;
 	this.SIZE_WORKING_IRAM = 0x00008000;
@@ -26,6 +29,9 @@ GBACore = function() {
 	this.SP = 13;
 	this.LR = 14;
 	this.PC = 15;
+
+	this.MODE_ARM = 0;
+	this.MODE_THUMB = 1;
 
 	this.resetCPU();
 };
@@ -52,22 +58,109 @@ GBACore.prototype.resetCPU = function() {
 	this.shifterOperand = 0;
 	this.shifterCarryOut = 0;
 
-	this.iram = new ArrayBuffer(this.SIZE_WORKING_IRAM);
-	this.wram = new ArrayBuffer(this.SIZE_WORKING_RAM);
+	this.memory = [
+		null,
+		null, // Unused
+		new ArrayBuffer(this.SIZE_WORKING_IRAM),
+		new ArrayBuffer(this.SIZE_WORKING_RAM),
+		null,
+		new ArrayBuffer(this.SIZE_PALLETE_RAM),
+		new ArrayBuffer(this.SIZE_VRAM),
+		new ArrayBuffer(this.SIZE_OAM),
+		null,
+		null, // Unused
+		null,
+		null, // Unused
+		null,
+		null, // Unused
+		null,
+		null // Unused
+	];
+
+	this.memoryView = [
+		null,
+		null, // Unused
+		new DataView(this.memory[2]),
+		new DataView(this.memory[3]),
+		null,
+		new DataView(this.memory[5]),
+		new DataView(this.memory[6]),
+		new DataView(this.memory[7]),
+		null,
+		null, // Unused
+		null,
+		null, // Unused
+		null,
+		null, // Unused
+		null,
+		null // Unused
+	];
 };
 
 GBACore.prototype.loadRom = function(rom) {
 	this.resetCPU();
 };
 
+GBACore.prototype.load8 = function(offset) {
+	var memoryZone = this.getMemoryZone(offset);
+	return this.memoryView[memoryZone].getInt8(offset & 0x00FFFFFF); // FIXME: allow >16MB reads
+};
+
+GBACore.prototype.load16 = function(offset) {
+	var memoryZone = this.getMemoryZone(offset);
+	return this.memoryView[memoryZone].getInt16(offset & 0x00FFFFFF); // FIXME: allow >16MB reads
+};
+
+GBACore.prototype.load32 = function(offset) {
+	var memoryZone = this.getMemoryZone(offset);
+	return this.memoryView[memoryZone].getInt32(offset & 0x00FFFFFF); // FIXME: allow >16MB reads
+};
+
+GBACore.prototype.loadInstruction = function() {
+	if (this.execMode == this.MODE_ARM) {
+		var instruction = this.load32(this.nextPC);
+		return this.compile(instruction);
+	} else {
+		var instruction = this.load16(this.nextPC);
+		return this.compileThumb(instruction);
+	}
+};
+
+GBACore.prototype.step = function() {
+	this.loadInstruction(this.nextPC)();
+};
+
+GBACore.prototype.getMemoryZone = function(offset) {
+	var memoryZone = (offset & this.BASE_MASK) >> this.baseOffset;
+	switch (memoryZone) {
+	case this.BASE_CART0 + 1:
+	case this.BASE_CART1 + 1:
+	case this.BASE_CART2 + 1:
+		return memoryZone - 1;
+	default:
+		return memoryZone;
+	}
+};
+
 GBACore.prototype.advancePC = function() {
+	this.gprs[this.PC] &= 0x0FFFFFFC;
 	this.nextPC = this.gprs[this.PC];
 	this.gprs[this.PC] += 4;
-}
+};
+
+GBACore.prototype.advancePCThumb = function() {
+	this.gprs[this.PC] &= 0x0FFFFFFE;
+	this.nextPC = this.gprs[this.PC];
+	this.gprs[this.PC] += 2;
+};
 
 GBACore.prototype.noop = function() {
 	this.advancePC();
-}
+};
+
+GBACore.prototype.noopThumb = function() {
+	this.advancePCThumb();
+};
 
 GBACore.prototype.compile = function(instruction) {
 	var cond = instruction & 0xF0000000;
@@ -590,5 +683,5 @@ GBACore.prototype.compile = function(instruction) {
 };
 
 GBACore.prototype.compileThumb = function(instruction) {
-	return this.tnoop;
+	return this.noopThumb;
 };
