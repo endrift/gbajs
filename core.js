@@ -1,6 +1,4 @@
 GBACore = function() {
-	this.resetCPU();
-
 	this.WORKING_IRAM_SIZE = 0x8000;
 	this.WORKING_RAM_SIZE = 0x40000;
 
@@ -9,6 +7,8 @@ GBACore = function() {
 	this.C = 0x20000000;
 	this.Z = 0x40000000;
 	this.N = 0x80000000;
+
+	this.resetCPU();
 };
 
 GBACore.prototype.ASSERT_UNREACHED = function(err) {
