@@ -1,6 +1,27 @@
 GBACore = function() {
-	this.WORKING_IRAM_SIZE = 0x8000;
-	this.WORKING_RAM_SIZE = 0x40000;
+	this.BASE_BIOS = 0x00000000;
+	this.BASE_WORKING_RAM = 0x02000000;
+	this.BASE_WORKING_IRAM = 0x03000000;
+	this.BASE_IO = 0x04000000;
+	this.BASE_PALETTE_RAM = 0x05000000;
+	this.BASE_VRAM = 0x06000000;
+	this.BASE_OAM = 0x07000000;
+	this.BASE_CART0 = 0x08000000;
+	this.BASE_CART1 = 0x0A000000;
+	this.BASE_CART2 = 0x0C000000;
+	this.BASE_CART_SRAM = 0x0E000000;
+
+	this.SIZE_BIOS = 0x00004000;
+	this.SIZE_WORKING_RAM = 0x00040000;
+	this.SIZE_WORKING_IRAM = 0x00008000;
+	this.SIZE_IO = 0x00000400;
+	this.SIZE_PALETTE_RAM = 0x00000400;
+	this.SIZE_VRAM = 0x00018000;
+	this.SIZE_OAM = 0x00000400;
+	this.SIZE_CART0 = 0x02000000;
+	this.SIZE_CART1 = 0x02000000;
+	this.SIZE_CART2 = 0x02000000;
+	this.SIZE_CART_SRAM = 0x00010000;
 
 	this.SP = 13;
 	this.LR = 14;
@@ -32,8 +53,8 @@ GBACore.prototype.resetCPU = function() {
 	this.shifterOperand = 0;
 	this.shifterCarryOut = 0;
 
-	this.iram = new ArrayBuffer(this.WORKING_IRAM_SIZE);
-	this.wram = new ArrayBuffer(this.WORKING_RAM_SIZE);
+	this.iram = new ArrayBuffer(this.SIZE_WORKING_IRAM);
+	this.wram = new ArrayBuffer(this.SIZE_WORKING_RAM);
 };
 
 GBACore.prototype.loadRom = function(rom) {
