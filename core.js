@@ -47,7 +47,7 @@ GBACore.prototype.compile = function(instruction) {
 		var rd = (instruction & 0x0000F000) >> 12;
 
 		// Parse shifter operand
-		var shift = instruction & 0x00000060;
+		var shiftType = instruction & 0x00000060;
 		// FIXME: this only applies if using non-immediate, which we always will be (?)
 		var rm = instruction & 0x0000000F;
 		var shiftOp = function() { return this.gprs[rm] };
@@ -64,7 +64,7 @@ GBACore.prototype.compile = function(instruction) {
 			}
 		} else if (instruction & 0x00000010) {
 			var rs = (instruction & 0x00000F00) >> 8;
-			switch (shift) {
+			switch (shiftType) {
 			case 0:
 				// LSL
 				break;
@@ -80,7 +80,7 @@ GBACore.prototype.compile = function(instruction) {
 			}
 		} else {
 			var immediate = (instruction & 0x00000F80) >> 8;
-			switch (shift) {
+			switch (shiftType) {
 			case 0:
 				// LSL
 				if (immediate) {
