@@ -8,6 +8,13 @@ canvas {
 <script src="core.js"></script>
 <script>
 var core = new GBACore();
+var instruction = core.compile(0xE3A000FF);
+
+var start = new Date().getTime();
+for (i = 0; i < 16780000; ++i) {
+	instruction();
+}
+console.log((new Date().getTime() - start) / 1000.0 + "x too slow");
 </script>
 </head>
 <body>
