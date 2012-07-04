@@ -166,7 +166,7 @@ GBACore.prototype.noopThumb = function() {
 };
 
 GBACore.prototype.compile = function(instruction) {
-	var cond = instruction & 0xF0000000;
+	var cond = (instruction & 0xF0000000) >>> 0 // >>> 0 converts from signed to unsigned;
 	var op = this.noop;
 	var i = instruction & 0x0E000000;
 	var cpu = this;
