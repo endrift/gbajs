@@ -345,6 +345,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00000000:
 			// AND
 			innerOp = function() {
+				shiftOp();
 				cpu.gprs[rd] = cpu.gprs[rn] & cpu.shifterOperand;
 				if (s) {
 					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
@@ -356,6 +357,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00200000:
 			// EOR
 			innerOp = function() {
+				shiftOp();
 				cpu.gprs[rd] = cpu.gprs[rn] ^ cpu.shifterOperand;
 				if (s) {
 					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
@@ -367,6 +369,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00400000:
 			// SUB
 			innerOp = function() {
+				shiftOp();
 				var d = cpu.gprs[rn] - cpu.shifterOperand;
 				if (s) {
 					cpu.cpsrN = d & 0x80000000;
@@ -381,6 +384,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00600000:
 			// RSB
 			innerOp = function() {
+				shiftOp();
 				var d = cpu.shifterOperand - cpu.gprs[rn];
 				if (s) {
 					cpu.cpsrN = d & 0x80000000;
@@ -395,6 +399,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00800000:
 			// ADD
 			innerOp = function() {
+				shiftOp();
 				var d = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
 				if (s) {
 					cpu.cpsrN = d & 0x80000000;
@@ -410,6 +415,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00A00000:
 			// ADC
 			innerOp = function() {
+				shiftOp();
 				var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
 				var d = (cpu.gprs[rn] >>> 0) + shifterOperand;
 				if (s) {
@@ -426,6 +432,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00C00000:
 			// SBC
 			innerOp = function() {
+				shiftOp();
 				var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
 				var d = (cpu.gprs[rn] >>> 0) - shifterOperand;
 				if (s) {
@@ -441,6 +448,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00E00000:
 			// RSC
 			innerOp = function() {
+				shiftOp();
 				var n = (cpu.gprs[rn] >>> 0) + !cpu.cpsrC;
 				var d = (cpu.shifterOperand >>> 0) - n;
 				if (s) {
@@ -456,6 +464,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01000000:
 			// TST
 			innerOp = function() {
+				shiftOp();
 				var aluOut = cpu.gprs[rn] & cpu.shifterOperand;
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !aluOut;
@@ -465,6 +474,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01200000:
 			// TEQ
 			innerOp = function() {
+				shiftOp();
 				var aluOut = cpu.gprs[rn] ^ cpu.shifterOperand;
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !aluOut;
@@ -474,6 +484,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01400000:
 			// CMP
 			innerOp = function() {
+				shiftOp();
 				var aluOut = cpu.gprs[rn] - cpu.shifterOperand;
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !aluOut;
@@ -485,6 +496,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01600000:
 			// CMN
 			innerOp = function() {
+				shiftOp();
 				var aluOut = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !aluOut;
@@ -497,6 +509,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01800000:
 			// ORR
 			innerOp = function() {
+				shiftOp();
 				cpu.gprs[rd] = cpu.gprs[rn] | cpu.shifterOperand;
 				if (s) {
 					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
@@ -507,6 +520,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01A00000:
 			// MOV
 			innerOp = function() {
+				shiftOp();
 				cpu.gprs[rd] = cpu.shifterOperand;
 				if (s) {
 					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
@@ -530,6 +544,7 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01E00000:
 			// MVN
 			innerOp = function() {
+				shiftOp();
 				cpu.gprs[rd] = ~cpu.shifterOperand;
 				if (s) {
 					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
@@ -539,10 +554,7 @@ GBACore.prototype.compile = function(instruction) {
 			}
 			break;
 		}
-		op = function() {
-			shiftOp();
-			innerOp();
-		}
+		op = innerOp;
 	} else if (instruction & 0x0FFFFFF0 == 0x012FFF10) {
 		// BX
 		var rm = instruction & 0xF;
