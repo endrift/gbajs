@@ -128,6 +128,11 @@ GBACore.prototype.loadInstruction = function() {
 
 GBACore.prototype.step = function() {
 	this.loadInstruction(this.nextPC)();
+	if (this.execMode == this.MODE_ARM) {
+		this.advancePC();
+	} else {
+		this.advancePCThumb();
+	}
 };
 
 GBACore.prototype.getMemoryZone = function(offset) {
@@ -155,11 +160,9 @@ GBACore.prototype.advancePCThumb = function() {
 };
 
 GBACore.prototype.noop = function() {
-	this.advancePC();
 };
 
 GBACore.prototype.noopThumb = function() {
-	this.advancePCThumb();
 };
 
 GBACore.prototype.compile = function(instruction) {
@@ -538,7 +541,6 @@ GBACore.prototype.compile = function(instruction) {
 		op = function() {
 			shiftOp();
 			innerOp();
-			this.advancePC();
 		}
 	} else if (instruction & 0x0FFFFFF0 == 0x012FFF10) {
 		// BX
