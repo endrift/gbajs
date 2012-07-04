@@ -11,10 +11,17 @@ var core = new GBACore();
 var instruction = core.compile(0xE3A000FF);
 
 var start = new Date().getTime();
+// The GBA runs at 16.78MHz, so let's see how long it takes to simulate a GBA-second.
 for (i = 0; i < 16780000; ++i) {
 	instruction();
 }
-console.log((new Date().getTime() - start) / 1000.0 + "x too slow");
+
+var elapsed = (new Date().getTime() - start) / 1000.0;
+if (elapsed > 1) {
+	console.log(elapsed + "x too slow");
+} else {
+	console.log("Running at " + 1 / elapsed + "x speed");
+}
 </script>
 </head>
 <body>
