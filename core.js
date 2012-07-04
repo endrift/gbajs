@@ -2,6 +2,10 @@ GBACore = function() {
 	this.WORKING_IRAM_SIZE = 0x8000;
 	this.WORKING_RAM_SIZE = 0x40000;
 
+	this.SP = 13;
+	this.LR = 14;
+	this.PC = 15;
+
 	this.T = 0x00000020;
 	this.V = 0x10000000;
 	this.C = 0x20000000;
@@ -23,6 +27,7 @@ GBACore.prototype.resetCPU = function() {
 		0, 0, 0, 0
 	];
 	this.cpsr = 0;
+	this.nextPC = 0;
 
 	this.shifterOperand = 0;
 	this.shifterCarryOut = 0;
@@ -34,6 +39,11 @@ GBACore.prototype.resetCPU = function() {
 GBACore.prototype.loadRom = function(rom) {
 	this.resetCPU();
 };
+
+GBACore.prototype.advancePC = function() {
+	this.nextPC = this.gprs[this.PC];
+	this.gprs[this.PC] += 4;
+}
 
 GBACore.prototype.compile = function(instruction) {
 	var cond = instruction & 0xF0000000;
