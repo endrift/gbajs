@@ -45,6 +45,10 @@ GBACore.prototype.advancePC = function() {
 	this.gprs[this.PC] += 4;
 }
 
+GBACore.prototype.noop = function() {
+	this.advancePC();
+}
+
 GBACore.prototype.compile = function(instruction) {
 	var cond = instruction & 0xF0000000;
 	var op = this.noop;
