@@ -98,15 +98,49 @@ GBACore.prototype.compile = function(instruction) {
 				break;
 			case 1:
 				// LSR
+				if (immediate) {
+					shiftOp = function() {
+						this.shifterOperand = this.gprs[rm] >>> immediate;
+						this.shifterCarryOut = this.gprs[rm] & (1 << (immediate - 1));
+					};
+				} else {
+					shiftOp = function() {
+						this.shifterOperand = 0;
+						this.shifterCarryOut = this.gprs[rm] & 0x80000000;
+					};
+				}
 				break;
 			case 2:
 				// ASR
+				if (immediate) {
+					shiftOp = function() {
+						this.shifterOperand = this.gprs[rm] >> immediate;
+						this.shifterCarryOut = this.gprs[rm] & (1 << (immediate - 1));
+					};
+				} else {
+					shiftOp = function() {
+						this.shifterCarryOut = this.gprs[rm] & 0x80000000;
+						if (this.shifterCarryOut) {
+							this.shifterOperand = 0xFFFFFFFF;
+						} else {
+							this.shifterOperand = 0;
+						}
+					};
+				}
 				break;
 			case 3:
 				// ROR
 				if (immediate) {
+					shiftOp = function() {
+						this.shifterOperand = (this.gprs[rm] >>> immediate) | (this.gprs[rm] << (32 - immediate));
+						this.shifterCarryOut = this.gprs[rm] & (1 << (immediate - 1));
+					};
 				} else {
 					// RRX
+					shiftOp = function() {
+						this.shifterOperand = (!!(this.cpsr & this.C) << 31) | (this.gprs[rm] >>> 1);
+						this.shifterCarryOut =  this.gprs[rm] & 0x00000001;
+					};
 				}
 				break;
 			}
