@@ -27,12 +27,6 @@ GBACore = function() {
 	this.LR = 14;
 	this.PC = 15;
 
-	this.T = 0x00000020;
-	this.V = 0x10000000;
-	this.C = 0x20000000;
-	this.Z = 0x40000000;
-	this.N = 0x80000000;
-
 	this.resetCPU();
 };
 
@@ -47,7 +41,12 @@ GBACore.prototype.resetCPU = function() {
 		0, 0, 0, 0,
 		0, 0, 0, 0
 	];
-	this.cpsr = 0;
+	this.execMode = 0;
+	this.cpsrV = false;
+	this.cpsrC = false;
+	this.cpsrZ = false;
+	this.cpsrN = false;
+
 	this.nextPC = 0;
 
 	this.shifterOperand = 0;
@@ -94,7 +93,7 @@ GBACore.prototype.compile = function(instruction) {
 			shiftOp = function() {
 				this.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
 				if (rotate == 0) {
-					this.shifterCarryOut = this.cpsr & this.C;
+					this.shifterCarryOut = this.cpsrC;
 				} else {
 					this.shifterCarryOut = this.shifterOperand & 0x80000000;
 				}
@@ -108,7 +107,7 @@ GBACore.prototype.compile = function(instruction) {
 					var shift = this.gprs[rs] & 0xFF;
 					if (shift == 0) {
 						this.shifterOperand = this.gprs[rm];
-						this.shifterCarryOut = this.cpsr & this.C;
+						this.shifterCarryOut = this.cpsrC;
 					} else if (shift < 32) {
 						this.shifterOperand = this.gprs[rm] << shift;
 						this.shifterCarryOut = this.gprs[rm] & (1 << (32 - shift));
@@ -127,7 +126,7 @@ GBACore.prototype.compile = function(instruction) {
 					var shift = this.gprs[rs] & 0xFF;
 					if (shift == 0) {
 						this.shifterOperand = this.gprs[rm];
-						this.shifterCarryOut = this.cpsr & this.C;
+						this.shifterCarryOut = this.cpsrC;
 					} else if (shift < 32) {
 						this.shifterOperand = this.gprs[rm] >>> shift;
 						this.shifterCarryOut = this.gprs[rm] & (1 << (shift - 1));
@@ -146,7 +145,7 @@ GBACore.prototype.compile = function(instruction) {
 					var shift = this.gprs[rs] & 0xFF;
 					if (shift == 0) {
 						this.shifterOperand = this.gprs[rm];
-						this.shifterCarryOut = this.cpsr & this.C;
+						this.shifterCarryOut = this.cpsrC;
 					} else if (shift < 32) {
 						this.shifterOperand = this.gprs[rm] >> shift;
 						this.shifterCarryOut = this.gprs[rm] & (1 << (shift - 1));
@@ -166,7 +165,7 @@ GBACore.prototype.compile = function(instruction) {
 					var rotate = shift & 0x1F;
 					if (shift == 0) {
 						this.shifterOperand = this.gprs[rm];
-						this.shifterCarryOut = this.cpsr & this.C;
+						this.shifterCarryOut = this.cpsrC;
 					} else if (rotate) {
 						this.shifterOperand = (this.gprs[rm] >>> rotate) | (this.gprs[rm] << (32 - rotate));
 						this.shifterCarryOut = this.gprs[rm] & (1 << (rotate - 1));
@@ -191,7 +190,7 @@ GBACore.prototype.compile = function(instruction) {
 					// This boils down to no shift
 					shiftOp = function() {
 						this.shifterOperand = this.gprs[rm];
-						this.shifterCarryOut = this.cpsr & this.C;
+						this.shifterCarryOut = this.cpsrC;
 					};
 				}
 				break;
@@ -237,7 +236,7 @@ GBACore.prototype.compile = function(instruction) {
 				} else {
 					// RRX
 					shiftOp = function() {
-						this.shifterOperand = (!!(this.cpsr & this.C) << 31) | (this.gprs[rm] >>> 1);
+						this.shifterOperand = (!!this.cpsrC << 31) | (this.gprs[rm] >>> 1);
 						this.shifterCarryOut =  this.gprs[rm] & 0x00000001;
 					};
 				}
@@ -251,21 +250,9 @@ GBACore.prototype.compile = function(instruction) {
 			op = function() {
 				this.gprs[rd] = this.gprs[rn] & this.shifterOperand;
 				if (s) {
-					if (this.gprs[rd] & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (this.gprs[rd]) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (this.shifterCarryOut) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
+					this.cpsrN = this.gprs[rd] & 0x80000000;
+					this.cpsrZ = !this.gprs[rd];
+					this.cpsrC = this.shifterCarryOut;
 				}
 			}
 			break;
@@ -274,21 +261,9 @@ GBACore.prototype.compile = function(instruction) {
 			op = function() {
 				this.gprs[rd] = this.gprs[rn] ^ this.shifterOperand;
 				if (s) {
-					if (this.gprs[rd] & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (this.gprs[rd]) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (this.shifterCarryOut) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
+					this.cpsrN = this.gprs[rd] & 0x80000000;
+					this.cpsrZ = !this.gprs[rd];
+					this.cpsrC = this.shifterCarryOut;
 				}
 			}
 			break;
@@ -297,27 +272,11 @@ GBACore.prototype.compile = function(instruction) {
 			op = function() {
 				var d = this.gprs[rn] - this.shifterOperand;
 				if (s) {
-					if (d & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (d) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if ((this.gprs[rn] >>> 0) >= (this.shifterOperand >>> 0)) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
-					if (this.gprs[rn] & 0x80000000 != this.shifterOperand & 0x800000000 &&
-					    this.gprs[rn] & 0x80000000 != d & 0x80000000) {
-						this.cpsr |= this.V;
-					} else {
-						this.cpsr &= ~this.V;
-					}
+					this.cpsrN = d & 0x80000000;
+					this.cpsrZ = !d;
+					this.cpsrC = (this.gprs[rn] >>> 0) >= (this.shifterOperand >>> 0);
+					this.cpsrV = this.gprs[rn] & 0x80000000 != this.shifterOperand & 0x800000000 &&
+					             this.gprs[rn] & 0x80000000 != d & 0x80000000;
 				}
 				this.gprs[rd] = d;
 			}
@@ -327,27 +286,11 @@ GBACore.prototype.compile = function(instruction) {
 			op = function() {
 				var d = this.shifterOperand - this.gprs[rn];
 				if (s) {
-					if (d & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (d) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if ((this.shifterOperand >>> 0) >= (this.gprs[rn] >>> 0)) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
-					if (this.shifterOperand & 0x800000000 != this.gprs[rn] & 0x80000000 &&
-					    this.shifterOperand & 0x800000000 != d & 0x80000000) {
-						this.cpsr |= this.V;
-					} else {
-						this.cpsr &= ~this.V;
-					}
+					this.cpsrN = d & 0x80000000;
+					this.cpsrZ = !d;
+					this.cpsrC = (this.shifterOperand >>> 0) >= (this.gprs[rn] >>> 0);
+					this.cpsrV = this.shifterOperand & 0x800000000 != this.gprs[rn] & 0x80000000 &&
+					             this.shifterOperand & 0x800000000 != d & 0x80000000;
 				}
 				this.gprs[rd] = d;
 			}
@@ -357,28 +300,12 @@ GBACore.prototype.compile = function(instruction) {
 			op = function() {
 				var d = (this.gprs[rn] >>> 0) + (this.shifterOperand >>> 0);
 				if (s) {
-					if (d & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (d) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (d > 0xFFFFFFFF) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
-					if (this.gprs[rn] & 0x80000000 == this.shifterOperand & 0x800000000 &&
-					    this.gprs[rn] & 0x80000000 != d & 0x80000000 &&
-					    this.shifterOperand & 0x80000000 != d & 0x80000000) {
-						this.cpsr |= this.V;
-					} else {
-						this.cpsr &= ~this.V;
-					}
+					this.cpsrN = d & 0x80000000;
+					this.cpsrZ = !d;
+					this.cpsrC = d > 0xFFFFFFFF;
+					this.cpsrV = this.gprs[rn] & 0x80000000 == this.shifterOperand & 0x800000000 &&
+					             this.gprs[rn] & 0x80000000 != d & 0x80000000 &&
+					             this.shifterOperand & 0x80000000 != d & 0x80000000;
 				}
 				this.gprs[rd] = d;
 			}
@@ -386,31 +313,15 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00A00000:
 			// ADC
 			op = function() {
-				var shifterOperand = (this.shifterOperand >>> 0) + !!(this.cpsr * this.C);
+				var shifterOperand = (this.shifterOperand >>> 0) + !!this.cpsrC;
 				var d = (this.gprs[rn] >>> 0) + shifterOperand;
 				if (s) {
-					if (d & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (d) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (d > 0xFFFFFFFF) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
-					if (this.gprs[rn] & 0x80000000 == shifterOperand & 0x800000000 &&
-					    this.gprs[rn] & 0x80000000 != d & 0x80000000 &&
-					    shifterOperand & 0x80000000 != d & 0x80000000) {
-						this.cpsr |= this.V;
-					} else {
-						this.cpsr &= ~this.V;
-					}
+					this.cpsrN = d & 0x80000000;
+					this.cpsrZ = !d;
+					this.cpsrC = d > 0xFFFFFFFF;
+					this.cpsrV = this.gprs[rn] & 0x80000000 == shifterOperand & 0x800000000 &&
+					             this.gprs[rn] & 0x80000000 != d & 0x80000000 &&
+					             shifterOperand & 0x80000000 != d & 0x80000000;
 				}
 				this.gprs[rd] = d;
 			}
@@ -418,30 +329,14 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00C00000:
 			// SBC
 			op = function() {
-				var shifterOperand = (this.shifterOperand >>> 0) + !(this.cpsr * this.C);
+				var shifterOperand = (this.shifterOperand >>> 0) + !this.cpsrC;
 				var d = (this.gprs[rn] >>> 0) - shifterOperand;
 				if (s) {
-					if (d & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (d) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (d > 0xFFFFFFFF) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
-					if (this.gprs[rn] & 0x80000000 != shifterOperand & 0x800000000 &&
-					    this.gprs[rn] & 0x80000000 != d & 0x80000000) {
-						this.cpsr |= this.V;
-					} else {
-						this.cpsr &= ~this.V;
-					}
+					this.cpsrN = d & 0x80000000;
+					this.cpsrZ = !d;
+					this.cpsrC = d > 0xFFFFFFFF;
+					this.cpsrV = this.gprs[rn] & 0x80000000 != shifterOperand & 0x800000000 &&
+					             this.gprs[rn] & 0x80000000 != d & 0x80000000;
 				}
 				this.gprs[rd] = d;
 			}
@@ -449,30 +344,14 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00E00000:
 			// RSC
 			op = function() {
-				var n = (this.gprs[rn] >>> 0) + !(this.cpsr * this.C);
+				var n = (this.gprs[rn] >>> 0) + !this.cpsrC;
 				var d = (this.shifterOperand >>> 0) - n;
 				if (s) {
-					if (d & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (d) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (d > 0xFFFFFFFF) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
-					if (this.shifterOperand & 0x80000000 != n & 0x80000000 &&
-					    this.shifterOperand & 0x80000000 != d & 0x80000000) {
-						this.cpsr |= this.V;
-					} else {
-						this.cpsr &= ~this.V;
-					}
+					this.cpsrN = d & 0x80000000;
+					this.cpsrZ = !d;
+					this.cpsrC = d > 0xFFFFFFFF;
+					this.cpsrV = this.shifterOperand & 0x80000000 != n & 0x80000000 &&
+					             this.shifterOperand & 0x80000000 != d & 0x80000000;
 				}
 				this.gprs[rd] = d;
 			}
@@ -481,97 +360,41 @@ GBACore.prototype.compile = function(instruction) {
 			// TST
 			op = function() {
 				var aluOut = this.gprs[rn] & this.shifterOperand;
-				if (aluOut & 0x80000000) {
-					this.cpsr |= this.N;
-				} else {
-					this.cpsr &= ~this.N;
-				}
-				if (aluOut) {
-					this.cpsr &= ~this.Z;
-				} else {
-					this.cpsr |= this.Z;
-				}
-				if (this.shifterCarryOut) {
-					this.cpsr |= this.C;
-				} else {
-					this.cpsr &= ~this.C;
-				}
+				this.cpsrN = aluOut & 0x80000000;
+				this.cpsrZ = !aluOut;
+				this.cpsrC = this.shifterCarryOut;
 			}
 			break;
 		case 0x01200000:
 			// TEQ
 			op = function() {
 				var aluOut = this.gprs[rn] ^ this.shifterOperand;
-				if (aluOut & 0x80000000) {
-					this.cpsr |= this.N;
-				} else {
-					this.cpsr &= ~this.N;
-				}
-				if (aluOut) {
-					this.cpsr &= ~this.Z;
-				} else {
-					this.cpsr |= this.Z;
-				}
-				if (this.shifterCarryOut) {
-					this.cpsr |= this.C;
-				} else {
-					this.cpsr &= ~this.C;
-				}
+				this.cpsrN = aluOut & 0x80000000;
+				this.cpsrZ = !aluOut;
+				this.cpsrC = this.shifterCarryOut;
 			}
 			break;
 		case 0x01400000:
 			// CMP
 			op = function() {
 				var aluOut = this.gprs[rn] - this.shifterOperand;
-				if (aluOut & 0x80000000) {
-					this.cpsr |= this.N;
-				} else {
-					this.cpsr &= ~this.N;
-				}
-				if (aluOut) {
-					this.cpsr &= ~this.Z;
-				} else {
-					this.cpsr |= this.Z;
-				}
-				if ((this.gprs[rn] >>> 0) >= (this.shifterOperand >>> 0)) {
-					this.cpsr |= this.C;
-				} else {
-					this.cpsr &= ~this.C;
-				}
-				if (this.gprs[rn] & 0x80000000 != this.shifterOperand & 0x800000000 &&
-					this.gprs[rn] & 0x80000000 != aluOut & 0x80000000) {
-					this.cpsr |= this.V;
-				} else {
-					this.cpsr &= ~this.V;
-				}
+				this.cpsrN = aluOut & 0x80000000;
+				this.cpsrZ = !aluOut;
+				this.cpsrC = (this.gprs[rn] >>> 0) >= (this.shifterOperand >>> 0);
+				this.cpsrV = this.gprs[rn] & 0x80000000 != this.shifterOperand & 0x800000000 &&
+					         this.gprs[rn] & 0x80000000 != aluOut & 0x80000000;
 			}
 			break;
 		case 0x01600000:
 			// CMN
 			op = function() {
 				var aluOut = (this.gprs[rn] >>> 0) + (this.shifterOperand >>> 0);
-				if (aluOut & 0x80000000) {
-					this.cpsr |= this.N;
-				} else {
-					this.cpsr &= ~this.N;
-				}
-				if (aluOut) {
-					this.cpsr &= ~this.Z;
-				} else {
-					this.cpsr |= this.Z;
-				}
-				if (aluOut > 0xFFFFFFFF) {
-					this.cpsr |= this.C;
-				} else {
-					this.cpsr &= ~this.C;
-				}
-				if (this.gprs[rn] & 0x80000000 == this.shifterOperand & 0x800000000 &&
-					this.gprs[rn] & 0x80000000 != aluOut & 0x80000000 &&
-					this.shifterOperand & 0x80000000 != aluOut & 0x80000000) {
-					this.cpsr |= this.V;
-				} else {
-					this.cpsr &= ~this.V;
-				}
+				this.cpsrN = aluOut & 0x80000000;
+				this.cpsrZ = !aluOut;
+				this.cpsrC = aluOut > 0xFFFFFFFF;
+				this.cpsrV = this.gprs[rn] & 0x80000000 == this.shifterOperand & 0x800000000 &&
+					         this.gprs[rn] & 0x80000000 != aluOut & 0x80000000 &&
+					         this.shifterOperand & 0x80000000 != aluOut & 0x80000000;
 			}
 			break;
 		case 0x01800000:
@@ -579,16 +402,8 @@ GBACore.prototype.compile = function(instruction) {
 			op = function() {
 				this.gprs[rd] = this.gprs[rn] | this.shifterOperand;
 				if (s) {
-					if (this.gprs[rd] & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (this.gprs[rd]) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
+					this.cpsrN = this.gprs[rd] & 0x80000000;
+					this.cpsrZ = !this.gprs[rd];
 				}
 			}
 			break;
@@ -597,21 +412,9 @@ GBACore.prototype.compile = function(instruction) {
 			op = function() {
 				this.gprs[rd] = this.shifterOperand;
 				if (s) {
-					if (this.gprs[rd] & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (this.gprs[rd]) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (aluOut > this.shifterCarryOut) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
+					this.cpsrN = this.gprs[rd] & 0x80000000;
+					this.cpsrZ = !this.gprs[rd];
+					this.cpsrC = this.shifterCarryOut;
 				}
 			}
 			break;
@@ -621,21 +424,9 @@ GBACore.prototype.compile = function(instruction) {
 				shiftOp();
 				this.gprs[rd] = this.gprs[rn] & ~this.shifterOperand;
 				if (s) {
-					if (this.gprs[rd] & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (this.gprs[rd]) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (this.shifterCarryOut) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
+					this.cpsrN = this.gprs[rd] & 0x80000000;
+					this.cpsrZ = !this.gprs[rd];
+					this.cpsrC = this.shifterCarryOut;
 				}
 			}
 			break;
@@ -644,21 +435,9 @@ GBACore.prototype.compile = function(instruction) {
 			op = function() {
 				this.gprs[rd] = ~this.shifterOperand;
 				if (s) {
-					if (this.gprs[rd] & 0x80000000) {
-						this.cpsr |= this.N;
-					} else {
-						this.cpsr &= ~this.N;
-					}
-					if (this.gprs[rd]) {
-						this.cpsr &= ~this.Z;
-					} else {
-						this.cpsr |= this.Z;
-					}
-					if (aluOut > this.shifterCarryOut) {
-						this.cpsr |= this.C;
-					} else {
-						this.cpsr &= ~this.C;
-					}
+					this.cpsrN = this.gprs[rd] & 0x80000000;
+					this.cpsrZ = !this.gprs[rd];
+					this.cpsrC = aluOut > this.shifterCarryOut;
 				}
 			}
 			break;
@@ -672,11 +451,7 @@ GBACore.prototype.compile = function(instruction) {
 		// BX
 		var rm = instruction & 0xF;
 		op = function() {
-			if (this.grps[rm] & 0x00000001) {
-				this.cpsr |= this.T;
-			} else {
-				this.cpsr &= ~this.T;
-			}
+			this.execMode = this.grps[rm] & 0x00000001;
 			this.gprs[this.PC] = this.grps[rm] & 0xFFFFFFFE;
 		}
 	} else if (instruction & 0x0FC000F0 == 0x00000090) {
@@ -722,85 +497,85 @@ GBACore.prototype.compile = function(instruction) {
 	case 0x00000000:
 		// EQ
 		condOp = function() {
-			return this.cpsr & this.Z;
+			return this.cpsrZ;
 		};
 		break;
 	case 0x10000000:
 		// NE
 		condOp = function() {
-			return !(this.cpsr & this.Z);
+			return !this.cpsrZ;
 		};
 		break;
 	case 0x20000000:
 		// CS
 		condOp = function() {
-			return this.cpsr & this.C;
+			return this.cpsrC;
 		};
 		break;
 	case 0x30000000:
 		// CC
 		condOp = function() {
-			return !(this.cpsr & this.C);
+			return !this.cpsrC;
 		};
 		break;
 	case 0x40000000:
 		// MI
 		condOp = function() {
-			return this.cpsr & this.N;
+			return this.cpsrN;
 		};
 		break;
 	case 0x50000000:
 		// PL
 		condOp = function() {
-			return !(this.cpsr & this.N);
+			return !this.cpsrN;
 		};
 		break;
 	case 0x60000000:
 		// VS
 		condOp = function() {
-			return this.cpsr & this.V;
+			return this.cpsrV;
 		};
 		break;
 	case 0x70000000:
 		// VC
 		condOp = function() {
-			return !(this.cpsr & this.V);
+			return !this.cpsrV;
 		};
 		break;
 	case 0x80000000:
 		// HI
 		condOp = function () {
-			return this.cspr & this.C && !(this.cspr & this.Z);
+			return this.csprC && !this.csprZ;
 		};
 		break;
 	case 0x90000000:
 		// LS
 		condOp = function () {
-			return !(this.cspr & this.C) || this.cspr & this.Z;
+			return !this.csprC || this.csprZ;
 		};
 		break;
 	case 0xA0000000:
 		// GE
 		condOp = function () {
-			return !(this.cspr & this.N) == !(this.cspr & this.V);
+			return !this.csprN == !this.csprV;
 		};
 		break;
 	case 0xB0000000:
 		// LT
 		condOp = function () {
-			return !(this.cspr & this.N) != !(this.cspr & this.V);
+			return !this.csprN != !this.csprV;
 		};
 		break;
 	case 0xC0000000:
 		// GT
 		condOp = function () {
-			return !(this.cspr & this.Z) && !(this.cspr & this.N) == !(this.cspr & this.V);
+			return !this.csprZ && !this.csprN == !this.csprV;
 		};
 		break;
 	case 0xD0000000:
 		// LE
 		condOp = function () {
-			return (this.cspr & this.Z) || !(this.cspr & this.N) != !(this.cspr & this.V);
+			return this.csprZ || !this.csprN != !this.csprV;
 		};
 		break;
 	}
