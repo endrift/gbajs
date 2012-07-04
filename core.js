@@ -67,15 +67,77 @@ GBACore.prototype.compile = function(instruction) {
 			switch (shiftType) {
 			case 0:
 				// LSL
+				shiftOp = function() {
+					var shift = this.gprs[rs] & 0xFF;
+					if (shift == 0) {
+						this.shifterOperand = this.gprs[rm];
+						this.shifterCarryOut = this.cpsr & this.C;
+					} else if (shift < 32) {
+						this.shifterOperand = this.gprs[rm] << shift;
+						this.shifterCarryOut = this.gprs[rm] & (1 << (32 - shift));
+					} else if (shift == 32) {
+						this.shifterOperand = 0;
+						this.shifterCarryOut = this.gprs[rm] & 1;
+					} else {
+						this.shifterOperand = 0;
+						this.shifterCarryOut = 0;
+					}
+				};
 				break;
 			case 1:
 				// LSR
+				shiftOp = function() {
+					var shift = this.gprs[rs] & 0xFF;
+					if (shift == 0) {
+						this.shifterOperand = this.gprs[rm];
+						this.shifterCarryOut = this.cpsr & this.C;
+					} else if (shift < 32) {
+						this.shifterOperand = this.gprs[rm] >>> shift;
+						this.shifterCarryOut = this.gprs[rm] & (1 << (shift - 1));
+					} else if (shift == 32) {
+						this.shifterOperand = 0;
+						this.shifterCarryOut = this.gprs[rm] & 0x80000000;
+					} else {
+						this.shifterOperand = 0;
+						this.shifterCarryOut = 0;
+					}
+				}
 				break;
 			case 2:
 				// ASR
+				shiftOp = function() {
+					var shift = this.gprs[rs] & 0xFF;
+					if (shift == 0) {
+						this.shifterOperand = this.gprs[rm];
+						this.shifterCarryOut = this.cpsr & this.C;
+					} else if (shift < 32) {
+						this.shifterOperand = this.gprs[rm] >> shift;
+						this.shifterCarryOut = this.gprs[rm] & (1 << (shift - 1));
+					} else if (this.gprs[rm] & 0x80000000) {
+						this.shifterOperand = 0xFFFFFFFF;
+						this.shifterCarryOut = 0x80000000;
+					} else {
+						this.shifterOperand = 0;
+						this.shifterCarryOut = 0;
+					}
+				}
 				break;
 			case 3:
 				// ROR
+				shiftOp = function() {
+					var shift = this.gprs[rs] & 0xFF;
+					var rotate = shift 0x1F;
+					if (shift == 0) {
+						this.shifterOperand = this.gprs[rm];
+						this.shifterCarryOut = this.cpsr & this.C;
+					} else if (rotate) {
+						this.shifterOperand = (this.gprs[rm] >>> rotate) | (this.gprs[rm] << (32 - rotate));
+						this.shifterCarryOut = this.gprs[rm] & (1 << (rotate - 1));
+					} else {
+						this.shifterOperand = this.gprs[rm];
+						this.shifterCarryOut = this.gprs[rm] & 0x80000000;
+					}
+				}
 				break;
 			}
 		} else {
