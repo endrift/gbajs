@@ -4,6 +4,7 @@ GBACore = function() {
 	this.WORKING_IRAM_SIZE = 0x8000;
 	this.WORKING_RAM_SIZE = 0x40000;
 
+	this.T = 0x00000020;
 	this.V = 0x10000000;
 	this.C = 0x20000000;
 	this.Z = 0x40000000;
@@ -643,6 +644,15 @@ GBACore.prototype.compile = function(instruction) {
 		}
 	} else if (instruction & 0x0FFFFFF0 == 0x012FFF10) {
 		// BX
+		var rm = instruction & 0xF;
+		op = function() {
+			if (this.grps[rm] & 0x00000001) {
+				this.cpsr |= this.T;
+			} else {
+				this.cpsr &= ~this.T;
+			}
+			this.gprs[this.PC] = this.grps[rm] & 0xFFFFFFFE;
+		}
 	} else if (instruction & 0x0FC000F0 == 0x00000090) {
 		// MUL
 	} else if (instruction & 0x0F8000F0 == 0x00800090) {
