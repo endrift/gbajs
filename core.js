@@ -171,6 +171,98 @@ GBACore.prototype.compile = function(instruction) {
 	var i = instruction & 0x0E000000;
 	var cpu = this;
 
+	var condOp;
+	switch (cond) {
+	case 0x00000000:
+		// EQ
+		condOp = function() {
+			return cpu.cpsrZ;
+		};
+		break;
+	case 0x10000000:
+		// NE
+		condOp = function() {
+			return !cpu.cpsrZ;
+		};
+		break;
+	case 0x20000000:
+		// CS
+		condOp = function() {
+			return cpu.cpsrC;
+		};
+		break;
+	case 0x30000000:
+		// CC
+		condOp = function() {
+			return !cpu.cpsrC;
+		};
+		break;
+	case 0x40000000:
+		// MI
+		condOp = function() {
+			return cpu.cpsrN;
+		};
+		break;
+	case 0x50000000:
+		// PL
+		condOp = function() {
+			return !cpu.cpsrN;
+		};
+		break;
+	case 0x60000000:
+		// VS
+		condOp = function() {
+			return cpu.cpsrV;
+		};
+		break;
+	case 0x70000000:
+		// VC
+		condOp = function() {
+			return !cpu.cpsrV;
+		};
+		break;
+	case 0x80000000:
+		// HI
+		condOp = function () {
+			return cpu.csprC && !cpu.csprZ;
+		};
+		break;
+	case 0x90000000:
+		// LS
+		condOp = function () {
+			return !cpu.csprC || cpu.csprZ;
+		};
+		break;
+	case 0xA0000000:
+		// GE
+		condOp = function () {
+			return !cpu.csprN == !cpu.csprV;
+		};
+		break;
+	case 0xB0000000:
+		// LT
+		condOp = function () {
+			return !cpu.csprN != !cpu.csprV;
+		};
+		break;
+	case 0xC0000000:
+		// GT
+		condOp = function () {
+			return !cpu.csprZ && !cpu.csprN == !cpu.csprV;
+		};
+		break;
+	case 0xD0000000:
+		// LE
+		condOp = function () {
+			return cpu.csprZ || !cpu.csprN != !cpu.csprV;
+		};
+		break;
+	case 0xE0000000:
+		// AL
+	case 0xF0000000:
+		condOp = false;
+	}
+
 	if (i == 0x02000000 || instruction & 0x00000090 != 0x00000090) {
 		// Data processing/FSR transfer
 		var opcode = instruction & 0x01E00000;
@@ -346,6 +438,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00000000:
 			// AND
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				cpu.gprs[rd] = cpu.gprs[rn] & cpu.shifterOperand;
 				if (s) {
@@ -358,6 +453,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00200000:
 			// EOR
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				cpu.gprs[rd] = cpu.gprs[rn] ^ cpu.shifterOperand;
 				if (s) {
@@ -370,6 +468,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00400000:
 			// SUB
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var d = cpu.gprs[rn] - cpu.shifterOperand;
 				if (s) {
@@ -385,6 +486,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00600000:
 			// RSB
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var d = cpu.shifterOperand - cpu.gprs[rn];
 				if (s) {
@@ -400,6 +504,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00800000:
 			// ADD
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var d = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
 				if (s) {
@@ -416,6 +523,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00A00000:
 			// ADC
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
 				var d = (cpu.gprs[rn] >>> 0) + shifterOperand;
@@ -433,6 +543,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00C00000:
 			// SBC
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
 				var d = (cpu.gprs[rn] >>> 0) - shifterOperand;
@@ -449,6 +562,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00E00000:
 			// RSC
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var n = (cpu.gprs[rn] >>> 0) + !cpu.cpsrC;
 				var d = (cpu.shifterOperand >>> 0) - n;
@@ -465,6 +581,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01000000:
 			// TST
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var aluOut = cpu.gprs[rn] & cpu.shifterOperand;
 				cpu.cpsrN = aluOut & 0x80000000;
@@ -475,6 +594,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01200000:
 			// TEQ
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var aluOut = cpu.gprs[rn] ^ cpu.shifterOperand;
 				cpu.cpsrN = aluOut & 0x80000000;
@@ -485,6 +607,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01400000:
 			// CMP
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var aluOut = cpu.gprs[rn] - cpu.shifterOperand;
 				cpu.cpsrN = aluOut & 0x80000000;
@@ -497,6 +622,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01600000:
 			// CMN
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				var aluOut = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
 				cpu.cpsrN = aluOut & 0x80000000;
@@ -510,6 +638,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01800000:
 			// ORR
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				cpu.gprs[rd] = cpu.gprs[rn] | cpu.shifterOperand;
 				if (s) {
@@ -521,6 +652,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01A00000:
 			// MOV
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				cpu.gprs[rd] = cpu.shifterOperand;
 				if (s) {
@@ -533,6 +667,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01C00000:
 			// BIC
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				cpu.gprs[rd] = cpu.gprs[rn] & ~cpu.shifterOperand;
 				if (s) {
@@ -545,6 +682,9 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x01E00000:
 			// MVN
 			innerOp = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
 				shiftOp();
 				cpu.gprs[rd] = ~cpu.shifterOperand;
 				if (s) {
@@ -560,6 +700,9 @@ GBACore.prototype.compile = function(instruction) {
 		// BX
 		var rm = instruction & 0xF;
 		op = function() {
+			if (condOp && !condOp()) {
+				return;
+			}
 			cpu.execMode = cpu.grps[rm] & 0x00000001;
 			cpu.gprs[cpu.PC] = cpu.grps[rm] & 0xFFFFFFFE;
 		}
@@ -596,104 +739,7 @@ GBACore.prototype.compile = function(instruction) {
 		}
 	}
 
-	// If cond is AL (or unpredictable), don't decorate the op
-	if (cond == 0xE0000000 || cond == 0xF0000000) {
-		return op;
-	}
-
-	var condOp;
-	switch (cond) {
-	case 0x00000000:
-		// EQ
-		condOp = function() {
-			return cpu.cpsrZ;
-		};
-		break;
-	case 0x10000000:
-		// NE
-		condOp = function() {
-			return !cpu.cpsrZ;
-		};
-		break;
-	case 0x20000000:
-		// CS
-		condOp = function() {
-			return cpu.cpsrC;
-		};
-		break;
-	case 0x30000000:
-		// CC
-		condOp = function() {
-			return !cpu.cpsrC;
-		};
-		break;
-	case 0x40000000:
-		// MI
-		condOp = function() {
-			return cpu.cpsrN;
-		};
-		break;
-	case 0x50000000:
-		// PL
-		condOp = function() {
-			return !cpu.cpsrN;
-		};
-		break;
-	case 0x60000000:
-		// VS
-		condOp = function() {
-			return cpu.cpsrV;
-		};
-		break;
-	case 0x70000000:
-		// VC
-		condOp = function() {
-			return !cpu.cpsrV;
-		};
-		break;
-	case 0x80000000:
-		// HI
-		condOp = function () {
-			return cpu.csprC && !cpu.csprZ;
-		};
-		break;
-	case 0x90000000:
-		// LS
-		condOp = function () {
-			return !cpu.csprC || cpu.csprZ;
-		};
-		break;
-	case 0xA0000000:
-		// GE
-		condOp = function () {
-			return !cpu.csprN == !cpu.csprV;
-		};
-		break;
-	case 0xB0000000:
-		// LT
-		condOp = function () {
-			return !cpu.csprN != !cpu.csprV;
-		};
-		break;
-	case 0xC0000000:
-		// GT
-		condOp = function () {
-			return !cpu.csprZ && !cpu.csprN == !cpu.csprV;
-		};
-		break;
-	case 0xD0000000:
-		// LE
-		condOp = function () {
-			return cpu.csprZ || !cpu.csprN != !cpu.csprV;
-		};
-		break;
-	}
-
-	return function() {
-		if (condOp()) {
-			op();
-		}
-	};
+	return op;
 };
 
 GBACore.prototype.compileThumb = function(instruction) {
