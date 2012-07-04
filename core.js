@@ -188,10 +188,11 @@ GBACore.prototype.compile = function(instruction) {
 			var immediate = instruction & 0x000000FF;
 			var rotate = (instruction & 0x00000F00) >> 7;
 			shiftOp = function() {
-				cpu.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
 				if (rotate == 0) {
+					cpu.shifterOperand = immediate;
 					cpu.shifterCarryOut = cpu.cpsrC;
 				} else {
+					cpu.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
 					cpu.shifterCarryOut = cpu.shifterOperand & 0x80000000;
 				}
 			}
@@ -691,8 +692,6 @@ GBACore.prototype.compile = function(instruction) {
 	return function() {
 		if (condOp()) {
 			op();
-		} else {
-			cpu.noop();
 		}
 	};
 };
