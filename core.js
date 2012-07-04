@@ -126,7 +126,7 @@ GBACore.prototype.compile = function(instruction) {
 				// ROR
 				shiftOp = function() {
 					var shift = this.gprs[rs] & 0xFF;
-					var rotate = shift 0x1F;
+					var rotate = shift & 0x1F;
 					if (shift == 0) {
 						this.shifterOperand = this.gprs[rm];
 						this.shifterCarryOut = this.cpsr & this.C;
