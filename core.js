@@ -81,7 +81,7 @@ GBACore.prototype.resetCPU = function() {
 		null // Unused
 	];
 
-	this.memoryView = [
+	/*this.memoryView = [
 		null,
 		null, // Unused
 		new DataView(this.memory[2]),
@@ -98,7 +98,7 @@ GBACore.prototype.resetCPU = function() {
 		null, // Unused
 		null,
 		null // Unused
-	];
+	];*/
 };
 
 GBACore.prototype.loadRom = function(rom) {
@@ -689,7 +689,7 @@ GBACore.prototype.compile = function(instruction) {
 			break;
 		}
 		op = innerOp;
-	} else if (instruction & 0x0FFFFFF0 == 0x012FFF10) {
+	} else if ((instruction & 0x0FFFFFF0) == 0x012FFF10) {
 		// BX
 		var rm = instruction & 0xF;
 		op = function() {
@@ -699,13 +699,13 @@ GBACore.prototype.compile = function(instruction) {
 			cpu.execMode = cpu.grps[rm] & 0x00000001;
 			cpu.gprs[cpu.PC] = cpu.grps[rm] & 0xFFFFFFFE;
 		}
-	} else if (instruction & 0x0FC000F0 == 0x00000090) {
+	} else if ((instruction & 0x0FC000F0) == 0x00000090) {
 		// MUL
-	} else if (instruction & 0x0F8000F0 == 0x00800090) {
+	} else if ((instruction & 0x0F8000F0) == 0x00800090) {
 		// MLL
-	} else if (instruction & 0x0E000010 == 0x06000000) {
+	} else if ((instruction & 0x0E000010) == 0x06000000) {
 		// Single data transfer
-	} else if (instruction & 0x0FB00FF0 == 0x01000090) {
+	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
 		// Single data swap
 	} else {
 		switch (i) {
@@ -737,11 +737,11 @@ GBACore.prototype.compile = function(instruction) {
 
 GBACore.prototype.compileThumb = function(instruction) {
 	var op = this.noopThumb;
-	if (instruction & 0xFC00 == 0x4000) {
+	if ((instruction & 0xFC00) == 0x4000) {
 		// Data-processing register
 		switch (instruction & 0x0200) {
 		}
-	} else if (instruction & 0xFC00 == 0x4400) {
+	} else if ((instruction & 0xFC00) == 0x4400) {
 		// Special data processing / branch/exchange instruction set
 		var rm = (instruction & 0x0038) >> 3;
 		var rd = instruction & 0x0007;
@@ -795,27 +795,27 @@ GBACore.prototype.compileThumb = function(instruction) {
 			// MVN
 			break;
 		}
-	} else if (instruction & 0xF800 == 0x1800) {
+	} else if ((instruction & 0xF800) == 0x1800) {
 		// Add/subtract
-	} else if (instruction & 0xE000 == 0x2000) {
+	} else if ((instruction & 0xE000) == 0x2000) {
 		// Add/subtract/compare/move immediate
-	} else if (instruction & 0xF800 == 0x4800) {
+	} else if ((instruction & 0xF800) == 0x4800) {
 		// PC-relative load
-	} else if (instruction & 0xF200 == 0x5000) {
+	} else if ((instruction & 0xF200) == 0x5000) {
 		// Load and store with relative offset
-	} else if (instruction & 0xF200 == 0x5200) {
+	} else if ((instruction & 0xF200) == 0x5200) {
 		// Load and store sign-extend byte and halfword
-	} else if (instruction & 0xE000 == 0x3000) {
+	} else if ((instruction & 0xE000) == 0x3000) {
 		// Load and store with immediate offset
-	} else if (instruction & 0xFF00 == 0xB000) {
+	} else if ((instruction & 0xFF00) == 0xB000) {
 		// Add offset to stack pointer
-	} else if (instruction & 0xF600 == 0xB400) {
+	} else if ((instruction & 0xF600) == 0xB400) {
 		// Push and pop registers
-	} else if (instruction & 0xFF00 == 0xDF00) {
+	} else if ((instruction & 0xFF00) == 0xDF00) {
 		// SWI
-	} else if (instruction & 0xF800 == 0xE000) {
+	} else if ((instruction & 0xF800) == 0xE000) {
 		// Unconditional branch
-	} else if (instruction & 0xF000 == 0x8000) {
+	} else if ((instruction & 0xF000) == 0x8000) {
 		switch (instruction & 0x7000) {
 		case 0x0000:
 			// Load and store halfword
