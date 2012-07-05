@@ -739,8 +739,62 @@ GBACore.prototype.compileThumb = function(instruction) {
 	var op = this.noopThumb;
 	if (instruction & 0xFC00 == 0x4000) {
 		// Data-processing register
-	} else if (instruction & 0xFC00 == 0x4100) {
+		switch (instruction & 0x0200) {
+		}
+	} else if (instruction & 0xFC00 == 0x4400) {
 		// Special data processing / branch/exchange instruction set
+		var rm = (instruction & 0x0038) >> 3;
+		var rd = instruction & 0x0007;
+		switch (instruction & 0x03C0) {
+		case 0x0000:
+			// AND
+			break;
+		case 0x0040:
+			// EOR
+			break;
+		case 0x0080:
+			// LSL
+			break;
+		case 0x00C0:
+			// LSR
+			break;
+		case 0x0100:
+			// ASR
+			break;
+		case 0x0140:
+			// ADC
+			break;
+		case 0x0180:
+			// SBC
+			break;
+		case 0x01C0:
+			// ROR
+			break;
+		case 0x0200:
+			// TST
+			break;
+		case 0x0240:
+			// NEG
+			break;
+		case 0x0280:
+			// CMP
+			break;
+		case 0x02C0:
+			// CMN
+			break;
+		case 0x0300:
+			// ORR
+			break;
+		case 0x0340:
+			// MUL
+			break;
+		case 0x0380:
+			// BIC
+			break;
+		case 0x03C0:
+			// MVN
+			break;
+		}
 	} else if (instruction & 0xF800 == 0x1800) {
 		// Add/subtract
 	} else if (instruction & 0xE000 == 0x2000) {
