@@ -36,6 +36,10 @@ GBACore = function() {
 	this.resetCPU();
 };
 
+GBACore.prototype.WARN = function(warn) {
+	console.log("[WARNING] " + warn);
+}
+
 GBACore.prototype.ASSERT_UNREACHED = function(err) {
 	throw "Should be unreached: " + err;
 };
