@@ -747,5 +747,59 @@ GBACore.prototype.compile = function(instruction) {
 };
 
 GBACore.prototype.compileThumb = function(instruction) {
-	return this.noopThumb;
+	var op = this.noopThumb;
+	if (instruction & 0xFC00 == 0x4000) {
+		// Data-processing register
+	} else if (instruction & 0xFC00 == 0x4100) {
+		// Special data processing / branch/exchange instruction set
+	} else if (instruction & 0xF800 == 0x1800) {
+		// Add/subtract
+	} else if (instruction & 0xE000 == 0x2000) {
+		// Add/subtract/compare/move immediate
+	} else if (instruction & 0xF800 == 0x4800) {
+		// PC-relative load
+	} else if (instruction & 0xF200 == 0x5000) {
+		// Load and store with relative offset
+	} else if (instruction & 0xF200 == 0x5200) {
+		// Load and store sign-extend byte and halfword
+	} else if (instruction & 0xE000 == 0x3000) {
+		// Load and store with immediate offset
+	} else if (instruction & 0xFF00 == 0xB000) {
+		// Add offset to stack pointer
+	} else if (instruction & 0xF600 == 0xB400) {
+		// Push and pop registers
+	} else if (instruction & 0xFF00 == 0xDF00) {
+		// SWI
+	} else if (instruction & 0xF800 == 0xE000) {
+		// Unconditional branch
+	} else if (instruction & 0xF000 == 0x8000) {
+		switch (instruction & 0x7000) {
+		case 0x0000:
+			// Load and store halfword
+			break;
+		case 0x1000:
+			// SP-relative load and store
+			break;
+		case 0x2000:
+			// Load address
+			break;
+		case 0x3000:
+			// Push and pop registers
+			break;
+		case 0x4000:
+			// Multiple load and store
+			break;
+		case 0x5000:
+			// Conditional branch
+			break;
+		case 0x7000:
+			// Long branch with link
+			break;
+		default:
+			this.WARN("Undefined instruction");
+		}
+	} else {
+		this.ASSERT_UNREACHED("Bad opcode");
+	}
+	return op;
 };
