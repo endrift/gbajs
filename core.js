@@ -737,6 +737,7 @@ GBACore.prototype.compile = function(instruction) {
 
 GBACore.prototype.compileThumb = function(instruction) {
 	var op = this.noopThumb;
+	var cpu = this;
 	if ((instruction & 0xFC00) == 0x4000) {
 		// Data-processing register
 		switch (instruction & 0x0200) {
@@ -748,51 +749,206 @@ GBACore.prototype.compileThumb = function(instruction) {
 		switch (instruction & 0x03C0) {
 		case 0x0000:
 			// AND
+			op = function() {
+				cpu.gprs[rd] = cpu.gprs[rd] & cpu.gprs[rm];
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x0040:
 			// EOR
+			op = function() {
+				cpu.gprs[rd] = cpu.gprs[rd] ^ cpu.gprs[rm];
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x0080:
 			// LSL
+			op = function() {
+				var rs = cpu.gprs[rm] & 0xFF;
+				if (rs) {
+					if (rs < 32) {
+						cpu.cpsrC = cpu.gprs[rd] & (1 << (32 - rs));
+						cpu.gprs[rd] <<= rs;
+					} else {
+						if (rs > 32) {
+							cpu.cpsrC = 0;
+						} else {
+							cpu.cpsrC = cpu.gprs[rd] & 0x00000001;
+						}
+						cpu.gprs[rd] = 0;
+					}
+				}
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x00C0:
 			// LSR
+			op = function() {
+				var rs = cpu.gprs[rm] & 0xFF;
+				if (rs) {
+					if (rs < 32) {
+						cpu.cpsrC = cpu.gprs[rd] & (1 << (rs - 1));
+						cpu.gprs[rd] >>>= rs;
+					} else {
+						if (rs > 32) {
+							cpu.cpsrC = 0;
+						} else {
+							cpu.cpsrC = cpu.gprs[rd] & 0x80000000;
+						}
+						cpu.gprs[rd] = 0;
+					}
+				}
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x0100:
 			// ASR
+			op = function() {
+				var rs = cpu.gprs[rm] & 0xFF;
+				if (rs) {
+					if (rs < 32) {
+						cpu.cpsrC = cpu.gprs[rd] & (1 << (rs - 1));
+						cpu.gprs[rd] >>= rs;
+					} else {
+						cpu.cpsrC = cpu.gprs[rd] & 0x80000000;
+						if (cpu.cpsrC) {
+							cpu.gprs[rd] = 0xFFFFFFFF;
+						} else {
+							cpu.gprs[rd] = 0;
+						}
+					}
+				}
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x0140:
 			// ADC
+			op = function() {
+				var m = (cpu.gprs[rm] >>> 0) + !!cpu.cpsrC;
+				var d = (cpu.gprs[rd] >>> 0) + m;
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !d;
+				cpu.cpsrC = d > 0xFFFFFFFF;
+				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 == m & 0x800000000 &&
+				            cpu.gprs[rd] & 0x80000000 != d & 0x80000000 &&
+				            m & 0x80000000 != d & 0x80000000;
+				cpu.gprs[rd] = d;
+			}
 			break;
 		case 0x0180:
 			// SBC
+			innerOp = function() {
+				var m = (cpu.gprs[rm] >>> 0) + !cpu.cpsrC;
+				var d = (cpu.gprs[rd] >>> 0) - m;
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !d;
+				cpu.cpsrC = d > 0xFFFFFFFF;
+				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != m & 0x800000000 &&
+							cpu.gprs[rd] & 0x80000000 != d & 0x80000000;
+				cpu.gprs[rd] = d;
+			}
 			break;
 		case 0x01C0:
 			// ROR
+			op = function() {
+				var rs = cpu.gprs[rm] & 0xFF;
+				if (rs) {
+					var r4 = rs & 0x0F;
+					if (r4 > 0) {
+						cpu.cpsrC = cpu.gprs[rd] & (1 << (r4 - 1));
+						cpu.gprs[rd] = (cpu.gprs[rd] >>> r4) | (cpu.gprs[rd] << (32 - r4));
+					} else {
+						cpu.cpsrC = cpu.gprs[rd] & 0x80000000;
+					}
+				}
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x0200:
 			// TST
+			op = function() {
+				var aluOut = cpu.gprs[rd] & cpu.gprs[rm];
+				cpu.cpsrN = aluOut & 0x80000000;
+				cpu.cpsrZ = !aluOut;
+			}
 			break;
 		case 0x0240:
 			// NEG
+			innerOp = function() {
+				cpu.gprs[rd] = -cpu.gprs[rm];
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrC = 0 >= (cpu.gprs[rn] >>> 0);
+				cpu.cpsrV = cpu.gprs[rn] & 0x800000000 && cpu.gprs[rd] & 0x80000000;
+			}
 			break;
 		case 0x0280:
 			// CMP
+			op = function() {
+				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
+				cpu.cpsrN = aluOut & 0x80000000;
+				cpu.cpsrZ = !aluOut;
+				cpu.cpsrC = (cpu.gprs[rd] >>> 0) >= (cpu.gprs[rm] >>> 0);
+				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
+					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000;
+			}
 			break;
 		case 0x02C0:
 			// CMN
+			op = function() {
+				var aluOut = (cpu.gprs[rd] >>> 0) + (cpu.gprs[rm] >>> 0);
+				cpu.cpsrN = aluOut & 0x80000000;
+				cpu.cpsrZ = !aluOut;
+				cpu.cpsrC = aluOut > 0xFFFFFFFF;
+				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 == cpu.gprs[rm] & 0x800000000 &&
+					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000 &&
+					        cpu.gprs[rm] & 0x80000000 != aluOut & 0x80000000;
+			}
 			break;
 		case 0x0300:
 			// ORR
+			op = function() {
+				cpu.gprs[rd] = cpu.gprs[rd] | cpu.gprs[rm];
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x0340:
 			// MUL
+			op = function() {
+				if ((cpu.gprs[rs] & 0xFFFF0000) && (cpu.gprs[rd] & 0xFFFF0000)) {
+					// Our data type is a double--we'll lose bits if we do it all at once!
+					var hi = ((cpu.gprs[rd] & 0xFFFF0000) * cpu.gprs[rs]) & 0xFFFFFFFF;
+					var lo = ((cpu.gprs[rd] & 0x0000FFFF) * cpu.gprs[rs]) & 0xFFFFFFFF;
+					cpu.gprs[rd] = (hi + lo) & 0xFFFFFFFF;
+				} else {
+					cpu.gprs[rd] *= cpu.gprs[rs];
+				}
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x0380:
 			// BIC
+			op = function() {
+				cpu.gprs[rd] = cpu.gprs[rd] & ~cpu.gprs[rm];
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		case 0x03C0:
 			// MVN
+			op = function() {
+				cpu.gprs[rd] = ~cpu.gprs[rm];
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			}
 			break;
 		}
 	} else if ((instruction & 0xF800) == 0x1800) {
