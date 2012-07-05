@@ -169,104 +169,93 @@ GBACore.prototype.noop = function() {
 GBACore.prototype.noopThumb = function() {
 };
 
+GBACore.prototype.generateCond = function(cond) {
+	var cpu = this;
+	switch (cond) {
+	case 0x0:
+		// EQ
+		return function() {
+			return cpu.cpsrZ;
+		};
+	case 0x10000000:
+		// NE
+		return function() {
+			return !cpu.cpsrZ;
+		};
+	case 0x20000000:
+		// CS
+		return function() {
+			return cpu.cpsrC;
+		};
+	case 0x30000000:
+		// CC
+		return function() {
+			return !cpu.cpsrC;
+		};
+	case 0x40000000:
+		// MI
+		return function() {
+			return cpu.cpsrN;
+		};
+	case 0x50000000:
+		// PL
+		return function() {
+			return !cpu.cpsrN;
+		};
+	case 0x60000000:
+		// VS
+		return function() {
+			return cpu.cpsrV;
+		};
+	case 0x70000000:
+		// VC
+		return function() {
+			return !cpu.cpsrV;
+		};
+	case 0x80000000:
+		// HI
+		return function () {
+			return cpu.csprC && !cpu.csprZ;
+		};
+	case 0x90000000:
+		// LS
+		return function () {
+			return !cpu.csprC || cpu.csprZ;
+		};
+	case 0xA0000000:
+		// GE
+		return function () {
+			return !cpu.csprN == !cpu.csprV;
+		};
+	case 0xB0000000:
+		// LT
+		return function () {
+			return !cpu.csprN != !cpu.csprV;
+		};
+	case 0xC0000000:
+		// GT
+		return function () {
+			return !cpu.csprZ && !cpu.csprN == !cpu.csprV;
+		};
+	case 0xD0000000:
+		// LE
+		return function () {
+			return cpu.csprZ || !cpu.csprN != !cpu.csprV;
+		};
+	case 0xE:
+		// AL
+	default:
+		return null;
+	}
+}
+
 GBACore.prototype.compile = function(instruction) {
-	var cond = (instruction & 0xF0000000) >>> 0 // >>> 0 converts from signed to unsigned;
+	var cond = (instruction & 0xF0000000) >>> 28;
 	var op = this.noop;
 	var i = instruction & 0x0E000000;
 	var cpu = this;
 
-	var condOp;
-	switch (cond) {
-	case 0x00000000:
-		// EQ
-		condOp = function() {
-			return cpu.cpsrZ;
-		};
-		break;
-	case 0x10000000:
-		// NE
-		condOp = function() {
-			return !cpu.cpsrZ;
-		};
-		break;
-	case 0x20000000:
-		// CS
-		condOp = function() {
-			return cpu.cpsrC;
-		};
-		break;
-	case 0x30000000:
-		// CC
-		condOp = function() {
-			return !cpu.cpsrC;
-		};
-		break;
-	case 0x40000000:
-		// MI
-		condOp = function() {
-			return cpu.cpsrN;
-		};
-		break;
-	case 0x50000000:
-		// PL
-		condOp = function() {
-			return !cpu.cpsrN;
-		};
-		break;
-	case 0x60000000:
-		// VS
-		condOp = function() {
-			return cpu.cpsrV;
-		};
-		break;
-	case 0x70000000:
-		// VC
-		condOp = function() {
-			return !cpu.cpsrV;
-		};
-		break;
-	case 0x80000000:
-		// HI
-		condOp = function () {
-			return cpu.csprC && !cpu.csprZ;
-		};
-		break;
-	case 0x90000000:
-		// LS
-		condOp = function () {
-			return !cpu.csprC || cpu.csprZ;
-		};
-		break;
-	case 0xA0000000:
-		// GE
-		condOp = function () {
-			return !cpu.csprN == !cpu.csprV;
-		};
-		break;
-	case 0xB0000000:
-		// LT
-		condOp = function () {
-			return !cpu.csprN != !cpu.csprV;
-		};
-		break;
-	case 0xC0000000:
-		// GT
-		condOp = function () {
-			return !cpu.csprZ && !cpu.csprN == !cpu.csprV;
-		};
-		break;
-	case 0xD0000000:
-		// LE
-		condOp = function () {
-			return cpu.csprZ || !cpu.csprN != !cpu.csprV;
-		};
-		break;
-	case 0xE0000000:
-		// AL
-	case 0xF0000000:
-		condOp = false;
-	}
-
+	var condOp = this.generateCond(cond);
 	if (i == 0x02000000 || instruction & 0x00000090 != 0x00000090) {
 		// Data processing/FSR transfer
 		var opcode = instruction & 0x01E00000;
