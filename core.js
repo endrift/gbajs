@@ -205,11 +205,11 @@ GBACore.prototype.loadInstruction = function() {
 
 GBACore.prototype.step = function() {
 	this.loadInstruction(this.nextPC)();
-	if (this.execMode == this.MODE_ARM) {
+	/*if (this.execMode == this.MODE_ARM) {
 		this.advancePC();
 	} else {
 		this.advancePCThumb();
-	}
+	}*/
 };
 
 GBACore.prototype.getMemoryRegion = function(offset) {
