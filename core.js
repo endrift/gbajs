@@ -309,10 +309,8 @@ GBACore.prototype.getMemoryRegion = function(offset) {
 	}
 };
 
-GBACore.prototype.noop = function() {
-};
-
-GBACore.prototype.noopThumb = function() {
+GBACore.prototype.badOp = function() {
+	throw "Illegal instruction";
 };
 
 GBACore.prototype.generateCond = function(cond) {
@@ -397,7 +395,7 @@ GBACore.prototype.generateCond = function(cond) {
 
 GBACore.prototype.compile = function(instruction) {
 	var cond = (instruction & 0xF0000000) >>> 28;
-	var op = this.noop;
+	var op = this.badOp;
 	var i = instruction & 0x0E000000;
 	var cpu = this;
 
@@ -860,7 +858,7 @@ GBACore.prototype.compile = function(instruction) {
 			break;
 		case 0x06000000:
 			// Undefined
-			return this.noop;
+			return this.badOp;
 		case 0x08000000:
 			// Block data transfer
 			break;
@@ -882,7 +880,7 @@ GBACore.prototype.compile = function(instruction) {
 };
 
 GBACore.prototype.compileThumb = function(instruction) {
-	var op = this.noopThumb;
+	var op = this.badOp;
 	var cpu = this;
 	if ((instruction & 0xFC00) == 0x4000) {
 		// Data-processing register
