@@ -164,12 +164,12 @@ GBACore.prototype.load8 = function(offset) {
 
 GBACore.prototype.load16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt16(offset & 0x00FFFFFF); // FIXME: allow >16MB reads
+	return this.memoryView[memoryRegion].getInt16(offset & 0x00FFFFFF, true); // FIXME: allow >16MB reads
 };
 
 GBACore.prototype.load32 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt32(offset & 0x00FFFFFF); // FIXME: allow >16MB reads
+	return this.memoryView[memoryRegion].getInt32(offset & 0x00FFFFFF, true); // FIXME: allow >16MB reads
 };
 
 GBACore.prototype.loadInstruction = function() {
