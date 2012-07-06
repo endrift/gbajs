@@ -903,13 +903,15 @@ GBACore.prototype.compileThumb = function(instruction) {
 			// ADC
 			op = function() {
 				var m = (cpu.gprs[rm] >>> 0) + !!cpu.cpsrC;
-				var d = (cpu.gprs[rd] >>> 0) + m;
-				cpu.cpsrN = d & 0x80000000;
+				var oldD = cpu.gprs[rd];
+				var d = (oldD >>> 0) + m;
+				var oldDn = oldD & 0x80000000;
+				var dn = d & 0x80000000;
+				var mn = m & 0x80000000;
+				cpu.cpsrN = dn;
 				cpu.cpsrZ = !d;
 				cpu.cpsrC = d > 0xFFFFFFFF;
-				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 == m & 0x800000000 &&
-				            cpu.gprs[rd] & 0x80000000 != d & 0x80000000 &&
-				            m & 0x80000000 != d & 0x80000000;
+				cpu.cpsrV = oldDn == mn && oldDn != dn && mn != dn;
 				cpu.gprs[rd] = d;
 			}
 			break;
