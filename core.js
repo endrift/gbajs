@@ -990,7 +990,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 			break;
 		case 0x0180:
 			// SBC
-			innerOp = function() {
+			op = function() {
 				var m = (cpu.gprs[rm] >>> 0) + !cpu.cpsrC;
 				var d = (cpu.gprs[rd] >>> 0) - m;
 				cpu.cpsrN = d & 0x80000000;
@@ -1028,7 +1028,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 			break;
 		case 0x0240:
 			// NEG
-			innerOp = function() {
+			op = function() {
 				cpu.gprs[rd] = -cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
