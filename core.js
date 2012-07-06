@@ -286,14 +286,18 @@ GBACore.prototype.step = function() {
 	} else {
 		instructionWidth = this.WORD_SIZE_THUMB;
 	}
-	var currentPC = this.gprs[this.PC] + instructionWidth;
-	var nextPC = currentPC + instructionWidth;
-	this.gprs[this.PC] = nextPC;
+	if (instruction.touchesPC) {
+		var currentPC = this.gprs[this.PC] + instructionWidth;
+		var nextPC = currentPC + instructionWidth;
+		this.gprs[this.PC] = nextPC;
+	}
 
 	instruction();
 
-	if (this.gprs[this.PC] == nextPC) {
-		this.gprs[this.PC] = currentPC;
+	if (instruction.touchesPC) {
+		if (this.gprs[this.PC] == nextPC) {
+			this.gprs[this.PC] = currentPC;
+		}
 	}
 };
 
@@ -403,6 +407,7 @@ GBACore.prototype.compile = function(instruction) {
 		var s = instruction & 0x00100000;
 		var rn = (instruction & 0x000F0000) >> 16;
 		var rd = (instruction & 0x0000F000) >> 12;
+		var touchesPC = rn == this.PC || rd == this.PC;
 
 		// Parse shifter operand
 		var shiftType = instruction & 0x00000060;
@@ -423,6 +428,7 @@ GBACore.prototype.compile = function(instruction) {
 			}
 		} else if (instruction & 0x00000010) {
 			var rs = (instruction & 0x00000F00) >> 8;
+			touchesPC = touchesPC || rs == this.PC;
 			switch (shiftType) {
 			case 0:
 				// LSL
@@ -829,6 +835,7 @@ GBACore.prototype.compile = function(instruction) {
 			break;
 		}
 		op = innerOp;
+		op.touchesPC = touchesPC;
 	} else if ((instruction & 0x0FFFFFF0) == 0x012FFF10) {
 		// BX
 		var rm = instruction & 0xF;
@@ -839,6 +846,7 @@ GBACore.prototype.compile = function(instruction) {
 			cpu.execMode = cpu.grps[rm] & 0x00000001;
 			cpu.gprs[cpu.PC] = cpu.grps[rm] & 0xFFFFFFFE;
 		}
+		op.touchesPC = true;
 	} else if ((instruction & 0x0FC000F0) == 0x00000090) {
 		// MUL
 	} else if ((instruction & 0x0F8000F0) == 0x00800090) {
@@ -1095,6 +1103,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 			}
 			break;
 		}
+		op.touchesPC = rm == this.PC || rd == this.PC;
 	} else if ((instruction & 0xF800) == 0x1800) {
 		// Add/subtract
 	} else if ((instruction & 0xE000) == 0x2000) {
