@@ -184,7 +184,62 @@ GBACore.prototype.load16 = function(offset) {
 
 GBACore.prototype.load32 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt32(offset & 0x00FFFFFF, true); // FIXME: allow >16MB reads
+	return this.memoryView[memoryRegion].getInt32(this.maskOffset(offset), true);
+};
+
+GBACore.prototype.store8 = function(offset, value) {
+	var memoryRegion = this.getMemoryRegion(offset);
+	if (memoryRegion >= this.REGION_ROM0) {
+		throw "Bad access";
+	}
+	var maskedOffset = offset & 0x00FFFFFF;
+	this.memoryView[memoryRegion].setInt8(maskedOffset, value);
+	var cache;
+	cache = this.cachedArm[memoryRegion];
+	if (cache) {
+		delete cache[maskedOffset >> 2];
+	}
+	cache = this.cachedThumb[memoryRegion];
+	if (cache) {
+		delete cache[maskedOffset >> 1];
+	}
+};
+
+GBACore.prototype.store16 = function(offset, value) {
+	var memoryRegion = this.getMemoryRegion(offset);
+	if (memoryRegion >= this.REGION_ROM0) {
+		throw "Bad access";
+	}
+	var maskedOffset = offset & 0x00FFFFFE;
+	this.memoryView[memoryRegion].setInt16(maskedOffset, value, true);
+	var cache;
+	cache = this.cachedArm[memoryRegion];
+	if (cache) {
+		delete cache[maskedOffset >> 2];
+	}
+	cache = this.cachedThumb[memoryRegion];
+	if (cache) {
+		delete cache[maskedOffset >> 1];
+	}
+};
+
+GBACore.prototype.store32 = function(offset, value) {
+	var memoryRegion = this.getMemoryRegion(offset);
+	if (memoryRegion >= this.REGION_ROM0) {
+		throw "Bad access";
+	}
+	var maskedOffset = offset & 0x00FFFFFC;
+	this.memoryView[memoryRegion].setInt32(maskedOffset, value, true);
+	var cache;
+	cache = this.cachedArm[memoryRegion];
+	if (cache) {
+		delete cache[maskedOffset >> 2];
+	}
+	cache = this.cachedThumb[memoryRegion];
+	if (cache) {
+		delete cache[maskedOffset >> 1];
+		delete cache[(maskedOffset >> 1) + 1];
+	}
 };
 
 GBACore.prototype.loadInstruction = function() {
