@@ -45,6 +45,9 @@ GBACore = function() {
 	this.MODE_ARM = 0;
 	this.MODE_THUMB = 1;
 
+	this.WORD_SIZE_ARM = 4;
+	this.WORD_SIZE_THUMB = 2;
+
 	this.resetCPU();
 };
 
@@ -276,12 +279,22 @@ GBACore.prototype.loadInstruction = function() {
 };
 
 GBACore.prototype.step = function() {
-	this.loadInstruction(this.nextPC)();
-	/*if (this.execMode == this.MODE_ARM) {
-		this.advancePC();
+	var instruction = this.loadInstruction(this.nextPC);
+	var instructionWidth;
+	if (this.execMode == this.MODE_ARM) {
+		instructionWidth = this.WORD_SIZE_ARM;
 	} else {
-		this.advancePCThumb();
-	}*/
+		instructionWidth = this.WORD_SIZE_THUMB;
+	}
+	var currentPC = this.gprs[this.PC] + instructionWidth;
+	var nextPC = currentPC + instructionWidth;
+	this.gprs[this.PC] = nextPC;
+
+	instruction();
+
+	if (this.gprs[this.PC] == nextPC) {
+		this.gprs[this.PC] = currentPC;
+	}
 };
 
 GBACore.prototype.getMemoryRegion = function(offset) {
@@ -294,18 +307,6 @@ GBACore.prototype.getMemoryRegion = function(offset) {
 	default:
 		return memoryRegion;
 	}
-};
-
-GBACore.prototype.advancePC = function() {
-	this.gprs[this.PC] &= 0x0FFFFFFC;
-	this.nextPC = this.gprs[this.PC];
-	this.gprs[this.PC] += 4;
-};
-
-GBACore.prototype.advancePCThumb = function() {
-	this.gprs[this.PC] &= 0x0FFFFFFE;
-	this.nextPC = this.gprs[this.PC];
-	this.gprs[this.PC] += 2;
 };
 
 GBACore.prototype.noop = function() {
