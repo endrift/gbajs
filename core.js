@@ -149,6 +149,8 @@ GBACore.prototype.resetCPU = function() {
 	];
 	this.cachedThumb[this.REGION_CART1] = this.cachedThumb[this.REGION_CART0];
 	this.cachedThumb[this.REGION_CART2] = this.cachedThumb[this.REGION_CART0];
+
+	this.skipStatusBits = false;
 };
 
 GBACore.prototype.loadRom = function(rom) {
@@ -905,13 +907,15 @@ GBACore.prototype.compileThumb = function(instruction) {
 				var m = (cpu.gprs[rm] >>> 0) + !!cpu.cpsrC;
 				var oldD = cpu.gprs[rd];
 				var d = (oldD >>> 0) + m;
-				var oldDn = oldD & 0x80000000;
-				var dn = d & 0x80000000;
-				var mn = m & 0x80000000;
-				cpu.cpsrN = dn;
-				cpu.cpsrZ = !d;
-				cpu.cpsrC = d > 0xFFFFFFFF;
-				cpu.cpsrV = oldDn == mn && oldDn != dn && mn != dn;
+				if (!cpu.skipStatusBits) {
+					var oldDn = oldD & 0x80000000;
+					var dn = d & 0x80000000;
+					var mn = m & 0x80000000;
+					cpu.cpsrN = dn;
+					cpu.cpsrZ = !d;
+					cpu.cpsrC = d > 0xFFFFFFFF;
+					cpu.cpsrV = oldDn == mn && oldDn != dn && mn != dn;
+				}
 				cpu.gprs[rd] = d;
 			}
 			break;
