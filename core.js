@@ -245,17 +245,17 @@ GBACore.prototype.store32 = function(offset, value) {
 	}
 };
 
-GBACore.prototype.loadInstruction = function() {
+GBACore.prototype.loadInstruction = function(address) {
 	var compiled = null;
-	var memoryRegion = this.getMemoryRegion(this.nextPC);
+	var memoryRegion = this.getMemoryRegion(address);
 	if (this.execMode == this.MODE_ARM) {
 		var block = this.cachedArm[memoryRegion];
-		var offset = (this.maskOffset(this.nextPC)) >> 2;
+		var offset = (this.maskOffset(address)) >> 2;
 		if (block) {
 			compiled = block[offset];
 		}
 		if (!compiled) {
-			var instruction = this.load32(this.nextPC);
+			var instruction = this.load32(address);
 			compiled = this.compile(instruction);
 			if (block) {
 				block[offset] = compiled;
@@ -263,12 +263,12 @@ GBACore.prototype.loadInstruction = function() {
 		}
 	} else {
 		var block = this.cachedThumb[memoryRegion];
-		var offset = (this.maskOffset(this.nextPC)) >> 1;
+		var offset = (this.maskOffset(address)) >> 1;
 		if (block) {
 			compiled = block[offset];
 		}
 		if (!compiled) {
-			var instruction = this.load16(this.nextPC);
+			var instruction = this.load16(address);
 			compiled = this.compileThumb(instruction);
 			if (block) {
 				block[offset] = compiled;

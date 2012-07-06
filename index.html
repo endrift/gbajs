@@ -9,17 +9,17 @@ canvas {
 <script src="xhr.js"></script>
 <script>
 function simulate() {
-	var instruction = core.loadInstruction();
 	var start = new Date().getTime();
 	// The GBA runs at 16.78MHz, so let's see how long it takes to simulate a GBA-second.
 	for (var i = 0; i < 16780000; ++i) {
-		instruction();
+		core.step();
+		core.nextPC = 0x08000000;
 	}
 
 	var elapsed = (new Date().getTime() - start) / 1000.0;
 	document.getElementById('elapsed').innerText = elapsed;
 
-	setTimeout(simulate, 0);
+	setTimeout(simulate, (elapsed < 1000) ? (1000 - elapsed) : 0);
 }
 
 function runTest(r) {
