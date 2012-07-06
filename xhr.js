@@ -1,14 +1,8 @@
 function loadRom(url, callback) {
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', url, !!callback);
+	xhr.open('GET', url);
 	xhr.responseType = 'arraybuffer';
 
-	if (callback) {
-		xhr.onload = callback;
-	}
+	xhr.onload = function() { callback(xhr.response) };
 	xhr.send();
-
-	if (!callback) {
-		return xhr.response;
-	}
 }
