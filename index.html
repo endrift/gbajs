@@ -6,21 +6,33 @@ canvas {
 }
 </style>
 <script src="core.js"></script>
+<script src="xhr.js"></script>
 <script>
-var core = new GBACore();
-var instruction = core.compileThumb(0x4540);
+function simulate() {
+	var instruction = core.loadInstruction();
+	var start = new Date().getTime();
+	// The GBA runs at 16.78MHz, so let's see how long it takes to simulate a GBA-second.
+	for (var i = 0; i < 16780000; ++i) {
+		instruction();
+	}
 
-var start = new Date().getTime();
-// The GBA runs at 16.78MHz, so let's see how long it takes to simulate a GBA-second.
-for (i = 0; i < 16780000; ++i) {
-	instruction();
+	var elapsed = (new Date().getTime() - start) / 1000.0;
+	document.getElementById('elapsed').innerText = elapsed;
+
+	setTimeout(simulate, 0);
 }
 
-var elapsed = (new Date().getTime() - start) / 1000.0;
+function runTest(r) {
+	core.loadRom(r);
+
+	simulate();
+}
+var core = new GBACore();
+window.onload = function() { loadRom('test.rom', runTest) };
 </script>
 </head>
 <body>
 <canvas id="screen" width="240" height="160"></canvas>
-<p>1 GBA-second emulated in <script>document.write(elapsed)</script> seconds.</p>
+<p>1 GBA-second emulated in <span id="elapsed">undefined</span> seconds.</p>
 </body>
 </html>
