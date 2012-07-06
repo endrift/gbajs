@@ -155,6 +155,13 @@ GBACore.prototype.resetCPU = function() {
 
 GBACore.prototype.loadRom = function(rom) {
 	this.resetCPU();
+	this.memory[this.REGION_CART0] = rom;
+	this.memory[this.REGION_CART1] = rom;
+	this.memory[this.REGION_CART2] = rom;
+	var view = new DataView(rom);
+	this.memoryView[this.REGION_CART0] = view;
+	this.memoryView[this.REGION_CART1] = view;
+	this.memoryView[this.REGION_CART2] = view;
 };
 
 GBACore.prototype.load8 = function(offset) {
