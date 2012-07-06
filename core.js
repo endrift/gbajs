@@ -299,14 +299,10 @@ GBACore.prototype.step = function() {
 
 GBACore.prototype.getMemoryRegion = function(offset) {
 	var memoryRegion = (offset & this.BASE_MASK) >> this.BASE_OFFSET;
-	switch (memoryRegion) {
-	case this.BASE_CART0 + 1:
-	case this.BASE_CART1 + 1:
-	case this.BASE_CART2 + 1:
-		return memoryRegion - 1;
-	default:
-		return memoryRegion;
+	if (memoryRegion > this.BASE_CART0) {
+		return memoryRegion & 0xE;
 	}
+	return memoryRegion;
 };
 
 GBACore.prototype.badOp = function() {
