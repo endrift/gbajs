@@ -171,13 +171,36 @@ GBACore.prototype.load32 = function(offset) {
 };
 
 GBACore.prototype.loadInstruction = function() {
+	var compiled = null;
+	var memoryRegion = this.getMemoryRegion(this.nextPC);
 	if (this.execMode == this.MODE_ARM) {
-		var instruction = this.load32(this.nextPC);
-		return this.compile(instruction);
+		var block = this.cachedArm[memoryRegion];
+		var offset = (this.nextPC & 0x00FFFFFF) >> 2; // FIXME: allow >16MB reads
+		if (block) {
+			compiled = block[offset];
+		}
+		if (!compiled) {
+			var instruction = this.load32(this.nextPC);
+			compiled = this.compile(instruction);
+			if (block) {
+				block[offset] = compiled;
+			}
+		}
 	} else {
-		var instruction = this.load16(this.nextPC);
-		return this.compileThumb(instruction);
+		var block = this.cachedThumb[memoryRegion];
+		var offset = (this.nextPC & 0x00FFFFFF) >> 1; // FIXME: allow >16MB reads
+		if (block) {
+			compiled = block[offset];
+		}
+		if (!compiled) {
+			var instruction = this.load16(this.nextPC);
+			compiled = this.compileThumb(instruction);
+			if (block) {
+				block[offset] = compiled;
+			}
+		}
 	}
+	return compiled;
 };
 
 GBACore.prototype.step = function() {
