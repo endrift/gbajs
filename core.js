@@ -61,7 +61,7 @@ GBACore.prototype.resetCPU = function() {
 		0, 0, 0, 0,
 		0, 0, 0, 0,
 		0, 0, 0, 0,
-		0, 0, 0, 0
+		0, 0, 0, 0x08000000
 	];
 	this.execMode = 0;
 	this.cpsrV = false;
@@ -69,7 +69,7 @@ GBACore.prototype.resetCPU = function() {
 	this.cpsrZ = false;
 	this.cpsrN = false;
 
-	this.nextPC = 0;
+	this.nextPC = this.gprs[this.PC];
 
 	this.shifterOperand = 0;
 	this.shifterCarryOut = 0;
