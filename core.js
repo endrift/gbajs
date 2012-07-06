@@ -164,14 +164,22 @@ GBACore.prototype.loadRom = function(rom) {
 	this.memoryView[this.REGION_CART2] = view;
 };
 
+GBACore.prototype.maskOffset = function(offset) {
+	if (offset < this.BASE_CART0) {
+		return offset & 0x00FFFFFF;
+	} else {
+		return offset & 0x01FFFFFF;
+	}
+}
+
 GBACore.prototype.load8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt8(offset & 0x00FFFFFF); // FIXME: allow >16MB reads
+	return this.memoryView[memoryRegion].getInt8(this.maskOffset(offset));
 };
 
 GBACore.prototype.load16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt16(offset & 0x00FFFFFF, true); // FIXME: allow >16MB reads
+	return this.memoryView[memoryRegion].getInt16(this.maskOffset(offset), true);
 };
 
 GBACore.prototype.load32 = function(offset) {
@@ -184,7 +192,7 @@ GBACore.prototype.loadInstruction = function() {
 	var memoryRegion = this.getMemoryRegion(this.nextPC);
 	if (this.execMode == this.MODE_ARM) {
 		var block = this.cachedArm[memoryRegion];
-		var offset = (this.nextPC & 0x00FFFFFF) >> 2; // FIXME: allow >16MB reads
+		var offset = (this.maskOffset(this.nextPC)) >> 2;
 		if (block) {
 			compiled = block[offset];
 		}
@@ -197,7 +205,7 @@ GBACore.prototype.loadInstruction = function() {
 		}
 	} else {
 		var block = this.cachedThumb[memoryRegion];
-		var offset = (this.nextPC & 0x00FFFFFF) >> 1; // FIXME: allow >16MB reads
+		var offset = (this.maskOffset(this.nextPC)) >> 1;
 		if (block) {
 			compiled = block[offset];
 		}
