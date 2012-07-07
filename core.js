@@ -418,7 +418,18 @@ GBACore.prototype.compile = function(instruction) {
 	var cpu = this;
 
 	var condOp = this.generateCond(cond);
-	if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
+	if ((instruction & 0x0FFFFFF0) == 0x012FFF10) {
+		// BX
+		var rm = instruction & 0xF;
+		op = function() {
+			if (condOp && !condOp()) {
+				return;
+			}
+			cpu.execMode = cpu.gprs[rm] & 0x00000001;
+			cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
+		}
+		op.touchesPC = true;
+	} else if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
 		var opcode = instruction & 0x01E00000;
 		var s = instruction & 0x00100000;
 		if ((opcode & 0x01800000) == 0x01000000 && !s) {
@@ -872,17 +883,6 @@ GBACore.prototype.compile = function(instruction) {
 			op = innerOp;
 			op.touchesPC = touchesPC;
 		}
-	} else if ((instruction & 0x0FFFFFF0) == 0x012FFF10) {
-		// BX
-		var rm = instruction & 0xF;
-		op = function() {
-			if (condOp && !condOp()) {
-				return;
-			}
-			cpu.execMode = cpu.grps[rm] & 0x00000001;
-			cpu.gprs[cpu.PC] = cpu.grps[rm] & 0xFFFFFFFE;
-		}
-		op.touchesPC = true;
 	} else if ((instruction & 0x0E000010) == 0x06000000) {
 		// Single data transfer
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
