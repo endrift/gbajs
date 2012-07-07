@@ -255,7 +255,7 @@ GBACore.prototype.loadInstruction = function(address) {
 			compiled = block[offset];
 		}
 		if (!compiled) {
-			var instruction = this.load32(address);
+			var instruction = this.load32(address) >>> 0;
 			compiled = this.compile(instruction);
 			if (block) {
 				block[offset] = compiled;
@@ -309,8 +309,10 @@ GBACore.prototype.getMemoryRegion = function(offset) {
 	return memoryRegion;
 };
 
-GBACore.prototype.badOp = function() {
-	throw "Illegal instruction";
+GBACore.prototype.badOp = function(instruction) {
+	return function() {
+		throw "Illegal instruction: 0x" + instruction.toString(16);
+	}
 };
 
 GBACore.prototype.generateCond = function(cond) {
@@ -395,7 +397,7 @@ GBACore.prototype.generateCond = function(cond) {
 
 GBACore.prototype.compile = function(instruction) {
 	var cond = (instruction & 0xF0000000) >>> 28;
-	var op = this.badOp;
+	var op = this.badOp(instruction);
 	var i = instruction & 0x0E000000;
 	var cpu = this;
 
@@ -876,7 +878,7 @@ GBACore.prototype.compile = function(instruction) {
 			// Coprocessor data operation/SWI
 			break;
 		default:
-			this.ASSERT_UNREACHED("Bad opcode");
+			this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
 		}
 	}
 
@@ -884,7 +886,7 @@ GBACore.prototype.compile = function(instruction) {
 };
 
 GBACore.prototype.compileThumb = function(instruction) {
-	var op = this.badOp;
+	var op = this.badOp(instruction);
 	var cpu = this;
 	if ((instruction & 0xFC00) == 0x4000) {
 		// Data-processing register
@@ -1148,10 +1150,10 @@ GBACore.prototype.compileThumb = function(instruction) {
 			// Long branch with link
 			break;
 		default:
-			this.WARN("Undefined instruction");
+			this.WARN("Undefined instruction: 0x" + instruction.toString(16));
 		}
 	} else {
-		this.ASSERT_UNREACHED("Bad opcode");
+		this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
 	}
 	return op;
 };
