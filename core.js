@@ -892,6 +892,81 @@ GBACore.prototype.compile = function(instruction) {
 		case 0x00000000:
 			// Halfword data transfer
 			break;
+		case 0x04000000:
+			// LDR/STR
+			var rn = (instruction & 0x000F0000) >> 16;
+			var rd = (instruction & 0x0000F000) >> 12;
+			var load = instruction & 0x00100000;
+			var w = instruction & 0x00200000;
+			var b = instruction & 0x00400000;
+			var u = instruction & 0x00800000;
+			var p = instruction & 0x01000000;
+			var i = instruction & 0x02000000;
+
+			var address = function() {
+				throw "Unimplemented memory access: 0x" + instruction.toString(16);
+			}
+			if (i) {
+				if (p) {
+					if (w) {
+					} else {
+					}
+				} else {
+					if (w) {
+					} else {
+					}
+				}
+			} else {
+				// Immediate
+				var offset = instruction & 0x00000FFF;
+				if (p) {
+					if (w) {
+					} else {
+						if (u) {
+							address = function() {
+								return cpu.gprs[rn] + offset;
+							}
+						} else {
+							address = function() {
+								return cpu.gprs[rn] - offset;
+							}
+						}
+					}
+				} else {
+					if (w) {
+					} else {
+					}
+				}
+			}
+			if (load) {
+				if (b) {
+					// LDRB
+				} else {
+					// LDR
+					op = function() {
+						if (condOp && !condOp()) {
+							return;
+						}
+						var a = address();
+						cpu.gprs[rd] = cpu.load32(a);
+					}
+				}
+			} else {
+				if (b) {
+					// STRB
+				} else {
+					// STR
+					op = function() {
+						if (condOp && !condOp()) {
+							return;
+						}
+						var a = address();
+						cpu.store32(a, cpu.gprs[rd]);
+					}
+				}
+			}
+			op.touchesPC = rn == this.PC || rd == this.PC;
+			break;
 		case 0x06000000:
 			// Undefined
 			return op;
