@@ -55,6 +55,10 @@ GBACore.prototype.WARN = function(warn) {
 	console.log("[WARNING] " + warn);
 }
 
+GBACore.prototype.OP_STUB = function(op) {
+	console.log("[STUB] Unimplemented opcode: " + op);
+}
+
 GBACore.prototype.ASSERT_UNREACHED = function(err) {
 	throw "Should be unreached: " + err;
 };
@@ -412,442 +416,460 @@ GBACore.prototype.compile = function(instruction) {
 	var cpu = this;
 
 	var condOp = this.generateCond(cond);
-	if (i == 0x02000000 || instruction & 0x00000090 != 0x00000090) {
-		// Data processing/FSR transfer
+	if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
 		var opcode = instruction & 0x01E00000;
-		var innerOp = null;
 		var s = instruction & 0x00100000;
-		var rn = (instruction & 0x000F0000) >> 16;
-		var rd = (instruction & 0x0000F000) >> 12;
-		var touchesPC = rn == this.PC || rd == this.PC;
-
-		// Parse shifter operand
-		var shiftType = instruction & 0x00000060;
-		// FIXME: this only applies if using non-immediate, which we always will be (?)
-		var rm = instruction & 0x0000000F;
-		var shiftOp = function() { return cpu.gprs[rm] };
-		if (i) {
-			var immediate = instruction & 0x000000FF;
-			var rotate = (instruction & 0x00000F00) >> 7;
-			shiftOp = function() {
-				if (rotate == 0) {
-					cpu.shifterOperand = immediate;
-					cpu.shifterCarryOut = cpu.cpsrC;
-				} else {
-					cpu.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
-					cpu.shifterCarryOut = cpu.shifterOperand & 0x80000000;
-				}
-			}
-		} else if (instruction & 0x00000010) {
-			var rs = (instruction & 0x00000F00) >> 8;
-			touchesPC = touchesPC || rs == this.PC;
-			switch (shiftType) {
-			case 0:
-				// LSL
-				shiftOp = function() {
-					var shift = cpu.gprs[rs] & 0xFF;
-					if (shift == 0) {
-						cpu.shifterOperand = cpu.gprs[rm];
-						cpu.shifterCarryOut = cpu.cpsrC;
-					} else if (shift < 32) {
-						cpu.shifterOperand = cpu.gprs[rm] << shift;
-						cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (32 - shift));
-					} else if (shift == 32) {
-						cpu.shifterOperand = 0;
-						cpu.shifterCarryOut = cpu.gprs[rm] & 1;
-					} else {
-						cpu.shifterOperand = 0;
-						cpu.shifterCarryOut = 0;
+		if ((opcode & 0x01800000) == 0x01000000 && !s) {
+			if ((instruction & 0x00B8FFF0) == 0x0028F000) {
+				// MSR
+				var r = instruction & 0x00400000;
+				var c = instruction & 0x00010000;
+				var x = instruction & 0x00020000;
+				var s = instruction & 0x00040000;
+				var f = instruction & 0x00080000;
+				op = function() {
+					if (condOp && !condOp()) {
+						return;
 					}
-				};
-				break;
-			case 1:
-				// LSR
-				shiftOp = function() {
-					var shift = cpu.gprs[rs] & 0xFF;
-					if (shift == 0) {
-						cpu.shifterOperand = cpu.gprs[rm];
-						cpu.shifterCarryOut = cpu.cpsrC;
-					} else if (shift < 32) {
-						cpu.shifterOperand = cpu.gprs[rm] >>> shift;
-						cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (shift - 1));
-					} else if (shift == 32) {
-						cpu.shifterOperand = 0;
-						cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
-					} else {
-						cpu.shifterOperand = 0;
-						cpu.shifterCarryOut = 0;
-					}
+					cpu.OP_STUB("MSR");
 				}
-				break;
-			case 2:
-				// ASR
-				shiftOp = function() {
-					var shift = cpu.gprs[rs] & 0xFF;
-					if (shift == 0) {
-						cpu.shifterOperand = cpu.gprs[rm];
-						cpu.shifterCarryOut = cpu.cpsrC;
-					} else if (shift < 32) {
-						cpu.shifterOperand = cpu.gprs[rm] >> shift;
-						cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (shift - 1));
-					} else if (cpu.gprs[rm] & 0x80000000) {
-						cpu.shifterOperand = 0xFFFFFFFF;
-						cpu.shifterCarryOut = 0x80000000;
-					} else {
-						cpu.shifterOperand = 0;
-						cpu.shifterCarryOut = 0;
-					}
-				}
-				break;
-			case 3:
-				// ROR
-				shiftOp = function() {
-					var shift = cpu.gprs[rs] & 0xFF;
-					var rotate = shift & 0x1F;
-					if (shift == 0) {
-						cpu.shifterOperand = cpu.gprs[rm];
-						cpu.shifterCarryOut = cpu.cpsrC;
-					} else if (rotate) {
-						cpu.shifterOperand = (cpu.gprs[rm] >>> rotate) | (cpu.gprs[rm] << (32 - rotate));
-						cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (rotate - 1));
-					} else {
-						cpu.shifterOperand = cpu.gprs[rm];
-						cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
-					}
-				}
-				break;
+				op.touchesPC = rm == this.PC;
 			}
 		} else {
-			var immediate = (instruction & 0x00000F80) >> 8;
-			switch (shiftType) {
-			case 0:
-				// LSL
-				if (immediate) {
-					shiftOp = function() {
-						cpu.shifterOperand = cpu.gprs[rm] << immediate;
-						cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (32 - immediate));
-					};
-				} else {
-					// This boils down to no shift
-					shiftOp = function() {
-						cpu.shifterOperand = cpu.gprs[rm];
+			// Data processing/FSR transfer
+			var innerOp = null;
+			var rn = (instruction & 0x000F0000) >> 16;
+			var rd = (instruction & 0x0000F000) >> 12;
+			var touchesPC = rn == this.PC || rd == this.PC;
+	
+			// Parse shifter operand
+			var shiftType = instruction & 0x00000060;
+			// FIXME: this only applies if using non-immediate, which we always will be (?)
+			var rm = instruction & 0x0000000F;
+			var shiftOp = function() { return cpu.gprs[rm] };
+			if (i) {
+				var immediate = instruction & 0x000000FF;
+				var rotate = (instruction & 0x00000F00) >> 7;
+				shiftOp = function() {
+					if (rotate == 0) {
+						cpu.shifterOperand = immediate;
 						cpu.shifterCarryOut = cpu.cpsrC;
-					};
+					} else {
+						cpu.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
+						cpu.shifterCarryOut = cpu.shifterOperand & 0x80000000;
+					}
 				}
-				break;
-			case 1:
-				// LSR
-				if (immediate) {
+			} else if (instruction & 0x00000010) {
+				var rs = (instruction & 0x00000F00) >> 8;
+				touchesPC = touchesPC || rs == this.PC;
+				switch (shiftType) {
+				case 0:
+					// LSL
 					shiftOp = function() {
-						cpu.shifterOperand = cpu.gprs[rm] >>> immediate;
-						cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (immediate - 1));
-					};
-				} else {
-					shiftOp = function() {
-						cpu.shifterOperand = 0;
-						cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
-					};
-				}
-				break;
-			case 2:
-				// ASR
-				if (immediate) {
-					shiftOp = function() {
-						cpu.shifterOperand = cpu.gprs[rm] >> immediate;
-						cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (immediate - 1));
-					};
-				} else {
-					shiftOp = function() {
-						cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
-						if (cpu.shifterCarryOut) {
-							cpu.shifterOperand = 0xFFFFFFFF;
+						var shift = cpu.gprs[rs] & 0xFF;
+						if (shift == 0) {
+							cpu.shifterOperand = cpu.gprs[rm];
+							cpu.shifterCarryOut = cpu.cpsrC;
+						} else if (shift < 32) {
+							cpu.shifterOperand = cpu.gprs[rm] << shift;
+							cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (32 - shift));
+						} else if (shift == 32) {
+							cpu.shifterOperand = 0;
+							cpu.shifterCarryOut = cpu.gprs[rm] & 1;
 						} else {
 							cpu.shifterOperand = 0;
+							cpu.shifterCarryOut = 0;
 						}
 					};
+					break;
+				case 1:
+					// LSR
+					shiftOp = function() {
+						var shift = cpu.gprs[rs] & 0xFF;
+						if (shift == 0) {
+							cpu.shifterOperand = cpu.gprs[rm];
+							cpu.shifterCarryOut = cpu.cpsrC;
+						} else if (shift < 32) {
+							cpu.shifterOperand = cpu.gprs[rm] >>> shift;
+							cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (shift - 1));
+						} else if (shift == 32) {
+							cpu.shifterOperand = 0;
+							cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
+						} else {
+							cpu.shifterOperand = 0;
+							cpu.shifterCarryOut = 0;
+						}
+					}
+					break;
+				case 2:
+					// ASR
+					shiftOp = function() {
+						var shift = cpu.gprs[rs] & 0xFF;
+						if (shift == 0) {
+							cpu.shifterOperand = cpu.gprs[rm];
+							cpu.shifterCarryOut = cpu.cpsrC;
+						} else if (shift < 32) {
+							cpu.shifterOperand = cpu.gprs[rm] >> shift;
+							cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (shift - 1));
+						} else if (cpu.gprs[rm] & 0x80000000) {
+							cpu.shifterOperand = 0xFFFFFFFF;
+							cpu.shifterCarryOut = 0x80000000;
+						} else {
+							cpu.shifterOperand = 0;
+							cpu.shifterCarryOut = 0;
+						}
+					}
+					break;
+				case 3:
+					// ROR
+					shiftOp = function() {
+						var shift = cpu.gprs[rs] & 0xFF;
+						var rotate = shift & 0x1F;
+						if (shift == 0) {
+							cpu.shifterOperand = cpu.gprs[rm];
+							cpu.shifterCarryOut = cpu.cpsrC;
+						} else if (rotate) {
+							cpu.shifterOperand = (cpu.gprs[rm] >>> rotate) | (cpu.gprs[rm] << (32 - rotate));
+							cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (rotate - 1));
+						} else {
+							cpu.shifterOperand = cpu.gprs[rm];
+							cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
+						}
+					}
+					break;
+				}
+			} else {
+				var immediate = (instruction & 0x00000F80) >> 8;
+				switch (shiftType) {
+				case 0:
+					// LSL
+					if (immediate) {
+						shiftOp = function() {
+							cpu.shifterOperand = cpu.gprs[rm] << immediate;
+							cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (32 - immediate));
+						};
+					} else {
+						// This boils down to no shift
+						shiftOp = function() {
+							cpu.shifterOperand = cpu.gprs[rm];
+							cpu.shifterCarryOut = cpu.cpsrC;
+						};
+					}
+					break;
+				case 1:
+					// LSR
+					if (immediate) {
+						shiftOp = function() {
+							cpu.shifterOperand = cpu.gprs[rm] >>> immediate;
+							cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (immediate - 1));
+						};
+					} else {
+						shiftOp = function() {
+							cpu.shifterOperand = 0;
+							cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
+						};
+					}
+					break;
+				case 2:
+					// ASR
+					if (immediate) {
+						shiftOp = function() {
+							cpu.shifterOperand = cpu.gprs[rm] >> immediate;
+							cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (immediate - 1));
+						};
+					} else {
+						shiftOp = function() {
+							cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
+							if (cpu.shifterCarryOut) {
+								cpu.shifterOperand = 0xFFFFFFFF;
+							} else {
+								cpu.shifterOperand = 0;
+							}
+						};
+					}
+					break;
+				case 3:
+					// ROR
+					if (immediate) {
+						shiftOp = function() {
+							cpu.shifterOperand = (cpu.gprs[rm] >>> immediate) | (cpu.gprs[rm] << (32 - immediate));
+							cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (immediate - 1));
+						};
+					} else {
+						// RRX
+						shiftOp = function() {
+							cpu.shifterOperand = (!!cpu.cpsrC << 31) | (cpu.gprs[rm] >>> 1);
+							cpu.shifterCarryOut =  cpu.gprs[rm] & 0x00000001;
+						};
+					}
+					break;
+				}
+			}
+	
+			switch (opcode) {
+			case 0x00000000:
+				// AND
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					cpu.gprs[rd] = cpu.gprs[rn] & cpu.shifterOperand;
+					if (s) {
+						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrC = cpu.shifterCarryOut;
+					}
 				}
 				break;
-			case 3:
-				// ROR
-				if (immediate) {
-					shiftOp = function() {
-						cpu.shifterOperand = (cpu.gprs[rm] >>> immediate) | (cpu.gprs[rm] << (32 - immediate));
-						cpu.shifterCarryOut = cpu.gprs[rm] & (1 << (immediate - 1));
-					};
-				} else {
-					// RRX
-					shiftOp = function() {
-						cpu.shifterOperand = (!!cpu.cpsrC << 31) | (cpu.gprs[rm] >>> 1);
-						cpu.shifterCarryOut =  cpu.gprs[rm] & 0x00000001;
-					};
+			case 0x00200000:
+				// EOR
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					cpu.gprs[rd] = cpu.gprs[rn] ^ cpu.shifterOperand;
+					if (s) {
+						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrC = cpu.shifterCarryOut;
+					}
 				}
 				break;
-			}
-		}
-
-		switch (opcode) {
-		case 0x00000000:
-			// AND
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
+			case 0x00400000:
+				// SUB
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var d = cpu.gprs[rn] - cpu.shifterOperand;
+					if (s) {
+						cpu.cpsrN = d & 0x80000000;
+						cpu.cpsrZ = !d;
+						cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
+						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.shifterOperand & 0x800000000 &&
+									cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
+					}
+					cpu.gprs[rd] = d;
 				}
-				shiftOp();
-				cpu.gprs[rd] = cpu.gprs[rn] & cpu.shifterOperand;
-				if (s) {
-					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-					cpu.cpsrZ = !cpu.gprs[rd];
+				break;
+			case 0x00600000:
+				// RSB
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var d = cpu.shifterOperand - cpu.gprs[rn];
+					if (s) {
+						cpu.cpsrN = d & 0x80000000;
+						cpu.cpsrZ = !d;
+						cpu.cpsrC = (cpu.shifterOperand >>> 0) >= (cpu.gprs[rn] >>> 0);
+						cpu.cpsrV = cpu.shifterOperand & 0x800000000 != cpu.gprs[rn] & 0x80000000 &&
+									cpu.shifterOperand & 0x800000000 != d & 0x80000000;
+					}
+					cpu.gprs[rd] = d;
+				}
+				break;
+			case 0x00800000:
+				// ADD
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var d = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
+					if (s) {
+						cpu.cpsrN = d & 0x80000000;
+						cpu.cpsrZ = !d;
+						cpu.cpsrC = d > 0xFFFFFFFF;
+						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == cpu.shifterOperand & 0x800000000 &&
+									cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
+									cpu.shifterOperand & 0x80000000 != d & 0x80000000;
+					}
+					cpu.gprs[rd] = d;
+				}
+				break;
+			case 0x00A00000:
+				// ADC
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
+					var d = (cpu.gprs[rn] >>> 0) + shifterOperand;
+					if (s) {
+						cpu.cpsrN = d & 0x80000000;
+						cpu.cpsrZ = !d;
+						cpu.cpsrC = d > 0xFFFFFFFF;
+						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == shifterOperand & 0x800000000 &&
+									cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
+									shifterOperand & 0x80000000 != d & 0x80000000;
+					}
+					cpu.gprs[rd] = d;
+				}
+				break;
+			case 0x00C00000:
+				// SBC
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
+					var d = (cpu.gprs[rn] >>> 0) - shifterOperand;
+					if (s) {
+						cpu.cpsrN = d & 0x80000000;
+						cpu.cpsrZ = !d;
+						cpu.cpsrC = d > 0xFFFFFFFF;
+						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != shifterOperand & 0x800000000 &&
+									cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
+					}
+					cpu.gprs[rd] = d;
+				}
+				break;
+			case 0x00E00000:
+				// RSC
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var n = (cpu.gprs[rn] >>> 0) + !cpu.cpsrC;
+					var d = (cpu.shifterOperand >>> 0) - n;
+					if (s) {
+						cpu.cpsrN = d & 0x80000000;
+						cpu.cpsrZ = !d;
+						cpu.cpsrC = d > 0xFFFFFFFF;
+						cpu.cpsrV = cpu.shifterOperand & 0x80000000 != n & 0x80000000 &&
+									cpu.shifterOperand & 0x80000000 != d & 0x80000000;
+					}
+					cpu.gprs[rd] = d;
+				}
+				break;
+			case 0x01000000:
+				// TST
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var aluOut = cpu.gprs[rn] & cpu.shifterOperand;
+					cpu.cpsrN = aluOut & 0x80000000;
+					cpu.cpsrZ = !aluOut;
 					cpu.cpsrC = cpu.shifterCarryOut;
 				}
-			}
-			break;
-		case 0x00200000:
-			// EOR
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				cpu.gprs[rd] = cpu.gprs[rn] ^ cpu.shifterOperand;
-				if (s) {
-					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-					cpu.cpsrZ = !cpu.gprs[rd];
+				break;
+			case 0x01200000:
+				// TEQ
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var aluOut = cpu.gprs[rn] ^ cpu.shifterOperand;
+					cpu.cpsrN = aluOut & 0x80000000;
+					cpu.cpsrZ = !aluOut;
 					cpu.cpsrC = cpu.shifterCarryOut;
 				}
-			}
-			break;
-		case 0x00400000:
-			// SUB
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var d = cpu.gprs[rn] - cpu.shifterOperand;
-				if (s) {
-					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !d;
+				break;
+			case 0x01400000:
+				// CMP
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var aluOut = cpu.gprs[rn] - cpu.shifterOperand;
+					cpu.cpsrN = aluOut & 0x80000000;
+					cpu.cpsrZ = !aluOut;
 					cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
 					cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.shifterOperand & 0x800000000 &&
-					            cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
+								cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000;
 				}
-				cpu.gprs[rd] = d;
-			}
-			break;
-		case 0x00600000:
-			// RSB
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var d = cpu.shifterOperand - cpu.gprs[rn];
-				if (s) {
-					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !d;
-					cpu.cpsrC = (cpu.shifterOperand >>> 0) >= (cpu.gprs[rn] >>> 0);
-					cpu.cpsrV = cpu.shifterOperand & 0x800000000 != cpu.gprs[rn] & 0x80000000 &&
-					            cpu.shifterOperand & 0x800000000 != d & 0x80000000;
-				}
-				cpu.gprs[rd] = d;
-			}
-			break;
-		case 0x00800000:
-			// ADD
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var d = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
-				if (s) {
-					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !d;
-					cpu.cpsrC = d > 0xFFFFFFFF;
+				break;
+			case 0x01600000:
+				// CMN
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					var aluOut = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
+					cpu.cpsrN = aluOut & 0x80000000;
+					cpu.cpsrZ = !aluOut;
+					cpu.cpsrC = aluOut > 0xFFFFFFFF;
 					cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == cpu.shifterOperand & 0x800000000 &&
-					            cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
-					            cpu.shifterOperand & 0x80000000 != d & 0x80000000;
+								cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000 &&
+								cpu.shifterOperand & 0x80000000 != aluOut & 0x80000000;
 				}
-				cpu.gprs[rd] = d;
+				break;
+			case 0x01800000:
+				// ORR
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					cpu.gprs[rd] = cpu.gprs[rn] | cpu.shifterOperand;
+					if (s) {
+						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+						cpu.cpsrZ = !cpu.gprs[rd];
+					}
+				}
+				break;
+			case 0x01A00000:
+				// MOV
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					cpu.gprs[rd] = cpu.shifterOperand;
+					if (s) {
+						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrC = cpu.shifterCarryOut;
+					}
+				}
+				break;
+			case 0x01C00000:
+				// BIC
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					cpu.gprs[rd] = cpu.gprs[rn] & ~cpu.shifterOperand;
+					if (s) {
+						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrC = cpu.shifterCarryOut;
+					}
+				}
+				break;
+			case 0x01E00000:
+				// MVN
+				innerOp = function() {
+					if (condOp && !condOp()) {
+						return;
+					}
+					shiftOp();
+					cpu.gprs[rd] = ~cpu.shifterOperand;
+					if (s) {
+						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrC = aluOut > cpu.shifterCarryOut;
+					}
+				}
+				break;
 			}
-			break;
-		case 0x00A00000:
-			// ADC
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
-				var d = (cpu.gprs[rn] >>> 0) + shifterOperand;
-				if (s) {
-					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !d;
-					cpu.cpsrC = d > 0xFFFFFFFF;
-					cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == shifterOperand & 0x800000000 &&
-					            cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
-					            shifterOperand & 0x80000000 != d & 0x80000000;
-				}
-				cpu.gprs[rd] = d;
-			}
-			break;
-		case 0x00C00000:
-			// SBC
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
-				var d = (cpu.gprs[rn] >>> 0) - shifterOperand;
-				if (s) {
-					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !d;
-					cpu.cpsrC = d > 0xFFFFFFFF;
-					cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != shifterOperand & 0x800000000 &&
-					            cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
-				}
-				cpu.gprs[rd] = d;
-			}
-			break;
-		case 0x00E00000:
-			// RSC
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var n = (cpu.gprs[rn] >>> 0) + !cpu.cpsrC;
-				var d = (cpu.shifterOperand >>> 0) - n;
-				if (s) {
-					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !d;
-					cpu.cpsrC = d > 0xFFFFFFFF;
-					cpu.cpsrV = cpu.shifterOperand & 0x80000000 != n & 0x80000000 &&
-					            cpu.shifterOperand & 0x80000000 != d & 0x80000000;
-				}
-				cpu.gprs[rd] = d;
-			}
-			break;
-		case 0x01000000:
-			// TST
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var aluOut = cpu.gprs[rn] & cpu.shifterOperand;
-				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
-				cpu.cpsrC = cpu.shifterCarryOut;
-			}
-			break;
-		case 0x01200000:
-			// TEQ
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var aluOut = cpu.gprs[rn] ^ cpu.shifterOperand;
-				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
-				cpu.cpsrC = cpu.shifterCarryOut;
-			}
-			break;
-		case 0x01400000:
-			// CMP
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var aluOut = cpu.gprs[rn] - cpu.shifterOperand;
-				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
-				cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
-				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.shifterOperand & 0x800000000 &&
-					        cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000;
-			}
-			break;
-		case 0x01600000:
-			// CMN
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				var aluOut = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
-				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
-				cpu.cpsrC = aluOut > 0xFFFFFFFF;
-				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == cpu.shifterOperand & 0x800000000 &&
-					        cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000 &&
-					        cpu.shifterOperand & 0x80000000 != aluOut & 0x80000000;
-			}
-			break;
-		case 0x01800000:
-			// ORR
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				cpu.gprs[rd] = cpu.gprs[rn] | cpu.shifterOperand;
-				if (s) {
-					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-					cpu.cpsrZ = !cpu.gprs[rd];
-				}
-			}
-			break;
-		case 0x01A00000:
-			// MOV
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				cpu.gprs[rd] = cpu.shifterOperand;
-				if (s) {
-					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-					cpu.cpsrZ = !cpu.gprs[rd];
-					cpu.cpsrC = cpu.shifterCarryOut;
-				}
-			}
-			break;
-		case 0x01C00000:
-			// BIC
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				cpu.gprs[rd] = cpu.gprs[rn] & ~cpu.shifterOperand;
-				if (s) {
-					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-					cpu.cpsrZ = !cpu.gprs[rd];
-					cpu.cpsrC = cpu.shifterCarryOut;
-				}
-			}
-			break;
-		case 0x01E00000:
-			// MVN
-			innerOp = function() {
-				if (condOp && !condOp()) {
-					return;
-				}
-				shiftOp();
-				cpu.gprs[rd] = ~cpu.shifterOperand;
-				if (s) {
-					cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-					cpu.cpsrZ = !cpu.gprs[rd];
-					cpu.cpsrC = aluOut > cpu.shifterCarryOut;
-				}
-			}
-			break;
+			op = innerOp;
+			op.touchesPC = touchesPC;
 		}
-		op = innerOp;
-		op.touchesPC = touchesPC;
 	} else if ((instruction & 0x0FFFFFF0) == 0x012FFF10) {
 		// BX
 		var rm = instruction & 0xF;
