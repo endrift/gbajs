@@ -124,15 +124,13 @@ GBACore.prototype.resetCPU = function() {
 		null,
 		null,
 		null,
-		new Array(this.SIZE_CART0 >> 2),
+		null,
 		null, // Unusued
 		null,
 		null, // Unusued
 		null,
 		null // Unused
 	];
-	this.cachedArm[this.REGION_CART1] = this.cachedArm[this.REGION_CART0];
-	this.cachedArm[this.REGION_CART2] = this.cachedArm[this.REGION_CART0];
 
 	this.cachedThumb = [
 		null,
@@ -143,15 +141,13 @@ GBACore.prototype.resetCPU = function() {
 		null,
 		null,
 		null,
-		new Array(this.SIZE_CART0 >> 1),
+		null,
 		null, // Unusued
 		null,
 		null, // Unusued
 		null,
 		null // Unused
 	];
-	this.cachedThumb[this.REGION_CART1] = this.cachedThumb[this.REGION_CART0];
-	this.cachedThumb[this.REGION_CART2] = this.cachedThumb[this.REGION_CART0];
 
 	this.skipStatusBits = false;
 };
@@ -165,6 +161,16 @@ GBACore.prototype.loadRom = function(rom) {
 	this.memoryView[this.REGION_CART0] = view;
 	this.memoryView[this.REGION_CART1] = view;
 	this.memoryView[this.REGION_CART2] = view;
+
+	var cachedArm = new Array(rom.byteLength >> 2);
+	this.cachedArm[this.REGION_CART0] = cachedArm;
+	this.cachedArm[this.REGION_CART1] = cachedArm;
+	this.cachedArm[this.REGION_CART2] = cachedArm;
+
+	var cachedThumb = new Array(rom.byteLength >> 1);
+	this.cachedThumb[this.REGION_CART0] = cachedThumb;
+	this.cachedThumb[this.REGION_CART1] = cachedThumb;
+	this.cachedThumb[this.REGION_CART2] = cachedThumb;
 };
 
 GBACore.prototype.maskOffset = function(offset) {
