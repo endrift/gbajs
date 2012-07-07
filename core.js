@@ -874,6 +874,22 @@ GBACore.prototype.compile = function(instruction) {
 			break;
 		case 0x0A000000:
 			// Branch
+			var immediate = instruction & 0x00FFFFFF;
+			if (immediate & 0x00800000) {
+				immediate |= 0xFF000000;
+			}
+			immediate <<= 2;
+			var link = instruction & 0x01000000;
+			op = function() {
+				if (condOp && !condOp()) {
+					return;
+				}
+				if (link) {
+					cpu.gprs[cpu.LR] = cpu.gprs[cpu.PC] - 4;
+				}
+				cpu.gprs[cpu.PC] += immediate;
+			}
+			op.touchesPC = true;
 			break;
 		case 0x0C000000:
 			// Coprocessor data transfer
