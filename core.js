@@ -45,6 +45,14 @@ GBACore = function() {
 	this.MODE_ARM = 0;
 	this.MODE_THUMB = 1;
 
+	this.MODE_USER = 0x10;
+	this.MODE_FIQ = 0x11;
+	this.MODE_IRQ = 0x12;
+	this.MODE_SUPERVISOR = 0x13;
+	this.MODE_ABORT = 0x17;
+	this.MODE_UNDEFINED = 0x1B;
+	this.MODE_SYSTEM = 0x1F;
+
 	this.WORD_SIZE_ARM = 4;
 	this.WORD_SIZE_THUMB = 2;
 
@@ -71,6 +79,12 @@ GBACore.prototype.resetCPU = function() {
 		0, 0, 0, 0x08000000
 	];
 	this.execMode = 0;
+
+	this.mode = MODE_SYSTEM;
+
+	this.cpsrI = false;
+	this.cpsrF = false;
+
 	this.cpsrV = false;
 	this.cpsrC = false;
 	this.cpsrZ = false;
