@@ -881,10 +881,6 @@ GBACore.prototype.compile = function(instruction) {
 			cpu.gprs[cpu.PC] = cpu.grps[rm] & 0xFFFFFFFE;
 		}
 		op.touchesPC = true;
-	} else if ((instruction & 0x0FC000F0) == 0x00000090) {
-		// MUL
-	} else if ((instruction & 0x0F8000F0) == 0x00800090) {
-		// MLL
 	} else if ((instruction & 0x0E000010) == 0x06000000) {
 		// Single data transfer
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
@@ -896,7 +892,7 @@ GBACore.prototype.compile = function(instruction) {
 			break;
 		case 0x06000000:
 			// Undefined
-			return this.badOp;
+			return op;
 		case 0x08000000:
 			// Block data transfer
 			break;
