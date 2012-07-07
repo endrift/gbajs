@@ -296,8 +296,12 @@ GBACore.prototype.step = function() {
 
 	if (instruction.touchesPC) {
 		if (this.gprs[this.PC] == nextPC) {
-			this.gprs[this.PC] = currentPC;
+			this.nextPC = currentPC;
+		} else {
+			this.nextPC = this.gprs[this.PC];
 		}
+	} else {
+		this.nextPC += instructionWidth;
 	}
 };
 
