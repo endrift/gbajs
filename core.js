@@ -296,17 +296,19 @@ GBACore.prototype.step = function() {
 	} else {
 		instructionWidth = this.WORD_SIZE_THUMB;
 	}
+	var nextPC;
+	var shownPC;
 	if (instruction.touchesPC) {
-		var currentPC = this.gprs[this.PC] + instructionWidth;
-		var nextPC = currentPC + instructionWidth;
-		this.gprs[this.PC] = nextPC;
+		nextPC = this.nextPC + instructionWidth;
+		shownPC = nextPC + instructionWidth;
+		this.gprs[this.PC] = shownPC;
 	}
 
 	instruction();
 
 	if (instruction.touchesPC) {
-		if (this.gprs[this.PC] == nextPC) {
-			this.nextPC = currentPC;
+		if (this.gprs[this.PC] == shownPC) {
+			this.nextPC = nextPC;
 		} else {
 			this.nextPC = this.gprs[this.PC];
 		}
@@ -444,10 +446,9 @@ GBACore.prototype.compile = function(instruction) {
 	
 			// Parse shifter operand
 			var shiftType = instruction & 0x00000060;
-			// FIXME: this only applies if using non-immediate, which we always will be (?)
 			var rm = instruction & 0x0000000F;
 			var shiftOp = function() { return cpu.gprs[rm] };
-			if (i) {
+			if (instruction & 0x02000000) {
 				var immediate = instruction & 0x000000FF;
 				var rotate = (instruction & 0x00000F00) >> 7;
 				shiftOp = function() {
@@ -461,7 +462,7 @@ GBACore.prototype.compile = function(instruction) {
 				}
 			} else if (instruction & 0x00000010) {
 				var rs = (instruction & 0x00000F00) >> 8;
-				touchesPC = touchesPC || rs == this.PC;
+				touchesPC = touchesPC || rs == this.PC || rm == this.PC;
 				switch (shiftType) {
 				case 0:
 					// LSL
@@ -540,6 +541,7 @@ GBACore.prototype.compile = function(instruction) {
 				}
 			} else {
 				var immediate = (instruction & 0x00000F80) >> 8;
+				touchesPC = touchesPC || rm == this.PC;
 				switch (shiftType) {
 				case 0:
 					// LSL
