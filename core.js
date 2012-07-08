@@ -88,46 +88,34 @@ ARMCore.prototype.loadInstruction = function(address) {
 	if (this.execMode == this.MODE_ARM) {
 		var block = this.mmu.cachedArm[memoryRegion];
 		var offset = (this.mmu.maskOffset(address)) >> 2;
-		if (block) {
-			compiled = block[offset];
-			next = block[offset + 1];
-		}
+		compiled = block[offset];
+		next = block[offset + 1];
 		if (!compiled) {
 			var instruction = this.mmu.load32(address) >>> 0;
 			compiled = this.compile(instruction);
-			if (block) {
-				block[offset] = compiled;
-			}
+			block[offset] = compiled;
 		}
 		if (!next) {
 			var instruction = this.mmu.load32(address + this.WORD_SIZE_ARM) >>> 0;
 			next = this.compile(instruction);
-			if (block) {
-				block[offset + 1] = next;
-			}
+			block[offset + 1] = next;
 			this.prefetch.address = address + this.WORD_SIZE_ARM;
 			this.prefetch.instruction = next;
 		}
 	} else {
 		var block = this.mmu.cachedThumb[memoryRegion];
 		var offset = (this.mmu.maskOffset(address)) >> 1;
-		if (block) {
-			compiled = block[offset];
-			next = block[offset + 1];
-		}
+		compiled = block[offset];
+		next = block[offset + 1];
 		if (!compiled) {
 			var instruction = this.mmu.loadU16(address);
 			compiled = this.compileThumb(instruction);
-			if (block) {
-				block[offset] = compiled;
-			}
+			block[offset] = compiled;
 		}
 		if (!next) {
 			var instruction = this.mmu.loadU16(address + this.WORD_SIZE_THUMB);
 			next = this.compileThumb(instruction);
-			if (block) {
-				block[offset + 1] = next;
-			}
+			block[offset + 1] = next;
 			this.prefetch.address = address + this.WORD_SIZE_THUMB;
 			this.prefetch.instruction = next;
 		}
