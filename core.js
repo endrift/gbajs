@@ -1498,6 +1498,24 @@ GBACore.prototype.compileThumb = function(instruction) {
 			break;
 		case 0x5000:
 			// Conditional branch
+			var cond = (instruction & 0x0F00) >> 8;
+			var immediate = (instruction & 0x00FF);
+			if (cond == 0xF) {
+				// SWI
+			} else {
+				// B(1)
+				if (instruction & 0x0080) {
+					immediate |= 0xFFFFFF00;
+				}
+				immediate <<= 1;
+				var condOp = this.generateCond(cond);
+				op = function() {
+					if (condOp()) {
+						cpu.gprs[cpu.PC] += immediate;
+					}
+				}
+				op.touchesPC = true;
+			}
 			break;
 		case 0x6000:
 		case 0x7000:
