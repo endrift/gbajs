@@ -1255,7 +1255,8 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.mmu.store32(address, cpu.gprs[cpu.LR]);
 					address -= 4;
 				}
-				for (var m = 0x80, i = 0; m; m >>= 1, ++i) {
+				var m;
+				for (m = 0x80, i = 7; m; m >>= 1, --i) {
 					if (rs & m) {
 						cpu.mmu.store32(address, cpu.gprs[i]);
 						address -= 4;
