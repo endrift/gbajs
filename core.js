@@ -1437,8 +1437,6 @@ GBACore.prototype.compileThumb = function(instruction) {
 			}
 		}
 		op.touchesPC = false;
-	} else if ((instruction & 0xFF00) == 0xB000) {
-		// Add offset to stack pointer
 	} else if ((instruction & 0xF600) == 0xB400) {
 		// Push and pop registers
 		if (instruction & 0x0800) {
@@ -1492,7 +1490,22 @@ GBACore.prototype.compileThumb = function(instruction) {
 			// Load address
 			break;
 		case 0x3000:
-			// Push and pop registers
+			// Miscellaneous
+			if ((instruction & 0x0600) == 0x0400) {
+				// Push/pop multiple registers
+			} else if (!(instruction & 0x0F00)) {
+				// Adjust stack pointer
+				// ADD(7)/SUB(4)
+				var b = instruction & 0x0080;
+				var immediate = (instruction & 0x7F) << 2;
+				if (b) {
+					immediate = -immediate;
+				}
+				op = function() {
+					cpu.gprs[cpu.SP] += immediate;
+				};
+				op.touchesPC = false;
+			}
 			break;
 		case 0x4000:
 			// Multiple load and store
