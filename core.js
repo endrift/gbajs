@@ -1410,8 +1410,30 @@ GBACore.prototype.compileThumb = function(instruction) {
 		// Load and store with relative offset
 	} else if ((instruction & 0xF200) == 0x5200) {
 		// Load and store sign-extend byte and halfword
-	} else if ((instruction & 0xE000) == 0x3000) {
+	} else if ((instruction & 0xE000) == 0x6000) {
 		// Load and store with immediate offset
+		var rd = instruction & 0x0007;
+		var rn = (instruction & 0x0038) >> 3;
+		var immediate = (instruction & 0x07C0) >> 4;
+		var b = instruction & 0x1000;
+		var load = instruction & 0x0800;
+		if (load) {
+			if (b) {
+				// LDRB
+			} else {
+				// LDR(1)
+				op = function() {
+					cpu.gprs[rd] = cpu.load32(cpu.gprs[rn] + immediate);
+				}
+			}
+		} else {
+			if (b) {
+				// STRB
+			} else {
+				// STR(1)
+			}
+		}
+		op.touchesPC = false;
 	} else if ((instruction & 0xFF00) == 0xB000) {
 		// Add offset to stack pointer
 	} else if ((instruction & 0xF600) == 0xB400) {
