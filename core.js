@@ -1408,7 +1408,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 		// SWI
 	} else if ((instruction & 0xF800) == 0xE000) {
 		// Unconditional branch
-	} else if ((instruction & 0xF000) == 0x8000) {
+	} else if (instruction & 0x8000) {
 		switch (instruction & 0x7000) {
 		case 0x0000:
 			// Load and store halfword
@@ -1443,8 +1443,41 @@ GBACore.prototype.compileThumb = function(instruction) {
 		case 0x5000:
 			// Conditional branch
 			break;
+		case 0x6000:
 		case 0x7000:
-			// Long branch with link
+			// BL(X)
+			var immediate = instruction & 0x07FF;
+			var h = instruction & 0x1800;
+			switch (h) {
+			case 0x0800:
+				// BLX
+				op = function() {
+					var pc = cpu.gprs[cpu.PC];
+					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1));
+					cpu.gprs[cpu.LR] = pc - 1;
+					cpu.execMode = cpu.MODE_ARM;
+				}
+				break;
+			case 0x1000:
+				// BL(1)
+				if (immediate & 0x0400) {
+					immediate |= 0xFFFFFC00;
+				}
+				immediate <<= 12;
+				op = function() {
+					cpu.gprs[cpu.LR] = cpu.gprs[cpu.PC] + immediate;
+				}
+				break;
+			case 0x1800:
+				// BL(2)
+				op = function() {
+					var pc = cpu.gprs[cpu.PC];
+					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1));
+					cpu.gprs[cpu.LR] = pc - 1;
+				}
+				break;
+			}
+			op.touchesPC = true;
 			break;
 		default:
 			this.WARN("Undefined instruction: 0x" + instruction.toString(16));
