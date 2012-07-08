@@ -225,6 +225,16 @@ GBACore.prototype.load32 = function(offset) {
 	return this.memoryView[memoryRegion].getInt32(this.maskOffset(offset), true);
 };
 
+GBACore.prototype.loadU8 = function(offset) {
+	var memoryRegion = this.getMemoryRegion(offset);
+	return this.memoryView[memoryRegion].getInt8(this.maskOffset(offset));
+};
+
+GBACore.prototype.loadU16 = function(offset) {
+	var memoryRegion = this.getMemoryRegion(offset);
+	return this.memoryView[memoryRegion].getInt16(this.maskOffset(offset), true);
+};
+
 GBACore.prototype.store8 = function(offset, value) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	if (memoryRegion >= this.REGION_ROM0) {
@@ -303,7 +313,7 @@ GBACore.prototype.loadInstruction = function(address) {
 			compiled = block[offset];
 		}
 		if (!compiled) {
-			var instruction = this.load16(address);
+			var instruction = this.loadU16(address);
 			compiled = this.compileThumb(instruction);
 			if (block) {
 				block[offset] = compiled;
