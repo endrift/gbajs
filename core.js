@@ -1071,10 +1071,6 @@ GBACore.prototype.compileThumb = function(instruction) {
 	var cpu = this;
 	if ((instruction & 0xFC00) == 0x4000) {
 		// Data-processing register
-		switch (instruction & 0x0200) {
-		}
-	} else if ((instruction & 0xFC00) == 0x4400) {
-		// Special data processing / branch/exchange instruction set
 		var rm = (instruction & 0x0038) >> 3;
 		var rd = instruction & 0x0007;
 		switch (instruction & 0x03C0) {
@@ -1286,7 +1282,29 @@ GBACore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		}
-		op.touchesPC = rm == this.PC || rd == this.PC;
+		op.touchesPC = false;
+	} else if ((instruction & 0xFC00) == 0x4400) {
+		// Special data processing / branch/exchange instruction set
+		var rm = 0x0038;
+		var rn = 0x0007;
+		var h1 = 0x0080;
+		var h2 = 0x0040;
+		switch (instruction & 0x0300) {
+		case 0x0000:
+			break;
+		case 0x0100:
+			break;
+		case 0x0200:
+			// MOV
+			var rd = rn | (h1 >> 4);
+			rm = (rm | h2) >> 3;
+			op = function() {
+				cpu.gprs[rd] = cpu.gprs[rm];
+			};
+			break;
+		case 0x0300:
+			break;
+		}
 	} else if ((instruction & 0xF800) == 0x1800) {
 		// Add/subtract
 	} else if ((instruction & 0xE000) == 0x2000) {
