@@ -34,7 +34,7 @@ function runTest(r) {
 	simulate();
 }
 var mmu = new GameBoyAdvanceMMU();
-var core = new GBACore(mmu);
+var core = new ARMCore(mmu);
 window.onload = function() { loadRom('test.rom', runTest) };
 </script>
 </head>

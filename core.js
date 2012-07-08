@@ -1,4 +1,4 @@
-GBACore = function(mmu, irq) {
+ARMCore = function(mmu, irq) {
 	this.mmu = mmu;
 
 	this.SP = 13;
@@ -27,23 +27,23 @@ GBACore = function(mmu, irq) {
 	this.resetCPU();
 };
 
-GBACore.prototype.WARN = function(warn) {
+ARMCore.prototype.WARN = function(warn) {
 	console.log("[WARNING] " + warn);
 };
 
-GBACore.prototype.STUB = function(func) {
+ARMCore.prototype.STUB = function(func) {
 	console.log("[STUB] Unimplemented function: " + func);
 };
 
-GBACore.prototype.OP_STUB = function(op) {
+ARMCore.prototype.OP_STUB = function(op) {
 	console.log("[STUB] Unimplemented opcode: " + op);
 };
 
-GBACore.prototype.ASSERT_UNREACHED = function(err) {
+ARMCore.prototype.ASSERT_UNREACHED = function(err) {
 	throw "Should be unreached: " + err;
 };
 
-GBACore.prototype.resetCPU = function() {
+ARMCore.prototype.resetCPU = function() {
 	this.gprs = [
 		0, 0, 0, 0,
 		0, 0, 0, 0,
@@ -74,7 +74,7 @@ GBACore.prototype.resetCPU = function() {
 	this.skipStatusBits = false;
 };
 
-GBACore.prototype.loadInstruction = function(address) {
+ARMCore.prototype.loadInstruction = function(address) {
 	var compiled = null;
 	var memoryRegion = this.mmu.getMemoryRegion(address);
 	if (this.execMode == this.MODE_ARM) {
@@ -107,7 +107,7 @@ GBACore.prototype.loadInstruction = function(address) {
 	return compiled;
 };
 
-GBACore.prototype.step = function() {
+ARMCore.prototype.step = function() {
 	var instruction = this.loadInstruction(this.nextPC);
 	var instructionWidth;
 	if (this.execMode == this.MODE_ARM) {
@@ -136,17 +136,17 @@ GBACore.prototype.step = function() {
 	}
 };
 
-GBACore.prototype.switchMode = function(newMode) {
+ARMCore.prototype.switchMode = function(newMode) {
 	this.STUB("switchMode");
 };
 
-GBACore.prototype.badOp = function(instruction) {
+ARMCore.prototype.badOp = function(instruction) {
 	return function() {
 		throw "Illegal instruction: 0x" + instruction.toString(16);
 	};
 };
 
-GBACore.prototype.generateCond = function(cond) {
+ARMCore.prototype.generateCond = function(cond) {
 	var cpu = this;
 	switch (cond) {
 	case 0x0:
@@ -226,7 +226,7 @@ GBACore.prototype.generateCond = function(cond) {
 	}
 }
 
-GBACore.prototype.compile = function(instruction) {
+ARMCore.prototype.compile = function(instruction) {
 	var cond = (instruction & 0xF0000000) >>> 28;
 	var op = this.badOp(instruction);
 	var i = instruction & 0x0E000000;
@@ -852,7 +852,7 @@ GBACore.prototype.compile = function(instruction) {
 	return op;
 };
 
-GBACore.prototype.compileThumb = function(instruction) {
+ARMCore.prototype.compileThumb = function(instruction) {
 	var op = this.badOp(instruction);
 	var cpu = this;
 	if ((instruction & 0xFC00) == 0x4000) {
