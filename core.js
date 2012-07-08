@@ -1345,6 +1345,25 @@ GBACore.prototype.compileThumb = function(instruction) {
 		op.touchesPC = false;
 	} else if ((instruction & 0xE000) == 0x2000) {
 		// Add/subtract/compare/move immediate
+		var immediate = instruction & 0x00FF;
+		var rn = (instruction & 0x0700) >> 8;
+		switch (instruction & 0x1800) {
+		case 0x0000:
+			// MOV(1)
+			op = function() {
+				cpu.gprs[rn] = immediate;
+				cpu.cpsrN = immediate & 0x80000000;
+				cpu.cpsrZ = !immediate;
+			};
+			break;
+		case 0x0800:
+			break;
+		case 0x1000:
+			break;
+		case 0x1800:
+			break;
+		}
+		op.touchesPC = false;
 	} else if ((instruction & 0xF800) == 0x4800) {
 		// LDR(3)
 		var rd = (instruction & 0x0700) >> 8;
