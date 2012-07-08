@@ -1431,6 +1431,9 @@ GBACore.prototype.compileThumb = function(instruction) {
 				// STRB
 			} else {
 				// STR(1)
+				op = function() {
+					cpu.store32(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
+				}
 			}
 		}
 		op.touchesPC = false;
