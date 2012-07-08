@@ -1314,6 +1314,13 @@ GBACore.prototype.compileThumb = function(instruction) {
 			op.touchesPC = (rm == this.PC) || (rd == this.PC);
 			break;
 		case 0x0300:
+			// BX
+			rm = (rm | h2) >> 3;
+			op = function() {
+				cpu.execMode = cpu.gprs[rm] & 0x00000001;
+				cpu.gprs[cpu.PC] = cpu.gprs[rm];
+			};
+			op.touchesPC = true;
 			break;
 		}
 	} else if ((instruction & 0xF800) == 0x1800) {
