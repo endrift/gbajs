@@ -1393,6 +1393,21 @@ GBACore.prototype.compileThumb = function(instruction) {
 		switch (instruction & 0x7000) {
 		case 0x0000:
 			// Load and store halfword
+			var rd = instruction & 0x0007;
+			var rn = (instruction & 0x0038) >> 3;
+			var immediate = (instruction & 0x07C0) >> 5;
+			if (instruction & 0x0800) {
+				// LDRH(1)
+				op = function() {
+					cpu.gprs[rd] = cpu.loadU16(cpu.gprs[rn] + immediate);
+				};
+			} else {
+				// STRH(1)
+				op = function() {
+					cpu.store16(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
+				};
+			}
+			op.touchesPC = false;
 			break;
 		case 0x1000:
 			// SP-relative load and store
