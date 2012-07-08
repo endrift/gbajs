@@ -1,42 +1,5 @@
-GBACore = function() {
-	this.REGION_BIOS = 0x0;
-	this.REGION_WORKING_RAM = 0x2;
-	this.REGION_WORKING_IRAM = 0x3;
-	this.REGION_IO = 0x4;
-	this.REGION_PALETTE_RAM = 0x5;
-	this.REGION_VRAM = 0x6;
-	this.REGION_OAM = 0x7;
-	this.REGION_CART0 = 0x8;
-	this.REGION_CART1 = 0xA;
-	this.REGION_CART2 = 0xC;
-	this.REGION_CART_SRAM = 0xE;
-
-	this.BASE_BIOS = 0x00000000;
-	this.BASE_WORKING_RAM = 0x02000000;
-	this.BASE_WORKING_IRAM = 0x03000000;
-	this.BASE_IO = 0x04000000;
-	this.BASE_PALETTE_RAM = 0x05000000;
-	this.BASE_VRAM = 0x06000000;
-	this.BASE_OAM = 0x07000000;
-	this.BASE_CART0 = 0x08000000;
-	this.BASE_CART1 = 0x0A000000;
-	this.BASE_CART2 = 0x0C000000;
-	this.BASE_CART_SRAM = 0x0E000000;
-
-	this.BASE_MASK = 0x0F000000;
-	this.BASE_OFFSET = 24;
-
-	this.SIZE_BIOS = 0x00004000;
-	this.SIZE_WORKING_RAM = 0x00040000;
-	this.SIZE_WORKING_IRAM = 0x00008000;
-	this.SIZE_IO = 0x00000400;
-	this.SIZE_PALETTE_RAM = 0x00000400;
-	this.SIZE_VRAM = 0x00018000;
-	this.SIZE_OAM = 0x00000400;
-	this.SIZE_CART0 = 0x02000000;
-	this.SIZE_CART1 = 0x02000000;
-	this.SIZE_CART2 = 0x02000000;
-	this.SIZE_CART_SRAM = 0x00010000;
+GBACore = function(mmu, irq) {
+	this.mmu = mmu;
 
 	this.SP = 13;
 	this.LR = 14;
@@ -106,214 +69,35 @@ GBACore.prototype.resetCPU = function() {
 	this.shifterOperand = 0;
 	this.shifterCarryOut = 0;
 
-	this.memory = [
-		null,
-		null, // Unused
-		new ArrayBuffer(this.SIZE_WORKING_RAM),
-		new ArrayBuffer(this.SIZE_WORKING_IRAM),
-		new ArrayBuffer(this.SIZE_IO),
-		new ArrayBuffer(this.SIZE_PALETTE_RAM),
-		new ArrayBuffer(this.SIZE_VRAM),
-		new ArrayBuffer(this.SIZE_OAM),
-		null,
-		null, // Unused
-		null,
-		null, // Unused
-		null,
-		null, // Unused
-		null,
-		null // Unused
-	];
-
-	this.memoryView = [
-		null,
-		null, // Unused
-		new DataView(this.memory[2]),
-		new DataView(this.memory[3]),
-		new DataView(this.memory[4]),
-		new DataView(this.memory[5]),
-		new DataView(this.memory[6]),
-		new DataView(this.memory[7]),
-		null,
-		null, // Unused
-		null,
-		null, // Unused
-		null,
-		null, // Unused
-		null,
-		null // Unused
-	];
-
-	this.cachedArm = [
-		null,
-		null, // Unused
-		new Array(this.SIZE_WORKING_RAM >> 2),
-		new Array(this.SIZE_WORKING_IRAM >> 2),
-		null,
-		null,
-		null,
-		null,
-		null,
-		null, // Unusued
-		null,
-		null, // Unusued
-		null,
-		null // Unused
-	];
-
-	this.cachedThumb = [
-		null,
-		null, // Unused
-		new Array(this.SIZE_WORKING_RAM >> 1),
-		new Array(this.SIZE_WORKING_IRAM >> 1),
-		null,
-		null,
-		null,
-		null,
-		null,
-		null, // Unusued
-		null,
-		null, // Unusued
-		null,
-		null // Unused
-	];
+	this.mmu.clear();
 
 	this.skipStatusBits = false;
 };
 
-GBACore.prototype.loadRom = function(rom) {
-	this.resetCPU();
-	this.memory[this.REGION_CART0] = rom;
-	this.memory[this.REGION_CART1] = rom;
-	this.memory[this.REGION_CART2] = rom;
-	var view = new DataView(rom);
-	this.memoryView[this.REGION_CART0] = view;
-	this.memoryView[this.REGION_CART1] = view;
-	this.memoryView[this.REGION_CART2] = view;
-
-	var cachedArm = new Array(rom.byteLength >> 2);
-	this.cachedArm[this.REGION_CART0] = cachedArm;
-	this.cachedArm[this.REGION_CART1] = cachedArm;
-	this.cachedArm[this.REGION_CART2] = cachedArm;
-
-	var cachedThumb = new Array(rom.byteLength >> 1);
-	this.cachedThumb[this.REGION_CART0] = cachedThumb;
-	this.cachedThumb[this.REGION_CART1] = cachedThumb;
-	this.cachedThumb[this.REGION_CART2] = cachedThumb;
-};
-
-GBACore.prototype.maskOffset = function(offset) {
-	if (offset < this.BASE_CART0) {
-		return offset & 0x00FFFFFF;
-	} else {
-		return offset & 0x01FFFFFF;
-	}
-};
-
-GBACore.prototype.load8 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt8(this.maskOffset(offset));
-};
-
-GBACore.prototype.load16 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt16(this.maskOffset(offset), true);
-};
-
-GBACore.prototype.load32 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt32(this.maskOffset(offset), true);
-};
-
-GBACore.prototype.loadU8 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getUint8(this.maskOffset(offset));
-};
-
-GBACore.prototype.loadU16 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
-};
-
-GBACore.prototype.store8 = function(offset, value) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_ROM0) {
-		throw "Bad access";
-	}
-	var maskedOffset = offset & 0x00FFFFFF;
-	this.memoryView[memoryRegion].setInt8(maskedOffset, value);
-	var cache;
-	cache = this.cachedArm[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 2];
-	}
-	cache = this.cachedThumb[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 1];
-	}
-};
-
-GBACore.prototype.store16 = function(offset, value) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_ROM0) {
-		throw "Bad access";
-	}
-	var maskedOffset = offset & 0x00FFFFFE;
-	this.memoryView[memoryRegion].setInt16(maskedOffset, value, true);
-	var cache;
-	cache = this.cachedArm[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 2];
-	}
-	cache = this.cachedThumb[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 1];
-	}
-};
-
-GBACore.prototype.store32 = function(offset, value) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_ROM0) {
-		throw "Bad access";
-	}
-	var maskedOffset = offset & 0x00FFFFFC;
-	this.memoryView[memoryRegion].setInt32(maskedOffset, value, true);
-	var cache;
-	cache = this.cachedArm[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 2];
-	}
-	cache = this.cachedThumb[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 1];
-		delete cache[(maskedOffset >> 1) + 1];
-	}
-};
-
 GBACore.prototype.loadInstruction = function(address) {
 	var compiled = null;
-	var memoryRegion = this.getMemoryRegion(address);
+	var memoryRegion = this.mmu.getMemoryRegion(address);
 	if (this.execMode == this.MODE_ARM) {
-		var block = this.cachedArm[memoryRegion];
-		var offset = (this.maskOffset(address)) >> 2;
+		var block = this.mmu.cachedArm[memoryRegion];
+		var offset = (this.mmu.maskOffset(address)) >> 2;
 		if (block) {
 			compiled = block[offset];
 		}
 		if (!compiled) {
-			var instruction = this.load32(address) >>> 0;
+			var instruction = this.mmu.load32(address) >>> 0;
 			compiled = this.compile(instruction);
 			if (block) {
 				block[offset] = compiled;
 			}
 		}
 	} else {
-		var block = this.cachedThumb[memoryRegion];
-		var offset = (this.maskOffset(address)) >> 1;
+		var block = this.mmu.cachedThumb[memoryRegion];
+		var offset = (this.mmu.maskOffset(address)) >> 1;
 		if (block) {
 			compiled = block[offset];
 		}
 		if (!compiled) {
-			var instruction = this.loadU16(address);
+			var instruction = this.mmu.loadU16(address);
 			compiled = this.compileThumb(instruction);
 			if (block) {
 				block[offset] = compiled;
@@ -354,14 +138,6 @@ GBACore.prototype.step = function() {
 
 GBACore.prototype.switchMode = function(newMode) {
 	this.STUB("switchMode");
-};
-
-GBACore.prototype.getMemoryRegion = function(offset) {
-	var memoryRegion = (offset & this.BASE_MASK) >> this.BASE_OFFSET;
-	if (memoryRegion > this.BASE_CART0) {
-		return memoryRegion & 0xE;
-	}
-	return memoryRegion;
 };
 
 GBACore.prototype.badOp = function(instruction) {
@@ -1018,7 +794,7 @@ GBACore.prototype.compile = function(instruction) {
 							return;
 						}
 						var a = address();
-						cpu.gprs[rd] = cpu.load32(a);
+						cpu.gprs[rd] = cpu.mmu.load32(a);
 					};
 				}
 			} else {
@@ -1031,7 +807,7 @@ GBACore.prototype.compile = function(instruction) {
 							return;
 						}
 						var a = address();
-						cpu.store32(a, cpu.gprs[rd]);
+						cpu.mmu.store32(a, cpu.gprs[rd]);
 					};
 				}
 			}
@@ -1403,7 +1179,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 		var rd = (instruction & 0x0700) >> 8;
 		var immediate = (instruction & 0x00FF) << 2;
 		op = function() {
-			cpu.gprs[rd] = cpu.load32((cpu.gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
+			cpu.gprs[rd] = cpu.mmu.load32((cpu.gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
 		};
 		op.touchesPC = true;
 	} else if ((instruction & 0xF200) == 0x5000) {
@@ -1423,7 +1199,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 			} else {
 				// LDR(1)
 				op = function() {
-					cpu.gprs[rd] = cpu.load32(cpu.gprs[rn] + immediate);
+					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[rn] + immediate);
 				}
 			}
 		} else {
@@ -1432,7 +1208,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 			} else {
 				// STR(1)
 				op = function() {
-					cpu.store32(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
+					cpu.mmu.store32(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				}
 			}
 		}
@@ -1448,12 +1224,12 @@ GBACore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var address = cpu.gprs[cpu.SP] - 4;
 				if (r) {
-					cpu.store32(address, cpu.gprs[cpu.LR]);
+					cpu.mmu.store32(address, cpu.gprs[cpu.LR]);
 					address -= 4;
 				}
 				for (var m = 0x80, i = 0; m; m >>= 1, ++i) {
 					if (rs & m) {
-						cpu.store32(address, cpu.gprs[i]);
+						cpu.mmu.store32(address, cpu.gprs[i]);
 						address -= 4;
 					}
 				}
@@ -1473,12 +1249,12 @@ GBACore.prototype.compileThumb = function(instruction) {
 			if (instruction & 0x0800) {
 				// LDRH(1)
 				op = function() {
-					cpu.gprs[rd] = cpu.loadU16(cpu.gprs[rn] + immediate);
+					cpu.gprs[rd] = cpu.mmu.loadU16(cpu.gprs[rn] + immediate);
 				};
 			} else {
 				// STRH(1)
 				op = function() {
-					cpu.store16(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
+					cpu.mmu.store16(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				};
 			}
 			op.touchesPC = false;
@@ -1491,12 +1267,12 @@ GBACore.prototype.compileThumb = function(instruction) {
 			if (load) {
 				// LDR(4)
 				op = function() {
-					cpu.gprs[rd] = cpu.load32(cpu.gprs[cpu.SP] + immediate);
+					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[cpu.SP] + immediate);
 				}
 			} else {
 				// STR(3)
 				op = function() {
-					cpu.store32(cpu.gprs[cpu.SP] + immediate, cpu.gprs[rd]);
+					cpu.mmu.store32(cpu.gprs[cpu.SP] + immediate, cpu.gprs[rd]);
 				}
 			}
 			op.touchesPC = false;

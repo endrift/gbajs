@@ -6,6 +6,8 @@ canvas {
 }
 </style>
 <script src="core.js"></script>
+<script src="mmu.js"></script>
+<script src="irq.js"></script>
 <script src="xhr.js"></script>
 <script>
 function simulate() {
@@ -27,11 +29,12 @@ function simulate() {
 }
 
 function runTest(r) {
-	core.loadRom(r);
+	mmu.loadRom(r);
 
 	simulate();
 }
-var core = new GBACore();
+var mmu = new GameBoyAdvanceMMU();
+var core = new GBACore(mmu);
 window.onload = function() { loadRom('test.rom', runTest) };
 </script>
 </head>
