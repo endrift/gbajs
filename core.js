@@ -66,15 +66,15 @@ GBACore = function() {
 
 GBACore.prototype.WARN = function(warn) {
 	console.log("[WARNING] " + warn);
-}
+};
 
 GBACore.prototype.STUB = function(func) {
 	console.log("[STUB] Unimplemented function: " + func);
-}
+};
 
 GBACore.prototype.OP_STUB = function(op) {
 	console.log("[STUB] Unimplemented opcode: " + op);
-}
+};
 
 GBACore.prototype.ASSERT_UNREACHED = function(err) {
 	throw "Should be unreached: " + err;
@@ -206,7 +206,7 @@ GBACore.prototype.maskOffset = function(offset) {
 	} else {
 		return offset & 0x01FFFFFF;
 	}
-}
+};
 
 GBACore.prototype.load8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
@@ -355,7 +355,7 @@ GBACore.prototype.getMemoryRegion = function(offset) {
 GBACore.prototype.badOp = function(instruction) {
 	return function() {
 		throw "Illegal instruction: 0x" + instruction.toString(16);
-	}
+	};
 };
 
 GBACore.prototype.generateCond = function(cond) {
@@ -454,7 +454,7 @@ GBACore.prototype.compile = function(instruction) {
 			}
 			cpu.execMode = cpu.gprs[rm] & 0x00000001;
 			cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
-		}
+		};
 		op.touchesPC = true;
 	} else if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
 		var opcode = instruction & 0x01E00000;
@@ -504,16 +504,16 @@ GBACore.prototype.compile = function(instruction) {
 							//cpu.cpsrF = operand & 0x00000040;
 						}
 					}
-				}
+				};
 				op.touchesPC = rm == this.PC;
 			}
 		} else {
 			// Data processing/FSR transfer
-			var innerOp = null;
+			var op = null;
 			var rn = (instruction & 0x000F0000) >> 16;
 			var rd = (instruction & 0x0000F000) >> 12;
 			var touchesPC = rn == this.PC || rd == this.PC;
-	
+
 			// Parse shifter operand
 			var shiftType = instruction & 0x00000060;
 			var rm = instruction & 0x0000000F;
@@ -529,7 +529,7 @@ GBACore.prototype.compile = function(instruction) {
 						cpu.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
 						cpu.shifterCarryOut = cpu.shifterOperand & 0x80000000;
 					}
-				}
+				};
 			} else if (instruction & 0x00000010) {
 				var rs = (instruction & 0x00000F00) >> 8;
 				touchesPC = touchesPC || rs == this.PC || rm == this.PC;
@@ -570,7 +570,7 @@ GBACore.prototype.compile = function(instruction) {
 							cpu.shifterOperand = 0;
 							cpu.shifterCarryOut = 0;
 						}
-					}
+					};
 					break;
 				case 2:
 					// ASR
@@ -589,7 +589,7 @@ GBACore.prototype.compile = function(instruction) {
 							cpu.shifterOperand = 0;
 							cpu.shifterCarryOut = 0;
 						}
-					}
+					};
 					break;
 				case 3:
 					// ROR
@@ -606,7 +606,7 @@ GBACore.prototype.compile = function(instruction) {
 							cpu.shifterOperand = cpu.gprs[rm];
 							cpu.shifterCarryOut = cpu.gprs[rm] & 0x80000000;
 						}
-					}
+					};
 					break;
 				}
 			} else {
@@ -677,11 +677,11 @@ GBACore.prototype.compile = function(instruction) {
 					break;
 				}
 			}
-	
+
 			switch (opcode) {
 			case 0x00000000:
 				// AND
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -692,11 +692,11 @@ GBACore.prototype.compile = function(instruction) {
 						cpu.cpsrZ = !cpu.gprs[rd];
 						cpu.cpsrC = cpu.shifterCarryOut;
 					}
-				}
+				};
 				break;
 			case 0x00200000:
 				// EOR
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -707,11 +707,11 @@ GBACore.prototype.compile = function(instruction) {
 						cpu.cpsrZ = !cpu.gprs[rd];
 						cpu.cpsrC = cpu.shifterCarryOut;
 					}
-				}
+				};
 				break;
 			case 0x00400000:
 				// SUB
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -725,11 +725,11 @@ GBACore.prototype.compile = function(instruction) {
 									cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
 					}
 					cpu.gprs[rd] = d;
-				}
+				};
 				break;
 			case 0x00600000:
 				// RSB
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -743,11 +743,11 @@ GBACore.prototype.compile = function(instruction) {
 									cpu.shifterOperand & 0x800000000 != d & 0x80000000;
 					}
 					cpu.gprs[rd] = d;
-				}
+				};
 				break;
 			case 0x00800000:
 				// ADD
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -762,11 +762,11 @@ GBACore.prototype.compile = function(instruction) {
 									cpu.shifterOperand & 0x80000000 != d & 0x80000000;
 					}
 					cpu.gprs[rd] = d;
-				}
+				};
 				break;
 			case 0x00A00000:
 				// ADC
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -782,11 +782,11 @@ GBACore.prototype.compile = function(instruction) {
 									shifterOperand & 0x80000000 != d & 0x80000000;
 					}
 					cpu.gprs[rd] = d;
-				}
+				};
 				break;
 			case 0x00C00000:
 				// SBC
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -801,11 +801,11 @@ GBACore.prototype.compile = function(instruction) {
 									cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
 					}
 					cpu.gprs[rd] = d;
-				}
+				};
 				break;
 			case 0x00E00000:
 				// RSC
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -820,11 +820,11 @@ GBACore.prototype.compile = function(instruction) {
 									cpu.shifterOperand & 0x80000000 != d & 0x80000000;
 					}
 					cpu.gprs[rd] = d;
-				}
+				};
 				break;
 			case 0x01000000:
 				// TST
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -833,11 +833,11 @@ GBACore.prototype.compile = function(instruction) {
 					cpu.cpsrN = aluOut & 0x80000000;
 					cpu.cpsrZ = !aluOut;
 					cpu.cpsrC = cpu.shifterCarryOut;
-				}
+				};
 				break;
 			case 0x01200000:
 				// TEQ
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -846,11 +846,11 @@ GBACore.prototype.compile = function(instruction) {
 					cpu.cpsrN = aluOut & 0x80000000;
 					cpu.cpsrZ = !aluOut;
 					cpu.cpsrC = cpu.shifterCarryOut;
-				}
+				};
 				break;
 			case 0x01400000:
 				// CMP
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -861,11 +861,11 @@ GBACore.prototype.compile = function(instruction) {
 					cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
 					cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.shifterOperand & 0x800000000 &&
 								cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000;
-				}
+				};
 				break;
 			case 0x01600000:
 				// CMN
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -877,11 +877,11 @@ GBACore.prototype.compile = function(instruction) {
 					cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == cpu.shifterOperand & 0x800000000 &&
 								cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000 &&
 								cpu.shifterOperand & 0x80000000 != aluOut & 0x80000000;
-				}
+				};
 				break;
 			case 0x01800000:
 				// ORR
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -891,11 +891,11 @@ GBACore.prototype.compile = function(instruction) {
 						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 						cpu.cpsrZ = !cpu.gprs[rd];
 					}
-				}
+				};
 				break;
 			case 0x01A00000:
 				// MOV
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -906,11 +906,11 @@ GBACore.prototype.compile = function(instruction) {
 						cpu.cpsrZ = !cpu.gprs[rd];
 						cpu.cpsrC = cpu.shifterCarryOut;
 					}
-				}
+				};
 				break;
 			case 0x01C00000:
 				// BIC
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -921,11 +921,11 @@ GBACore.prototype.compile = function(instruction) {
 						cpu.cpsrZ = !cpu.gprs[rd];
 						cpu.cpsrC = cpu.shifterCarryOut;
 					}
-				}
+				};
 				break;
 			case 0x01E00000:
 				// MVN
-				innerOp = function() {
+				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -936,10 +936,9 @@ GBACore.prototype.compile = function(instruction) {
 						cpu.cpsrZ = !cpu.gprs[rd];
 						cpu.cpsrC = aluOut > cpu.shifterCarryOut;
 					}
-				}
+				};
 				break;
 			}
-			op = innerOp;
 			op.touchesPC = touchesPC;
 		}
 	} else if ((instruction & 0x0E000010) == 0x06000000) {
@@ -964,7 +963,7 @@ GBACore.prototype.compile = function(instruction) {
 
 			var address = function() {
 				throw "Unimplemented memory access: 0x" + instruction.toString(16);
-			}
+			};
 			if (i) {
 				if (p) {
 					if (w) {
@@ -984,11 +983,11 @@ GBACore.prototype.compile = function(instruction) {
 						if (u) {
 							address = function() {
 								return cpu.gprs[rn] + offset;
-							}
+							};
 						} else {
 							address = function() {
 								return cpu.gprs[rn] - offset;
-							}
+							};
 						}
 					}
 				} else {
@@ -1008,7 +1007,7 @@ GBACore.prototype.compile = function(instruction) {
 						}
 						var a = address();
 						cpu.gprs[rd] = cpu.load32(a);
-					}
+					};
 				}
 			} else {
 				if (b) {
@@ -1021,7 +1020,7 @@ GBACore.prototype.compile = function(instruction) {
 						}
 						var a = address();
 						cpu.store32(a, cpu.gprs[rd]);
-					}
+					};
 				}
 			}
 			op.touchesPC = rn == this.PC || rd == this.PC;
@@ -1048,7 +1047,7 @@ GBACore.prototype.compile = function(instruction) {
 					cpu.gprs[cpu.LR] = cpu.gprs[cpu.PC] - 4;
 				}
 				cpu.gprs[cpu.PC] += immediate;
-			}
+			};
 			op.touchesPC = true;
 			break;
 		case 0x0C000000:
@@ -1083,7 +1082,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[rd] = cpu.gprs[rd] & cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x0040:
 			// EOR
@@ -1091,7 +1090,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[rd] = cpu.gprs[rd] ^ cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x0080:
 			// LSL
@@ -1112,7 +1111,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x00C0:
 			// LSR
@@ -1133,7 +1132,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x0100:
 			// ASR
@@ -1154,7 +1153,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x0140:
 			// ADC
@@ -1172,7 +1171,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 					cpu.cpsrV = oldDn == mn && oldDn != dn && mn != dn;
 				}
 				cpu.gprs[rd] = d;
-			}
+			};
 			break;
 		case 0x0180:
 			// SBC
@@ -1185,7 +1184,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != m & 0x800000000 &&
 							cpu.gprs[rd] & 0x80000000 != d & 0x80000000;
 				cpu.gprs[rd] = d;
-			}
+			};
 			break;
 		case 0x01C0:
 			// ROR
@@ -1202,7 +1201,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x0200:
 			// TST
@@ -1220,7 +1219,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrZ = !cpu.gprs[rd];
 				cpu.cpsrC = 0 >= (cpu.gprs[rn] >>> 0);
 				cpu.cpsrV = cpu.gprs[rn] & 0x800000000 && cpu.gprs[rd] & 0x80000000;
-			}
+			};
 			break;
 		case 0x0280:
 			// CMP
@@ -1231,7 +1230,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrC = (cpu.gprs[rd] >>> 0) >= (cpu.gprs[rm] >>> 0);
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
 					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000;
-			}
+			};
 			break;
 		case 0x02C0:
 			// CMN
@@ -1243,7 +1242,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 == cpu.gprs[rm] & 0x800000000 &&
 					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000 &&
 					        cpu.gprs[rm] & 0x80000000 != aluOut & 0x80000000;
-			}
+			};
 			break;
 		case 0x0300:
 			// ORR
@@ -1251,7 +1250,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[rd] = cpu.gprs[rd] | cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x0340:
 			// MUL
@@ -1266,7 +1265,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x0380:
 			// BIC
@@ -1274,7 +1273,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[rd] = cpu.gprs[rd] & ~cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		case 0x03C0:
 			// MVN
@@ -1282,7 +1281,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[rd] = ~cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-			}
+			};
 			break;
 		}
 		op.touchesPC = rm == this.PC || rd == this.PC;
