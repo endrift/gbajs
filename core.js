@@ -227,12 +227,12 @@ GBACore.prototype.load32 = function(offset) {
 
 GBACore.prototype.loadU8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt8(this.maskOffset(offset));
+	return this.memoryView[memoryRegion].getUint8(this.maskOffset(offset));
 };
 
 GBACore.prototype.loadU16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	return this.memoryView[memoryRegion].getInt16(this.maskOffset(offset), true);
+	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
 };
 
 GBACore.prototype.store8 = function(offset, value) {
