@@ -1311,7 +1311,13 @@ GBACore.prototype.compileThumb = function(instruction) {
 	} else if ((instruction & 0xE000) == 0x2000) {
 		// Add/subtract/compare/move immediate
 	} else if ((instruction & 0xF800) == 0x4800) {
-		// PC-relative load
+		// LDR(3)
+		var rd = (instruction & 0x0700) >> 8;
+		var immediate = (instruction & 0x00FF) << 2;
+		op = function() {
+			cpu.gprs[rd] = cpu.load32((cpu.gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
+		};
+		op.touchesPC = true;
 	} else if ((instruction & 0xF200) == 0x5000) {
 		// Load and store with relative offset
 	} else if ((instruction & 0xF200) == 0x5200) {
