@@ -89,7 +89,7 @@ GBACore.prototype.resetCPU = function() {
 	];
 	this.execMode = 0;
 
-	this.mode = MODE_SYSTEM;
+	this.mode = this.MODE_SYSTEM;
 
 	this.cpsrI = false;
 	this.cpsrF = false;
