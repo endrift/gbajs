@@ -111,7 +111,7 @@ GBACore.prototype.resetCPU = function() {
 		null, // Unused
 		new ArrayBuffer(this.SIZE_WORKING_RAM),
 		new ArrayBuffer(this.SIZE_WORKING_IRAM),
-		null,
+		new ArrayBuffer(this.SIZE_IO),
 		new ArrayBuffer(this.SIZE_PALLETE_RAM),
 		new ArrayBuffer(this.SIZE_VRAM),
 		new ArrayBuffer(this.SIZE_OAM),
@@ -130,7 +130,7 @@ GBACore.prototype.resetCPU = function() {
 		null, // Unused
 		new DataView(this.memory[2]),
 		new DataView(this.memory[3]),
-		null,
+		new DataView(this.memory[4]),
 		new DataView(this.memory[5]),
 		new DataView(this.memory[6]),
 		new DataView(this.memory[7]),
