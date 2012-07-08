@@ -23,8 +23,6 @@ ARMCore = function(mmu, irq) {
 
 	this.WORD_SIZE_ARM = 4;
 	this.WORD_SIZE_THUMB = 2;
-	this.WORD_WIDTH_ARM = 2;
-	this.WORD_WIDTH_THUMB = 1;
 
 	this.resetCPU();
 };
@@ -73,103 +71,83 @@ ARMCore.prototype.resetCPU = function() {
 
 	this.mmu.clear();
 
-	this.prefetch = null; // Prefetch size must be a power of 2, if enabled
 	this.skipStatusBits = false;
+	this.prefetch = {
+		'address': 0,
+		'instruction': null
+	};
 };
 
-ARMCore.prototype.loadInstruction = function(address, prefetch) {
+ARMCore.prototype.loadInstruction = function(address) {
 	var compiled = null;
-	var addressBase;
-	var primary = 0;
-	var fetchSize = 1;
+	var next = null;
+	if (address == this.prefetch.address && this.prefetch.instruction) {
+		return this.prefetch.instruction;
+	}
+	var memoryRegion = this.mmu.getMemoryRegion(address);
 	if (this.execMode == this.MODE_ARM) {
-		if (prefetch) {
-			addressBase = address & ~((prefetch.length << 2) - 1);
-			primary = (address - addressBase) >> 2;
-			compiled = prefetch[primary];
-			if (compiled) {
-				return compiled;
-			}
-			fetchSize = prefetch.length;
-		} else {
-			addressBase = address;
-		}
-		var offset = (this.mmu.maskOffset(addressBase)) >> 2;
-		var memoryRegion = this.mmu.getMemoryRegion(address);
 		var block = this.mmu.cachedArm[memoryRegion];
-		for (var i = 0; i < fetchSize; ++i) {
-			var fetched = null;
+		var offset = (this.mmu.maskOffset(address)) >> 2;
+		if (block) {
+			compiled = block[offset];
+			next = block[offset + 1];
+		}
+		if (!compiled) {
+			var instruction = this.mmu.load32(address) >>> 0;
+			compiled = this.compile(instruction);
 			if (block) {
-				fetched = block[offset + i];
+				block[offset] = compiled;
 			}
-			if (!fetched) {
-				var instruction = this.mmu.load32(addressBase + (i << 2)) >>> 0;
-				fetched = this.compile(instruction);
-				if (block) {
-					block[offset + i] = fetched;
-				}
+		}
+		if (!next) {
+			var instruction = this.mmu.load32(address + this.WORD_SIZE_ARM) >>> 0;
+			next = this.compile(instruction);
+			if (block) {
+				block[offset + 1] = next;
 			}
-			if (prefetch) {
-				prefetch[i] = fetched;
-			}
-			if (i == primary || !prefetch) {
-				compiled = fetched;
-			}
+			this.prefetch.address = address + this.WORD_SIZE_ARM;
+			this.prefetch.instruction = next;
 		}
 	} else {
-		if (prefetch) {
-			addressBase = address & ~((prefetch.length << 1) - 1);
-			primary = (address - addressBase) >> 1;
-			if (compiled) {
-				return compiled;
-			}
-			fetchSize = prefetch.length;
-		} else {
-			addressBase = address;
-		}
-		var offset = (this.mmu.maskOffset(addressBase)) >> 1;
-		var memoryRegion = this.mmu.getMemoryRegion(address);
 		var block = this.mmu.cachedThumb[memoryRegion];
-		for (var i = 0; i < fetchSize; ++i) {
-			var fetched = null;
+		var offset = (this.mmu.maskOffset(address)) >> 1;
+		if (block) {
+			compiled = block[offset];
+			next = block[offset + 1];
+		}
+		if (!compiled) {
+			var instruction = this.mmu.loadU16(address);
+			compiled = this.compileThumb(instruction);
 			if (block) {
-				fetched = block[offset + i];
+				block[offset] = compiled;
 			}
-			if (!fetched) {
-				var instruction = this.mmu.loadU16(addressBase + (i << 1));
-				fetched = this.compileThumb(instruction);
-				if (block) {
-					block[offset + i] = fetched;
-				}
+		}
+		if (!next) {
+			var instruction = this.mmu.loadU16(address + this.WORD_SIZE_THUMB);
+			next = this.compileThumb(instruction);
+			if (block) {
+				block[offset + 1] = next;
 			}
-			if (prefetch) {
-				prefetch[i] = fetched;
-			}
-			if (i == primary || !prefetch) {
-				compiled = fetched;
-			}
+			this.prefetch.address = address + this.WORD_SIZE_THUMB;
+			this.prefetch.instruction = next;
 		}
 	}
 	return compiled;
 };
 
 ARMCore.prototype.step = function() {
-	var instruction = this.loadInstruction(this.nextPC, this.prefetch);
-	var instructionSize;
+	var instruction = this.loadInstruction(this.nextPC);
+	var instructionWidth;
 	if (this.execMode == this.MODE_ARM) {
-		instructionSize = this.WORD_SIZE_ARM;
-		instructionWidth = this.WORD_WIDTH_ARM;
+		instructionWidth = this.WORD_SIZE_ARM;
 	} else {
-		instructionSize = this.WORD_SIZE_THUMB;
-		instructionWidth = this.WORD_WIDTH_THUMB;
+		instructionWidth = this.WORD_SIZE_THUMB;
 	}
-
-	var currentPC = this.nextPC;
 	var nextPC;
 	var shownPC;
 	if (instruction.touchesPC) {
-		nextPC = this.nextPC + instructionSize;
-		shownPC = nextPC + instructionSize;
+		nextPC = this.nextPC + instructionWidth;
+		shownPC = nextPC + instructionWidth;
 		this.gprs[this.PC] = shownPC;
 	}
 
@@ -182,17 +160,12 @@ ARMCore.prototype.step = function() {
 			this.nextPC = this.gprs[this.PC];
 		}
 	} else {
-		this.nextPC += instructionSize;
-	}
-
-	// If we've left the prefetch boundary, clear the prefetch
-	if (this.prefetch && !(this.nextPC & currentPC & ((this.prefetch.length << instructionWidth) - 1))) {
-		this.prefetch = new Array(this.prefetch.length);
+		this.nextPC += instructionWidth;
 	}
 };
 
 ARMCore.prototype.switchMode = function(newMode) {
-	this.STUB("switchMode");
+	//this.STUB("switchMode");
 };
 
 ARMCore.prototype.badOp = function(instruction) {
