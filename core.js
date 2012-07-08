@@ -1343,6 +1343,33 @@ GBACore.prototype.compileThumb = function(instruction) {
 			break;
 		}
 		op.touchesPC = false;
+	} else if (!(instruction & 0xE000)) {
+		// Shift by immediate
+		var rd = instruction & 0x0007;
+		var rm = (instruction & 0x0038) >> 3;
+		var immediate = (instruction & 0x07C0) >> 6;
+		switch (instruction & 0x1800) {
+		case 0x0000:
+			// LSL(1)
+			op = function() {
+				if (immediate == 0) {
+					cpu.gprs[rd] = cpu.gprs[rm];
+				} else {
+					cpu.cpsrC = cpu.gprs[rm] & (32 - immediate);
+					cpu.gprs[rd] = cpu.gprs[rm] << immediate;
+				}
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			};
+			break;
+		case 0x0800:
+			break;
+		case 0x1000:
+			break;
+		case 0x1800:
+			break;
+		}
+		op.touchesPC = false;
 	} else if ((instruction & 0xE000) == 0x2000) {
 		// Add/subtract/compare/move immediate
 		var immediate = instruction & 0x00FF;
