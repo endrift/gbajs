@@ -1460,8 +1460,6 @@ GBACore.prototype.compileThumb = function(instruction) {
 			};
 			op.touchesPC = false;
 		}
-	} else if ((instruction & 0xFF00) == 0xDF00) {
-		// SWI
 	} else if ((instruction & 0xF800) == 0xE000) {
 		// Unconditional branch
 	} else if (instruction & 0x8000) {
@@ -1502,6 +1500,10 @@ GBACore.prototype.compileThumb = function(instruction) {
 			var immediate = (instruction & 0x00FF);
 			if (cond == 0xF) {
 				// SWI
+				op = function() {
+					cpu.OP_STUB("SWI");
+					throw "Unimplemented opcode: SWI";
+				}
 			} else {
 				// B(1)
 				if (instruction & 0x0080) {
