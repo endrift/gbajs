@@ -1215,8 +1215,8 @@ GBACore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[rd] = -cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !cpu.gprs[rd];
-				cpu.cpsrC = 0 >= (cpu.gprs[rn] >>> 0);
-				cpu.cpsrV = cpu.gprs[rn] & 0x800000000 && cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrC = 0 >= (cpu.gprs[rd] >>> 0);
+				cpu.cpsrV = cpu.gprs[rm] & 0x800000000 && cpu.gprs[rd] & 0x80000000;
 			};
 			break;
 		case 0x0280:
