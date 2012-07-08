@@ -1375,9 +1375,10 @@ GBACore.prototype.compileThumb = function(instruction) {
 					cpu.store32(address, cpu.gprs[cpu.LR]);
 					address -= 4;
 				}
-				for (var m = 0x80, i = 0; m; m >>= 1, ++i, address -= 4) {
+				for (var m = 0x80, i = 0; m; m >>= 1, ++i) {
 					if (rs & m) {
 						cpu.store32(address, cpu.gprs[i]);
+						address -= 4;
 					}
 				}
 				cpu.gprs[cpu.SP] = address + 4;
