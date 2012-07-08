@@ -1303,6 +1303,27 @@ GBACore.prototype.compileThumb = function(instruction) {
 		// Add offset to stack pointer
 	} else if ((instruction & 0xF600) == 0xB400) {
 		// Push and pop registers
+		if (instruction & 0x0800) {
+			// POP
+		} else {
+			// PUSH
+			var r = instruction & 0x0100;
+			var rs = instruction & 0x00FF;
+			op = function() {
+				var address = cpu.gprs[cpu.SP] - 4;
+				if (r) {
+					cpu.store32(address, cpu.gprs[cpu.LR]);
+					address -= 4;
+				}
+				for (var m = 0x80, i = 0; m; m >>= 1, ++i, address -= 4) {
+					if (rs & m) {
+						cpu.store32(address, cpu.gprs[i]);
+					}
+				}
+				cpu.gprs[cpu.SP] = address + 4;
+			};
+			op.touchesPC = false;
+		}
 	} else if ((instruction & 0xFF00) == 0xDF00) {
 		// SWI
 	} else if ((instruction & 0xF800) == 0xE000) {
