@@ -53,6 +53,11 @@ GBACore = function() {
 	this.MODE_UNDEFINED = 0x1B;
 	this.MODE_SYSTEM = 0x1F;
 
+	this.UNALLOC_MASK = 0x0FFFFF00;
+	this.USER_MASK = 0xF0000000;
+	this.PRIV_MASK = 0x0000000F; // TODO: this prevents MSR from setting status bits
+	this.STATE_MASK = 0x00000020;
+
 	this.WORD_SIZE_ARM = 4;
 	this.WORD_SIZE_THUMB = 2;
 
@@ -61,6 +66,10 @@ GBACore = function() {
 
 GBACore.prototype.WARN = function(warn) {
 	console.log("[WARNING] " + warn);
+}
+
+GBACore.prototype.STUB = function(func) {
+	console.log("[STUB] Unimplemented function: " + func);
 }
 
 GBACore.prototype.OP_STUB = function(op) {
@@ -331,6 +340,10 @@ GBACore.prototype.step = function() {
 	}
 };
 
+GBACore.prototype.switchMode = function(newMode) {
+	this.STUB("switchMode");
+};
+
 GBACore.prototype.getMemoryRegion = function(offset) {
 	var memoryRegion = (offset & this.BASE_MASK) >> this.BASE_OFFSET;
 	if (memoryRegion > this.BASE_CART0) {
@@ -447,18 +460,50 @@ GBACore.prototype.compile = function(instruction) {
 		var opcode = instruction & 0x01E00000;
 		var s = instruction & 0x00100000;
 		if ((opcode & 0x01800000) == 0x01000000 && !s) {
-			if ((instruction & 0x00B8FFF0) == 0x0028F000) {
+			if ((instruction & 0x00B0F000) == 0x0020F000) {
 				// MSR
 				var r = instruction & 0x00400000;
 				var c = instruction & 0x00010000;
 				var x = instruction & 0x00020000;
 				var s = instruction & 0x00040000;
 				var f = instruction & 0x00080000;
+				var rm = instruction & 0x0000000F;
+				var immediate = instruction & 0x000000FF;
+				var rotateImm = (instruction & 0x00000F00) >> 7;
+				immediate = (immediate >> rotateImm) | (immediate << (32 - rotateImm));
+
 				op = function() {
 					if (condOp && !condOp()) {
 						return;
 					}
-					cpu.OP_STUB("MSR");
+					var operand;
+					if (instruction & 0x02000000) {
+						operand = immediate;
+					} else {
+						operand = cpu.gprs[rm];
+					}
+					var mask = (c ? 0x000000FF : 0x00000000) |
+					           //(x ? 0x0000FF00 : 0x00000000) | // Irrelevant on ARMv4T
+					           //(s ? 0x00FF0000 : 0x00000000) | // Irrelevant on ARMv4T
+					           (f ? 0xFF000000 : 0x00000000);
+
+					if (r) {
+						mask &= cpu.USER_MASK | cpu.PRIV_MASK | cpu.STATE_MASK;
+						cpu.spsr = (cpu.spsr & ~mask) | (operand & mask);
+					} else {
+						if (mask & cpu.USER_MASK) {
+							cpu.cpsrN = operand & 0x80000000;
+							cpu.csprZ = operand & 0x40000000;
+							cpu.cpsrC = operand & 0x20000000;
+							cpu.cpsrV = operand & 0x10000000;
+						}
+						if (cpu.mode != cpu.MODE_USER && (mask & cpu.PRIV_MASK)) {
+							cpu.switchMode((operand & 0x0000000F) | 0x00000010);
+							// TODO: is disabling interrupts allowed here?
+							//cpu.cpsrI = operand & 0x00000080;
+							//cpu.cpsrF = operand & 0x00000040;
+						}
+					}
 				}
 				op.touchesPC = rm == this.PC;
 			}
