@@ -21,7 +21,8 @@ function simulate() {
 
 		//setTimeout(simulate, (elapsed < 1000) ? (1000 - elapsed) : 0);
 	} catch (e) {
-		document.write(e + " at 0x" + core.nextPC.toString(16));
+		var elapsed = (new Date().getTime() - start) / 1000.0;
+		document.write(e + " at 0x" + core.nextPC.toString(16) + " after " + elapsed + " milliseconds");
 	}
 }
 
