@@ -112,7 +112,7 @@ GBACore.prototype.resetCPU = function() {
 		new ArrayBuffer(this.SIZE_WORKING_RAM),
 		new ArrayBuffer(this.SIZE_WORKING_IRAM),
 		new ArrayBuffer(this.SIZE_IO),
-		new ArrayBuffer(this.SIZE_PALLETE_RAM),
+		new ArrayBuffer(this.SIZE_PALETTE_RAM),
 		new ArrayBuffer(this.SIZE_VRAM),
 		new ArrayBuffer(this.SIZE_OAM),
 		null,
