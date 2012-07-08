@@ -1485,6 +1485,21 @@ GBACore.prototype.compileThumb = function(instruction) {
 			break;
 		case 0x1000:
 			// SP-relative load and store
+			var rd = (instruction & 0x0700) >> 8;
+			var immediate = (instruction & 0x00FF) << 2;
+			var load = instruction & 0x0800;
+			if (load) {
+				// LDR(4)
+				op = function() {
+					cpu.gprs[rd] = cpu.load32(cpu.gprs[cpu.SP] + immediate);
+				}
+			} else {
+				// STR(3)
+				op = function() {
+					cpu.store32(cpu.gprs[cpu.SP] + immediate, cpu.gprs[rd]);
+				}
+			}
+			op.touchesPC = false;
 			break;
 		case 0x2000:
 			// Load address
