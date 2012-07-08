@@ -99,6 +99,8 @@ GBACore.prototype.resetCPU = function() {
 	this.cpsrZ = false;
 	this.cpsrN = false;
 
+	this.spsr = 0;
+
 	this.nextPC = this.gprs[this.PC];
 
 	this.shifterOperand = 0;
