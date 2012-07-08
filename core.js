@@ -1318,7 +1318,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 			rm = (rm | h2) >> 3;
 			op = function() {
 				cpu.execMode = cpu.gprs[rm] & 0x00000001;
-				cpu.gprs[cpu.PC] = cpu.gprs[rm];
+				cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
 			};
 			op.touchesPC = true;
 			break;
@@ -1487,7 +1487,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				// BLX
 				op = function() {
 					var pc = cpu.gprs[cpu.PC];
-					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1));
+					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1)) & 0xFFFFFFFC;
 					cpu.gprs[cpu.LR] = pc - 1;
 					cpu.execMode = cpu.MODE_ARM;
 				}
@@ -1506,7 +1506,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 				// BL(2)
 				op = function() {
 					var pc = cpu.gprs[cpu.PC];
-					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1));
+					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1)) & 0xFFFFFFFC;
 					cpu.gprs[cpu.LR] = pc - 1;
 				}
 				break;
