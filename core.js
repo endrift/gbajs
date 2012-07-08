@@ -378,67 +378,67 @@ GBACore.prototype.generateCond = function(cond) {
 		return function() {
 			return cpu.cpsrZ;
 		};
-	case 0x10000000:
+	case 0x1:
 		// NE
 		return function() {
 			return !cpu.cpsrZ;
 		};
-	case 0x20000000:
+	case 0x2:
 		// CS
 		return function() {
 			return cpu.cpsrC;
 		};
-	case 0x30000000:
+	case 0x3:
 		// CC
 		return function() {
 			return !cpu.cpsrC;
 		};
-	case 0x40000000:
+	case 0x4:
 		// MI
 		return function() {
 			return cpu.cpsrN;
 		};
-	case 0x50000000:
+	case 0x5:
 		// PL
 		return function() {
 			return !cpu.cpsrN;
 		};
-	case 0x60000000:
+	case 0x6:
 		// VS
 		return function() {
 			return cpu.cpsrV;
 		};
-	case 0x70000000:
+	case 0x7:
 		// VC
 		return function() {
 			return !cpu.cpsrV;
 		};
-	case 0x80000000:
+	case 0x8:
 		// HI
 		return function () {
 			return cpu.csprC && !cpu.csprZ;
 		};
-	case 0x90000000:
+	case 0x9:
 		// LS
 		return function () {
 			return !cpu.csprC || cpu.csprZ;
 		};
-	case 0xA0000000:
+	case 0xA:
 		// GE
 		return function () {
 			return !cpu.csprN == !cpu.csprV;
 		};
-	case 0xB0000000:
+	case 0xB:
 		// LT
 		return function () {
 			return !cpu.csprN != !cpu.csprV;
 		};
-	case 0xC0000000:
+	case 0xC:
 		// GT
 		return function () {
 			return !cpu.csprZ && !cpu.csprN == !cpu.csprV;
 		};
-	case 0xD0000000:
+	case 0xD:
 		// LE
 		return function () {
 			return cpu.csprZ || !cpu.csprN != !cpu.csprV;
