@@ -1318,6 +1318,31 @@ GBACore.prototype.compileThumb = function(instruction) {
 		}
 	} else if ((instruction & 0xF800) == 0x1800) {
 		// Add/subtract
+		var rn = (instruction & 0x0038) >> 3;
+		var rd = instruction & 0x0007;
+		switch (instruction & 0x0C00) {
+		case 0x0000:
+			break;
+		case 0x0400:
+			break;
+		case 0x0800:
+			break;
+		case 0x0C00:
+			// ADD(1)
+			var immediate = (instruction & 0x01C0) >> 6;
+			op = function() {
+				var d = (cpu.gprs[rn] >>> 0) + immediate;
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !d;
+				cpu.cpsrC = d > 0xFFFFFFFF;
+				cpu.cpsrV = (cpu.gprs[rn] & 0x80000000) == (immediate & 0x800000000) &&
+							(cpu.gprs[rn] & 0x80000000) != (d & 0x80000000) &&
+							(immediate & 0x80000000) != (d & 0x80000000);
+				cpu.gprs[rd] = d;
+			};
+			break;
+		}
+		op.touchesPC = false;
 	} else if ((instruction & 0xE000) == 0x2000) {
 		// Add/subtract/compare/move immediate
 	} else if ((instruction & 0xF800) == 0x4800) {
