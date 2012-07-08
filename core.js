@@ -1285,10 +1285,10 @@ GBACore.prototype.compileThumb = function(instruction) {
 		op.touchesPC = false;
 	} else if ((instruction & 0xFC00) == 0x4400) {
 		// Special data processing / branch/exchange instruction set
-		var rm = 0x0038;
-		var rn = 0x0007;
-		var h1 = 0x0080;
-		var h2 = 0x0040;
+		var rm = instruction & 0x0038;
+		var rn = instruction & 0x0007;
+		var h1 = instruction & 0x0080;
+		var h2 = instruction & 0x0040;
 		switch (instruction & 0x0300) {
 		case 0x0000:
 			break;
@@ -1301,6 +1301,7 @@ GBACore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = cpu.gprs[rm];
 			};
+			op.touchesPC = (rm == this.PC) || (rd == this.PC);
 			break;
 		case 0x0300:
 			break;
