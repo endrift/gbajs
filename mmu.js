@@ -239,8 +239,8 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 
 
 GameBoyAdvanceMMU.prototype.getMemoryRegion = function(offset) {
-	var memoryRegion = (offset & this.BASE_MASK) >> this.BASE_OFFSET;
-	if (memoryRegion > this.BASE_CART0) {
+	var memoryRegion = offset >> this.BASE_OFFSET;
+	if (memoryRegion > this.REGION_CART0) {
 		return memoryRegion & 0xE;
 	}
 	return memoryRegion;
