@@ -50,7 +50,9 @@ ARMCore.prototype.resetCPU = function() {
 		0, 0, 0, 0,
 		0, 0, 0, 0x08000000
 	];
-	this.execMode = 0;
+
+	this.execMode = this.MODE_ARM;
+	this.instructionWidth = this.WORD_SIZE_ARM;
 
 	this.mode = this.MODE_SYSTEM;
 
@@ -129,30 +131,26 @@ ARMCore.prototype.loadInstruction = function(address) {
 
 ARMCore.prototype.step = function() {
 	var instruction = this.loadInstruction(this.nextPC);
-	var instructionWidth;
-	if (this.execMode == this.MODE_ARM) {
-		instructionWidth = this.WORD_SIZE_ARM;
-	} else {
-		instructionWidth = this.WORD_SIZE_THUMB;
-	}
-	var nextPC;
-	var shownPC;
 	if (instruction.touchesPC) {
-		nextPC = this.nextPC + instructionWidth;
-		shownPC = nextPC + instructionWidth;
+		var nextPC = this.nextPC + this.instructionWidth;
+		var shownPC = nextPC + this.instructionWidth;
 		this.gprs[this.PC] = shownPC;
-	}
 
-	instruction();
+		instruction();
 
-	if (instruction.touchesPC) {
 		if (this.gprs[this.PC] == shownPC) {
 			this.nextPC = nextPC;
 		} else {
 			this.nextPC = this.gprs[this.PC];
+			if (this.execMode == this.MODE_ARM) {
+				this.instructionWidth = this.WORD_SIZE_ARM;
+			} else {
+				this.instructionWidth = this.WORD_SIZE_THUMB;
+			}
 		}
 	} else {
-		this.nextPC += instructionWidth;
+		instruction();
+		this.nextPC += this.instructionWidth;
 	}
 };
 
