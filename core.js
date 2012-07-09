@@ -896,7 +896,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		case 0x0080:
-			// LSL
+			// LSL(2)
 			op = function() {
 				var rs = cpu.gprs[rm] & 0xFF;
 				if (rs) {
@@ -917,7 +917,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		case 0x00C0:
-			// LSR
+			// LSR(2)
 			op = function() {
 				var rs = cpu.gprs[rm] & 0xFF;
 				if (rs) {
@@ -938,7 +938,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		case 0x0100:
-			// ASR
+			// ASR(2)
 			op = function() {
 				var rs = cpu.gprs[rm] & 0xFF;
 				if (rs) {
@@ -1025,7 +1025,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		case 0x0280:
-			// CMP
+			// CMP(1)
 			op = function() {
 				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
 				cpu.cpsrN = aluOut & 0x80000000;
@@ -1100,7 +1100,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0100:
 			break;
 		case 0x0200:
-			// MOV
+			// MOV(3)
 			var rd = rn | (h1 >> 4);
 			rm = (rm | h2) >> 3;
 			op = function() {
@@ -1251,7 +1251,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		var load = instruction & 0x0800;
 		if (load) {
 			if (b) {
-				// LDRB
+				// LDRB(1)
 			} else {
 				// LDR(1)
 				op = function() {
@@ -1260,7 +1260,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			}
 		} else {
 			if (b) {
-				// STRB
+				// STRB(1)
 			} else {
 				// STR(1)
 				op = function() {
@@ -1310,7 +1310,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op.touchesPC = false;
 		}
 	} else if ((instruction & 0xF800) == 0xE000) {
-		// Unconditional branch
+		// B(2)
 	} else if (instruction & 0x8000) {
 		switch (instruction & 0x7000) {
 		case 0x0000:
