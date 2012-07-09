@@ -1096,6 +1096,13 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		var h2 = instruction & 0x0040;
 		switch (instruction & 0x0300) {
 		case 0x0000:
+			// ADD(4)
+			var rd = rn | (h1 >> 4);
+			rm = (rm | h2) >> 3;
+			op = function() {
+				cpu.gprs[rd] += cpu.gprs[rm];
+			};
+			op.touchesPC = (rm == this.PC) || (rd == this.PC);
 			break;
 		case 0x0100:
 			break;
