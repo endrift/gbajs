@@ -1238,6 +1238,16 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			}
 			break;
 		case 0x1800:
+			// SUB(2)
+			op = function() {
+				var d = cpu.gprs[rn] - immediate;
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !d;
+				cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= immediate;
+				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != immediate &&
+							cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
+				cpu.gprs[rn] = d;
+			};
 			break;
 		}
 		op.touchesPC = false;
