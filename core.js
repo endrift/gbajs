@@ -1377,7 +1377,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		// B(2)
 		var immediate = instruction & 0x07FF;
 		if (immediate & 0x0400) {
-			immediate |= 0xF800;
+			immediate |= 0xFFFFF800;
 		}
 		immediate <<= 1;
 		op = function() {
