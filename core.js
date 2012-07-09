@@ -1120,28 +1120,52 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		}
 	} else if ((instruction & 0xF800) == 0x1800) {
 		// Add/subtract
+		var rm = (instruction & 0x01C0) >> 6;
 		var rn = (instruction & 0x0038) >> 3;
 		var rd = instruction & 0x0007;
-		switch (instruction & 0x0C00) {
+		switch (instruction & 0x0600) {
 		case 0x0000:
+			// ADD(3)
 			break;
-		case 0x0400:
-			break;
-		case 0x0800:
-			break;
-		case 0x0C00:
-			// ADD(1)
-			var immediate = (instruction & 0x01C0) >> 6;
+		case 0x0200:
+			// SUB(3)
 			op = function() {
-				var d = (cpu.gprs[rn] >>> 0) + immediate;
+				var d = cpu.gprs[rn] - cpu.gprs[rm];
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !d;
-				cpu.cpsrC = d > 0xFFFFFFFF;
-				cpu.cpsrV = (cpu.gprs[rn] & 0x80000000) == (immediate & 0x800000000) &&
-							(cpu.gprs[rn] & 0x80000000) != (d & 0x80000000) &&
-							(immediate & 0x80000000) != (d & 0x80000000);
+				cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.gprs[rm] >>> 0);
+				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
+							cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
 				cpu.gprs[rd] = d;
 			};
+			break;
+		case 0x0400:
+			var immediate = (instruction & 0x01C0) >> 6;
+			if (immediate) {
+				// ADD(1)
+				op = function() {
+					var d = (cpu.gprs[rn] >>> 0) + immediate;
+					cpu.cpsrN = d & 0x80000000;
+					cpu.cpsrZ = !d;
+					cpu.cpsrC = d > 0xFFFFFFFF;
+					cpu.cpsrV = (cpu.gprs[rn] & 0x80000000) == (immediate & 0x800000000) &&
+								(cpu.gprs[rn] & 0x80000000) != (d & 0x80000000) &&
+								(immediate & 0x80000000) != (d & 0x80000000);
+					cpu.gprs[rd] = d;
+				};
+			} else {
+				// MOV(2)
+				op = function() {
+					var d = (cpu.gprs[rn] >>> 0);
+					cpu.cpsrN = d & 0x80000000;
+					cpu.cpsrZ = !d;
+					cpu.cpsrC = 0;
+					cpu.cpsrV = 0;
+					cpu.gprs[rd] = d;
+				};
+			}
+			break;
+		case 0x0600:
 			break;
 		}
 		op.touchesPC = false;
@@ -1165,8 +1189,10 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		case 0x0800:
+			// LSR(1)
 			break;
 		case 0x1000:
+			// ASR(1)
 			break;
 		case 0x1800:
 			break;
