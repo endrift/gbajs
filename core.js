@@ -1514,13 +1514,13 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			var h = instruction & 0x1800;
 			switch (h) {
 			case 0x0800:
-				// BLX
-				op = function() {
+				// BLX (ARMv5T)
+				/*op = function() {
 					var pc = cpu.gprs[cpu.PC];
 					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1)) & 0xFFFFFFFC;
 					cpu.gprs[cpu.LR] = pc - 1;
 					cpu.execMode = cpu.MODE_ARM;
-				}
+				}*/
 				break;
 			case 0x1000:
 				// BL(1)
