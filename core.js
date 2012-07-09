@@ -1282,6 +1282,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		if (load) {
 			if (b) {
 				// LDRB(1)
+				op = function() {
+					cpu.gprs[rd] = cpu.mmu.loadU8(cpu.gprs[rn] + immediate);
+				}
 			} else {
 				// LDR(1)
 				op = function() {
@@ -1291,6 +1294,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		} else {
 			if (b) {
 				// STRB(1)
+				op = function() {
+					cpu.mmu.store8(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
+				};
 			} else {
 				// STR(1)
 				op = function() {
