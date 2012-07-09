@@ -1025,7 +1025,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		case 0x0280:
-			// CMP(1)
+			// CMP(2)
 			op = function() {
 				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
 				cpu.cpsrN = aluOut & 0x80000000;
@@ -1223,6 +1223,15 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		case 0x0800:
+			// CMP(1)
+			op = function() {
+				var aluOut = cpu.gprs[rn] - immediate;
+				cpu.cpsrN = aluOut & 0x80000000;
+				cpu.cpsrZ = !aluOut;
+				cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= immediate;
+				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != immediate & 0x800000000 &&
+				            cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000;
+			};
 			break;
 		case 0x1000:
 			// ADD(2)
