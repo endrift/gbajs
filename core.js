@@ -211,32 +211,32 @@ ARMCore.prototype.generateCond = function(cond) {
 	case 0x8:
 		// HI
 		return function () {
-			return cpu.csprC && !cpu.csprZ;
+			return cpu.cpsrC && !cpu.cpsrZ;
 		};
 	case 0x9:
 		// LS
 		return function () {
-			return !cpu.csprC || cpu.csprZ;
+			return !cpu.cpsrC || cpu.cpsrZ;
 		};
 	case 0xA:
 		// GE
 		return function () {
-			return !cpu.csprN == !cpu.csprV;
+			return !cpu.cpsrN == !cpu.cpsrV;
 		};
 	case 0xB:
 		// LT
 		return function () {
-			return !cpu.csprN != !cpu.csprV;
+			return !cpu.cpsrN != !cpu.cpsrV;
 		};
 	case 0xC:
 		// GT
 		return function () {
-			return !cpu.csprZ && !cpu.csprN == !cpu.csprV;
+			return !cpu.cpsrZ && !cpu.cpsrN == !cpu.cpsrV;
 		};
 	case 0xD:
 		// LE
 		return function () {
-			return cpu.csprZ || !cpu.csprN != !cpu.csprV;
+			return cpu.cpsrZ || !cpu.cpsrN != !cpu.cpsrV;
 		};
 	case 0xE:
 		// AL
@@ -300,7 +300,7 @@ ARMCore.prototype.compile = function(instruction) {
 					} else {
 						if (mask & cpu.USER_MASK) {
 							cpu.cpsrN = operand & 0x80000000;
-							cpu.csprZ = operand & 0x40000000;
+							cpu.cpsrZ = operand & 0x40000000;
 							cpu.cpsrC = operand & 0x20000000;
 							cpu.cpsrV = operand & 0x10000000;
 						}
