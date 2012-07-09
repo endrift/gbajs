@@ -85,24 +85,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.memoryView[6].cachedInstructions = 0;
 	this.memoryView[7].cachedInstructions = 0;
 
-	this.cachedArm = [
-		null,
-		null, // Unused
-		new Array(this.SIZE_WORKING_RAM >> 2),
-		new Array(this.SIZE_WORKING_IRAM >> 2),
-		null,
-		null,
-		null,
-		null,
-		null,
-		null, // Unusued
-		null,
-		null, // Unusued
-		null,
-		null // Unused
-	];
-
-	this.cachedThumb = [
+	this.icache = [
 		null,
 		null, // Unused
 		new Array(this.SIZE_WORKING_RAM >> 1),
@@ -129,15 +112,10 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom) {
 	this.memoryView[this.REGION_CART1] = view;
 	this.memoryView[this.REGION_CART2] = view;
 
-	var cachedArm = new Array(rom.byteLength >> 2);
-	this.cachedArm[this.REGION_CART0] = cachedArm;
-	this.cachedArm[this.REGION_CART1] = cachedArm;
-	this.cachedArm[this.REGION_CART2] = cachedArm;
-
-	var cachedThumb = new Array(rom.byteLength >> 1);
-	this.cachedThumb[this.REGION_CART0] = cachedThumb;
-	this.cachedThumb[this.REGION_CART1] = cachedThumb;
-	this.cachedThumb[this.REGION_CART2] = cachedThumb;
+	var icache = new Array(rom.byteLength >> 1);
+	this.icache[this.REGION_CART0] = icache;
+	this.icache[this.REGION_CART1] = icache;
+	this.icache[this.REGION_CART2] = icache;
 };
 
 GameBoyAdvanceMMU.prototype.maskOffset = function(offset) {
@@ -182,15 +160,7 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt8(maskedOffset, value);
 	if (memory.cachedInstructions) {
-		var cache;
-		cache = this.cachedArm[memoryRegion];
-		if (cache) {
-			delete cache[maskedOffset >> 2];
-		}
-		cache = this.cachedThumb[memoryRegion];
-		if (cache) {
-			delete cache[maskedOffset >> 1];
-		}
+		delete icache[maskedOffset >> 1];
 	}
 };
 
@@ -203,37 +173,21 @@ GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt16(maskedOffset, value, true);
 	if (memory.cachedInstructions) {
-		var cache;
-		cache = this.cachedArm[memoryRegion];
-		if (cache) {
-			delete cache[maskedOffset >> 2];
-		}
-		cache = this.cachedThumb[memoryRegion];
-		if (cache) {
-			delete cache[maskedOffset >> 1];
-		}
+		delete icache[maskedOffset >> 1];
 	}
 };
 
 GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	if (memoryRegion >= this.REGION_ROM0) {
-		throw "Bad access";
+		console.log("Cannot write to read only memory");
+		return;
 	}
 	var maskedOffset = offset & 0x00FFFFFC;
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt32(maskedOffset, value, true);
 	if (memory.cachedInstructions) {
-		var cache;
-		cache = this.cachedArm[memoryRegion];
-		if (cache) {
-			delete cache[maskedOffset >> 2];
-		}
-		cache = this.cachedThumb[memoryRegion];
-		if (cache) {
-			delete cache[maskedOffset >> 1];
-			delete cache[(maskedOffset >> 1) + 1];
-		}
+		delete icache[maskedOffset >> 1];
 	}
 };
 
