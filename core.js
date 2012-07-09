@@ -1,6 +1,4 @@
-ARMCore = function(mmu, irq) {
-	this.mmu = mmu;
-
+ARMCore = function() {
 	this.SP = 13;
 	this.LR = 14;
 	this.PC = 15;
@@ -23,8 +21,6 @@ ARMCore = function(mmu, irq) {
 
 	this.WORD_SIZE_ARM = 4;
 	this.WORD_SIZE_THUMB = 2;
-
-	this.resetCPU();
 };
 
 ARMCore.prototype.WARN = function(warn) {
@@ -43,13 +39,18 @@ ARMCore.prototype.ASSERT_UNREACHED = function(err) {
 	throw "Should be unreached: " + err;
 };
 
-ARMCore.prototype.resetCPU = function() {
+ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.gprs = [
 		0, 0, 0, 0,
 		0, 0, 0, 0,
 		0, 0, 0, 0,
-		0, 0, 0, 0x08000000
+		0, 0, 0, startOffset
 	];
+
+	this.mmu = mmu;
+	this.irq = irq;
+
+	irq.setCPU(this);
 
 	this.execMode = this.MODE_ARM;
 	this.instructionWidth = this.WORD_SIZE_ARM;
@@ -1327,8 +1328,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (cond == 0xF) {
 				// SWI
 				op = function() {
-					cpu.OP_STUB("SWI");
-					throw "Unimplemented opcode: SWI";
+					cpu.irq.swi(immediate);
 				}
 			} else {
 				// B(1)
