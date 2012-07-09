@@ -1271,12 +1271,27 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		op.touchesPC = false;
 	} else if ((instruction & 0xF600) == 0xB400) {
 		// Push and pop registers
+		var r = instruction & 0x0100;
+		var rs = instruction & 0x00FF;
 		if (instruction & 0x0800) {
 			// POP
+			op = function() {
+				var address = cpu.gprs[cpu.SP];
+				var m;
+				for (m = 0x01, i = 0; m < 8; m <<= 1, ++i) {
+					if (rs & m) {
+						cpu.gprs[i] = cpu.mmu.load32(address);
+						address += 4;
+					}
+				}
+				if (r) {
+					cpu.gprs[cpu.PC] = cpu.mmu.load32(address) & 0xFFFFFFFE;
+				}
+				cpu.gprs[cpu.SP] = address;
+			};
+			op.touchesPC = r;
 		} else {
 			// PUSH
-			var r = instruction & 0x0100;
-			var rs = instruction & 0x00FF;
 			op = function() {
 				var address = cpu.gprs[cpu.SP] - 4;
 				if (r) {
@@ -1348,9 +1363,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			break;
 		case 0x3000:
 			// Miscellaneous
-			if ((instruction & 0x0600) == 0x0400) {
-				// Push/pop multiple registers
-			} else if (!(instruction & 0x0F00)) {
+			if (!(instruction & 0x0F00)) {
 				// Adjust stack pointer
 				// ADD(7)/SUB(4)
 				var b = instruction & 0x0080;
