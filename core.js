@@ -142,7 +142,7 @@ ARMCore.prototype.step = function() {
 		if (this.gprs[this.PC] == shownPC) {
 			this.nextPC = nextPC;
 		} else {
-			this.nextPC = this.gprs[this.PC];
+			this.nextPC = this.gprs[this.PC] & 0xFFFFFFFE;
 			if (this.execMode == this.MODE_ARM) {
 				this.instructionWidth = this.WORD_SIZE_ARM;
 			} else {
