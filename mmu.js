@@ -78,6 +78,13 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null // Unused
 	];
 
+	this.memoryView[2].cachedInstructions = 0;
+	this.memoryView[3].cachedInstructions = 0;
+	this.memoryView[4].cachedInstructions = 0;
+	this.memoryView[5].cachedInstructions = 0;
+	this.memoryView[6].cachedInstructions = 0;
+	this.memoryView[7].cachedInstructions = 0;
+
 	this.cachedArm = [
 		null,
 		null, // Unused
@@ -172,15 +179,18 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 		throw "Bad access";
 	}
 	var maskedOffset = offset & 0x00FFFFFF;
-	this.memoryView[memoryRegion].setInt8(maskedOffset, value);
-	var cache;
-	cache = this.cachedArm[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 2];
-	}
-	cache = this.cachedThumb[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 1];
+	var memory = this.memoryView[memoryRegion];
+	memory.setInt8(maskedOffset, value);
+	if (memory.cachedInstructions) {
+		var cache;
+		cache = this.cachedArm[memoryRegion];
+		if (cache) {
+			delete cache[maskedOffset >> 2];
+		}
+		cache = this.cachedThumb[memoryRegion];
+		if (cache) {
+			delete cache[maskedOffset >> 1];
+		}
 	}
 };
 
@@ -190,15 +200,18 @@ GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 		throw "Bad access";
 	}
 	var maskedOffset = offset & 0x00FFFFFE;
-	this.memoryView[memoryRegion].setInt16(maskedOffset, value, true);
-	var cache;
-	cache = this.cachedArm[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 2];
-	}
-	cache = this.cachedThumb[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 1];
+	var memory = this.memoryView[memoryRegion];
+	memory.setInt16(maskedOffset, value, true);
+	if (memory.cachedInstructions) {
+		var cache;
+		cache = this.cachedArm[memoryRegion];
+		if (cache) {
+			delete cache[maskedOffset >> 2];
+		}
+		cache = this.cachedThumb[memoryRegion];
+		if (cache) {
+			delete cache[maskedOffset >> 1];
+		}
 	}
 };
 
@@ -208,16 +221,19 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 		throw "Bad access";
 	}
 	var maskedOffset = offset & 0x00FFFFFC;
-	this.memoryView[memoryRegion].setInt32(maskedOffset, value, true);
-	var cache;
-	cache = this.cachedArm[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 2];
-	}
-	cache = this.cachedThumb[memoryRegion];
-	if (cache) {
-		delete cache[maskedOffset >> 1];
-		delete cache[(maskedOffset >> 1) + 1];
+	var memory = this.memoryView[memoryRegion];
+	memory.setInt32(maskedOffset, value, true);
+	if (memory.cachedInstructions) {
+		var cache;
+		cache = this.cachedArm[memoryRegion];
+		if (cache) {
+			delete cache[maskedOffset >> 2];
+		}
+		cache = this.cachedThumb[memoryRegion];
+		if (cache) {
+			delete cache[maskedOffset >> 1];
+			delete cache[(maskedOffset >> 1) + 1];
+		}
 	}
 };
 

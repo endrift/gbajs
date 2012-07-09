@@ -94,11 +94,13 @@ ARMCore.prototype.loadInstruction = function(address) {
 			var instruction = this.mmu.load32(address) >>> 0;
 			compiled = this.compile(instruction);
 			block[offset] = compiled;
+			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
 		if (!next) {
 			var instruction = this.mmu.load32(address + this.WORD_SIZE_ARM) >>> 0;
 			next = this.compile(instruction);
 			block[offset + 1] = next;
+			++mmu.memoryView[memoryRegion].cachedInstructions;
 			this.prefetch.address = address + this.WORD_SIZE_ARM;
 			this.prefetch.instruction = next;
 		}
@@ -111,11 +113,13 @@ ARMCore.prototype.loadInstruction = function(address) {
 			var instruction = this.mmu.loadU16(address);
 			compiled = this.compileThumb(instruction);
 			block[offset] = compiled;
+			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
 		if (!next) {
 			var instruction = this.mmu.loadU16(address + this.WORD_SIZE_THUMB);
 			next = this.compileThumb(instruction);
 			block[offset + 1] = next;
+			++mmu.memoryView[memoryRegion].cachedInstructions;
 			this.prefetch.address = address + this.WORD_SIZE_THUMB;
 			this.prefetch.instruction = next;
 		}
