@@ -1126,6 +1126,16 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		switch (instruction & 0x0600) {
 		case 0x0000:
 			// ADD(3)
+			op = function() {
+				var d = (cpu.gprs[rn] >>> 0) + (cpu.gprs[rm] >>> 0);
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !d;
+				cpu.cpsrC = d > 0xFFFFFFFF;
+				cpu.cpsrV = (cpu.gprs[rn] & 0x80000000) == (cpu.gprs[rm] & 0x800000000) &&
+				            (cpu.gprs[rn] & 0x80000000) != (d & 0x80000000) &&
+				            (cpu.gprs[rm] & 0x80000000) != (d & 0x80000000);
+				cpu.gprs[rd] = d;
+			};
 			break;
 		case 0x0200:
 			// SUB(3)
