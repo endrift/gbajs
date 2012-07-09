@@ -1307,7 +1307,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// POP
 			op = function() {
 				var address = cpu.gprs[cpu.SP];
-				var m;
+				var m, i;
 				for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 					if (rs & m) {
 						cpu.gprs[i] = cpu.mmu.load32(address);
@@ -1328,7 +1328,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.mmu.store32(address, cpu.gprs[cpu.LR]);
 					address -= 4;
 				}
-				var m;
+				var m, i;
 				for (m = 0x80, i = 7; m; m >>= 1, --i) {
 					if (rs & m) {
 						cpu.mmu.store32(address, cpu.gprs[i]);
@@ -1409,6 +1409,36 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			break;
 		case 0x4000:
 			// Multiple load and store
+			var rn = (instruction & 0x0700) >> 8;
+			var rs = instruction & 0x00FF;
+			if (instruction & 0x0800) {
+				// LDMIA
+				op = function() {
+					var address = cpu.gprs[rn];
+					var m, i;
+					for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
+						if (rs & m) {
+							cpu.gprs[i] = cpu.mmu.load32(address);
+							address += 4;
+						}
+					}
+					cpu.gprs[rn] = address;
+				};
+			} else {
+				// STMIA
+				op = function() {
+					var address = cpu.gprs[rn];
+					var m, i;
+					for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
+						if (rs & m) {
+							cpu.mmu.store32(address, cpu.gprs[i]);
+							address += 4;
+						}
+					}
+					cpu.gprs[rn] = address;
+				};
+			}
+			op.touchesPC = false;
 			break;
 		case 0x5000:
 			// Conditional branch
