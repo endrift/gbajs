@@ -21,6 +21,14 @@ ARMCore = function() {
 
 	this.WORD_SIZE_ARM = 4;
 	this.WORD_SIZE_THUMB = 2;
+
+	// These are all extra cycles above the normal
+	this.LDR_CYCLES = 2;
+	this.STR_CYCLES = 1;
+
+	this.PC_CYCLES = 2;
+	this.B_THUMB_CYCLES = 3;
+	this.SHIFT_RS_CYCLES = 1;
 };
 
 ARMCore.prototype.WARN = function(warn) {
@@ -37,6 +45,12 @@ ARMCore.prototype.OP_STUB = function(op) {
 
 ARMCore.prototype.ASSERT_UNREACHED = function(err) {
 	throw "Should be unreached: " + err;
+};
+
+ARMCore.prototype.ASSERT = function(test, err) {
+	if (!test) {
+		throw "Assertion failed: " + err;
+	}
 };
 
 ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
@@ -151,7 +165,7 @@ ARMCore.prototype.step = function() {
 		instruction();
 		this.nextPC += this.instructionWidth;
 	}
-	++this.cycles;
+	this.cycles += 1 + instruction.extraCycles;
 };
 
 ARMCore.prototype.switchMode = function(newMode) {
@@ -261,10 +275,13 @@ ARMCore.prototype.compile = function(instruction) {
 			cpu.execMode = cpu.gprs[rm] & 0x00000001;
 			cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
 		};
+		op.extraCycles = this.PC_CYCLES;
 		op.touchesPC = true;
+		op.writeCpsr = false;
 	} else if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
 		var opcode = instruction & 0x01E00000;
 		var s = instruction & 0x00100000;
+		var shiftsRs = false;
 		if ((opcode & 0x01800000) == 0x01000000 && !s) {
 			if ((instruction & 0x00B0F000) == 0x0020F000) {
 				// MSR
@@ -339,6 +356,7 @@ ARMCore.prototype.compile = function(instruction) {
 			} else if (instruction & 0x00000010) {
 				var rs = (instruction & 0x00000F00) >> 8;
 				touchesPC = touchesPC || rs == this.PC || rm == this.PC;
+				shiftsRs = true;
 				switch (shiftType) {
 				case 0:
 					// LSL
@@ -747,6 +765,8 @@ ARMCore.prototype.compile = function(instruction) {
 			}
 			op.touchesPC = touchesPC;
 		}
+		op.writeCpsr = s;
+		op.extraCycles = op.touchesPC * this.PC_CYCLES + shiftsRs * this.SHIFT_RS_CYCLES;
 	} else if ((instruction & 0x0E000010) == 0x06000000) {
 		// Single data transfer
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
@@ -815,6 +835,7 @@ ARMCore.prototype.compile = function(instruction) {
 						cpu.gprs[rd] = cpu.mmu.load32(a);
 					};
 				}
+				op.extraCycles = this.LDR_CYCLES;
 			} else {
 				if (b) {
 					// STRB
@@ -828,8 +849,11 @@ ARMCore.prototype.compile = function(instruction) {
 						cpu.mmu.store32(a, cpu.gprs[rd]);
 					};
 				}
+				op.extraCycles = this.STR_CYCLES;
 			}
 			op.touchesPC = rn == this.PC || rd == this.PC;
+			op.extraCycles += this.PC_CYCLES * op.touchesPC;
+			op.writeCpsr = false;
 			break;
 		case 0x06000000:
 			// Undefined
@@ -854,7 +878,9 @@ ARMCore.prototype.compile = function(instruction) {
 				}
 				cpu.gprs[cpu.PC] += immediate;
 			};
+			op.extraCycles = this.PC_CYCLES;
 			op.touchesPC = true;
+			op.writeCpsr = false;
 			break;
 		case 0x0C000000:
 			// Coprocessor data transfer
@@ -866,6 +892,11 @@ ARMCore.prototype.compile = function(instruction) {
 			this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
 		}
 	}
+	op.readCpsr = true;
+
+	this.ASSERT(typeof(op.touchesPC) !== "undefined", "touchesPC undefined");
+	this.ASSERT(typeof(op.extraCycles) !== "undefined", "extraCycles undefined");
+	this.ASSERT(typeof(op.writeCpsr) !== "undefined", "writeCpsr undefined");
 
 	return op;
 };
@@ -1087,6 +1118,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			break;
 		}
 		op.touchesPC = false;
+		op.extraCycles = 0;
+		op.readCpsr = false;
+		op.writeCpsr = true;
 	} else if ((instruction & 0xFC00) == 0x4400) {
 		// Special data processing / branch/exchange instruction set
 		var rm = instruction & 0x0038;
@@ -1124,6 +1158,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op.touchesPC = true;
 			break;
 		}
+		op.extraCycles = op.touchesPC * this.PC_CYCLES;
+		op.readCpsr = false;
+		op.writeCpsr = false;
 	} else if ((instruction & 0xF800) == 0x1800) {
 		// Add/subtract
 		var rm = (instruction & 0x01C0) >> 6;
@@ -1196,6 +1233,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			break;
 		}
 		op.touchesPC = false;
+		op.extraCycles = 0;
+		op.readCpsr = false;
+		op.writeCpsr = true;
 	} else if (!(instruction & 0xE000)) {
 		// Shift by immediate
 		var rd = instruction & 0x0007;
@@ -1251,6 +1291,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			break;
 		}
 		op.touchesPC = false;
+		op.extraCycles = 0;
+		op.readCpsr = false;
+		op.writeCpsr = true;
 	} else if ((instruction & 0xE000) == 0x2000) {
 		// Add/subtract/compare/move immediate
 		var immediate = instruction & 0x00FF;
@@ -1302,6 +1345,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			break;
 		}
 		op.touchesPC = false;
+		op.extraCycles = 0;
+		op.readCpsr = false;
+		op.writeCpsr = true;
 	} else if ((instruction & 0xF800) == 0x4800) {
 		// LDR(3)
 		var rd = (instruction & 0x0700) >> 8;
@@ -1310,6 +1356,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			cpu.gprs[rd] = cpu.mmu.load32((cpu.gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
 		};
 		op.touchesPC = true;
+		op.extraCycles = this.LDR_CYCLES;
+		op.readCpsr = false;
+		op.writeCpsr = false;
 	} else if ((instruction & 0xF200) == 0x5000) {
 		// Load and store with relative offset
 	} else if ((instruction & 0xF200) == 0x5200) {
@@ -1333,6 +1382,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[rn] + immediate);
 				}
 			}
+			op.extraCycles = this.LDR_CYCLES;
 		} else {
 			if (b) {
 				// STRB(1)
@@ -1345,8 +1395,11 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.mmu.store32(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				}
 			}
+			op.extraCycles = this.STR_CYCLES;
 		}
 		op.touchesPC = false;
+		op.readCpsr = false;
+		op.writeCpsr = false;
 	} else if ((instruction & 0xF600) == 0xB400) {
 		// Push and pop registers
 		var r = instruction & 0x0100;
@@ -1368,6 +1421,12 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[cpu.SP] = address;
 			};
 			op.touchesPC = r;
+			op.extraCycles = this.LDR_CYCLES + op.touchesPC ? this.PC_CYCLES : 0;
+			for (var x = rs; x; x >>= 1) {
+				if (x & 1) {
+					++op.extraCycles;
+				}
+			}
 		} else {
 			// PUSH
 			op = function() {
@@ -1386,7 +1445,15 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[cpu.SP] = address + 4;
 			};
 			op.touchesPC = false;
+			op.extraCycles = this.STR_CYCLES;
+			for (var x = rs; x; x >>= 1) {
+				if (x & 1) {
+					++op.extraCycles;
+				}
+			}
 		}
+		op.readCpsr = false;
+		op.writeCpsr = false;
 	} else if ((instruction & 0xF800) == 0xE000) {
 		// B(2)
 		var immediate = instruction & 0x07FF;
@@ -1398,6 +1465,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			cpu.gprs[cpu.PC] += immediate;
 		};
 		op.touchesPC = true;
+		op.extraCycles = this.PC_CYCLES;
+		op.readCpsr = false;
+		op.writeCpsr = false;
 	} else if (instruction & 0x8000) {
 		switch (instruction & 0x7000) {
 		case 0x0000:
@@ -1410,13 +1480,17 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.gprs[rd] = cpu.mmu.loadU16(cpu.gprs[rn] + immediate);
 				};
+				op.extraCycles = this.LDR_CYCLES;
 			} else {
 				// STRH(1)
 				op = function() {
 					cpu.mmu.store16(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				};
+				op.extraCycles = this.STR_CYCLES;
 			}
 			op.touchesPC = false;
+			op.readCpsr = false;
+			op.writeCpsr = false;
 			break;
 		case 0x1000:
 			// SP-relative load and store
@@ -1428,13 +1502,17 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[cpu.SP] + immediate);
 				}
+				op.extraCycles = this.LDR_CYCLES;
 			} else {
 				// STR(3)
 				op = function() {
 					cpu.mmu.store32(cpu.gprs[cpu.SP] + immediate, cpu.gprs[rd]);
 				}
+				op.extraCycles = this.STR_CYCLES;
 			}
 			op.touchesPC = false;
+			op.readCpsr = false;
+			op.writeCpsr = false;
 			break;
 		case 0x2000:
 			// Load address
@@ -1446,6 +1524,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[rd] = cpu.gprs[cpu.SP] + immediate;
 				};
 				op.touchesPC = false;
+				op.extraCycles = this.STR_CYCLES;
+				op.readCpsr = false;
+				op.writeCpsr = false;
 			}
 			break;
 		case 0x3000:
@@ -1462,6 +1543,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[cpu.SP] += immediate;
 				};
 				op.touchesPC = false;
+				op.extraCycles = 0;
+				op.readCpsr = false;
+				op.writeCpsr = false;
 			}
 			break;
 		case 0x4000:
@@ -1481,6 +1565,12 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 					cpu.gprs[rn] = address;
 				};
+				op.extraCycles = this.LDR_CYCLES;
+				for (var x = rs; x; x >>= 1) {
+					if (x & 1) {
+						++op.extraCycles;
+					}
+				}
 			} else {
 				// STMIA
 				op = function() {
@@ -1494,8 +1584,16 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 					cpu.gprs[rn] = address;
 				};
+				op.extraCycles = this.STR_CYCLES;
+				for (var x = rs; x; x >>= 1) {
+					if (x & 1) {
+						++op.extraCycles;
+					}
+				}
 			}
 			op.touchesPC = false;
+			op.readCpsr = false;
+			op.writeCpsr = false;
 			break;
 		case 0x5000:
 			// Conditional branch
@@ -1506,6 +1604,10 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.irq.swi(immediate);
 				}
+				op.touchesPC = false;
+				op.extraCycles = 0;
+				op.readCpsr = false;
+				op.writeCpsr = false;
 			} else {
 				// B(1)
 				if (instruction & 0x0080) {
@@ -1519,6 +1621,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 				}
 				op.touchesPC = true;
+				op.extraCycles = this.PC_CYCLES;
+				op.readCpsr = false;
+				op.writeCpsr = false;
 			}
 			break;
 		case 0x6000:
@@ -1556,6 +1661,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				break;
 			}
 			op.touchesPC = true;
+			op.extraCycles = this.B_THUMB_CYCLES;
+			op.readCpsr = false;
+			op.writeCpsr = false;
 			break;
 		default:
 			this.WARN("Undefined instruction: 0x" + instruction.toString(16));
@@ -1563,5 +1671,11 @@ ARMCore.prototype.compileThumb = function(instruction) {
 	} else {
 		this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
 	}
+
+	this.ASSERT(typeof(op.touchesPC) !== "undefined", "touchesPC undefined");
+	this.ASSERT(typeof(op.extraCycles) !== "undefined", "extraCycles undefined");
+	this.ASSERT(typeof(op.readCpsr) !== "undefined", "readCpsr undefined");
+	this.ASSERT(typeof(op.writeCpsr) !== "undefined", "writeCpsr undefined");
+
 	return op;
 };
