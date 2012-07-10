@@ -1232,6 +1232,21 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			break;
 		case 0x1000:
 			// ASR(1)
+			op = function() {
+				if (immediate == 0) {
+					cpu.cpsrC = cpu.gprs[rm] & 0x80000000;
+					if (cpu.cpsrC) {
+						cpu.gprs[rd] = 0xFFFFFFFF;
+					} else {
+						cpu.gprs[rd] = 0;
+					}
+				} else {
+					cpu.cpsrC = cpu.gprs[rm] & (immediate - 1);
+					cpu.gprs[rd] = cpu.gprs[rm] >> immediate;
+				}
+				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !cpu.gprs[rd];
+			};
 			break;
 		case 0x1800:
 			break;
