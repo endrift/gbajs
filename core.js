@@ -46,6 +46,7 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.mmu = mmu;
 	this.irq = irq;
 
+	mmu.setCPU(this);
 	irq.setCPU(this);
 
 	this.execMode = this.MODE_ARM;
@@ -64,6 +65,7 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.spsr = 0;
 
 	this.nextPC = this.gprs[this.PC];
+	this.cycles = 0;
 
 	this.shifterOperand = 0;
 	this.shifterCarryOut = 0;
@@ -90,13 +92,13 @@ ARMCore.prototype.loadInstruction = function(address) {
 		compiled = block[offset];
 		next = block[offset + 2];
 		if (!compiled) {
-			var instruction = this.mmu.load32(address) >>> 0;
+			var instruction = this.mmu.iload32(address) >>> 0;
 			compiled = this.compile(instruction);
 			block[offset] = compiled;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
 		if (!next) {
-			var instruction = this.mmu.load32(address + this.WORD_SIZE_ARM) >>> 0;
+			var instruction = this.mmu.iload32(address + this.WORD_SIZE_ARM) >>> 0;
 			next = this.compile(instruction);
 			block[offset + 2] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -109,13 +111,13 @@ ARMCore.prototype.loadInstruction = function(address) {
 		compiled = block[offset];
 		next = block[offset + 1];
 		if (!compiled) {
-			var instruction = this.mmu.loadU16(address);
+			var instruction = this.mmu.iload16(address);
 			compiled = this.compileThumb(instruction);
 			block[offset] = compiled;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
 		if (!next) {
-			var instruction = this.mmu.loadU16(address + this.WORD_SIZE_THUMB);
+			var instruction = this.mmu.iload16(address + this.WORD_SIZE_THUMB);
 			next = this.compileThumb(instruction);
 			block[offset + 1] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -149,6 +151,7 @@ ARMCore.prototype.step = function() {
 		instruction();
 		this.nextPC += this.instructionWidth;
 	}
+	++this.cycles;
 };
 
 ARMCore.prototype.switchMode = function(newMode) {
