@@ -1123,44 +1123,52 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		op.writeCpsr = true;
 	} else if ((instruction & 0xFC00) == 0x4400) {
 		// Special data processing / branch/exchange instruction set
-		var rm = instruction & 0x0038;
+		var rm = (instruction & 0x0078) >> 3;
 		var rn = instruction & 0x0007;
 		var h1 = instruction & 0x0080;
-		var h2 = instruction & 0x0040;
+		var rd = rn | (h1 >> 4);
 		switch (instruction & 0x0300) {
 		case 0x0000:
 			// ADD(4)
-			var rd = rn | (h1 >> 4);
-			rm = (rm | h2) >> 3;
 			op = function() {
 				cpu.gprs[rd] += cpu.gprs[rm];
 			};
 			op.touchesPC = (rm == this.PC) || (rd == this.PC);
+			op.writeCpsr = false;
 			break;
 		case 0x0100:
+			// CMP(3)
+			op = function() {
+				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
+				cpu.cpsrN = aluOut & 0x80000000;
+				cpu.cpsrZ = !aluOut;
+				cpu.cpsrC = (cpu.gprs[rd] >>> 0) >= (cpu.gprs[rm] >>> 0);
+				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
+					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000;
+			}
+			op.touchesPC = (rm == this.PC) || (rd == this.PC);
+			op.writeCpsr = true;
 			break;
 		case 0x0200:
 			// MOV(3)
-			var rd = rn | (h1 >> 4);
-			rm = (rm | h2) >> 3;
 			op = function() {
 				cpu.gprs[rd] = cpu.gprs[rm];
 			};
 			op.touchesPC = (rm == this.PC) || (rd == this.PC);
+			op.writeCpsr = false;
 			break;
 		case 0x0300:
 			// BX
-			rm = (rm | h2) >> 3;
 			op = function() {
 				cpu.execMode = cpu.gprs[rm] & 0x00000001;
 				cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
 			};
 			op.touchesPC = true;
+			op.writeCpsr = false;
 			break;
 		}
 		op.extraCycles = op.touchesPC * this.PC_CYCLES;
 		op.readCpsr = false;
-		op.writeCpsr = false;
 	} else if ((instruction & 0xF800) == 0x1800) {
 		// Add/subtract
 		var rm = (instruction & 0x01C0) >> 6;
