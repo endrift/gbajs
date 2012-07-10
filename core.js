@@ -40,12 +40,8 @@ ARMCore.prototype.ASSERT_UNREACHED = function(err) {
 };
 
 ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
-	this.gprs = [
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, startOffset
-	];
+	this.gprs = new Int32Array(16);
+	this.gprs[this.PC] = startOffset;
 
 	this.mmu = mmu;
 	this.irq = irq;
