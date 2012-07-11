@@ -44,7 +44,11 @@ mmu.setIO(io);
 io.setVideo(video);
 irq.addIrqProvider(video);
 core.resetCPU(0x08000000, mmu, irq, io);
-window.onload = function() { loadRom('test.rom', runTest) };
+window.onload = function() {
+	var canvas = document.getElementById('screen');
+	video.setCanvas(canvas);
+	loadRom('test.rom', runTest);
+};
 </script>
 </head>
 <body>

@@ -28,6 +28,10 @@ GameBoyAdvanceVideo = function() {
 	this.lastHblank = 0;
 };
 
+GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
+	this.canvas = canvas;
+}
+
 GameBoyAdvanceVideo.prototype.handleIrq = function(cpu) {
 	return false;
 };
