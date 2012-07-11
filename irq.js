@@ -2,6 +2,10 @@ GameBoyAdvanceInterruptHandler = function() {
 	this.cpu = null;
 	this.irqProviders = new Array();
 	this.enable = true;
+
+	this.dmaSource = new Uint32Array(4);
+	this.dmaDest = new Uint32Array(4);
+	this.dmaWordCount = new Uint32Array(4);
 };
 
 GameBoyAdvanceInterruptHandler.prototype.setCPU = function(cpu) {
@@ -76,4 +80,19 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 
 GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 	this.enable = value;
+};
+
+GameBoyAdvanceInterruptHandler.prototype.dmaSetSourceAddress = function(dma, address) {
+	this.dmaSource[dma] = address;
+};
+
+GameBoyAdvanceInterruptHandler.prototype.dmaSetDestAddress = function(dma, address) {
+	this.dmaDest[dma] = address;
+};
+
+GameBoyAdvanceInterruptHandler.prototype.dmaSetWordCount = function(dma, count) {
+	this.dmaWordCount[dma] = count ? count : (dma == 3 ? 0x10000 : 0x4000);
+};
+
+GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control) {
 };

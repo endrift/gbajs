@@ -94,7 +94,15 @@ GameBoyAdvanceIO.prototype.load16 = function(offset) {
 }
 
 GameBoyAdvanceIO.prototype.load32 = function(offset) {
-	return this.loadU16(offset) | (this.loadU16(offset + 2) << 16);
+	switch (offset) {
+	case this.DMA0CNT_LO:
+	case this.DMA1CNT_LO:
+	case this.DMA2CNT_LO:
+	case this.DMA3CNT_LO:
+		return this.loadU16(offset | 2);
+	}
+
+	return this.loadU16(offset) | (this.loadU16(offset | 2) << 16);
 };
 
 GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
@@ -109,6 +117,11 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		break;
 	case this.DISPSTAT:
 		return this.registers[offset >> 1] | this.video.readDisplayStat();
+	case this.DMA0CNT_HI:
+	case this.DMA1CNT_HI:
+	case this.DMA2CNT_HI:
+	case this.DMA3CNT_HI:
+		break; // FIXME: DMAs will disable themselves, we need to read that out
 	default:
 		throw "Unimplemented I/O register read: 0x" + offset.toString(16);
 	}
@@ -124,6 +137,30 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		value &= this.video.DISPSTAT_MASK;
 		this.video.writeDisplayStat(value);
 		break;
+	case this.DMA0CNT_LO:
+		this.cpu.irq.dmaSetWordCount(0, value);
+		return;
+	case this.DMA0CNT_HI:
+		this.cpu.irq.dmaWriteControl(0, value);
+		break;
+	case this.DMA1CNT_LO:
+		this.cpu.irq.dmaSetWordCount(1, value);
+		return;
+	case this.DMA1CNT_HI:
+		this.cpu.irq.dmaWriteControl(1, value);
+		break;
+	case this.DMA2CNT_LO:
+		this.cpu.irq.dmaSetWordCount(2, value);
+		return;
+	case this.DMA2CNT_HI:
+		this.cpu.irq.dmaWriteControl(2, value);
+		break;
+	case this.DMA3CNT_LO:
+		this.cpu.irq.dmaSetWordCount(3, value);
+		return;
+	case this.DMA3CNT_HI:
+		this.cpu.irq.dmaWriteControl(3, value);
+		break;
 	case this.IME:
 		value &= 0x0001;
 		this.cpu.irq.masterEnable(value);
@@ -135,6 +172,33 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 };
 
 GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
+	switch (offset) {
+	case this.DMA0SAD_LO:
+		this.cpu.irq.dmaSetSourceAddress(0, value);
+		return;
+	case this.DMA0DAD_LO:
+		this.cpu.irq.dmaSetDestAddress(0, value);
+		return;
+	case this.DMA1SAD_LO:
+		this.cpu.irq.dmaSetSourceAddress(1, value);
+		return;
+	case this.DMA1DAD_LO:
+		this.cpu.irq.dmaSetDestAddress(1, value);
+		return;
+	case this.DMA2SAD_LO:
+		this.cpu.irq.dmaSetSourceAddress(2, value);
+		return;
+	case this.DMA2DAD_LO:
+		this.cpu.irq.dmaSetDestAddress(2, value);
+		return;
+	case this.DMA3SAD_LO:
+		this.cpu.irq.dmaSetSourceAddress(3, value);
+		return;
+	case this.DMA3DAD_LO:
+		this.cpu.irq.dmaSetDestAddress(3, value);
+		return;
+	}
+
 	this.store16(offset, value & 0xFFFF);
 	this.store16(offset + 2, value >> 16);
 };
