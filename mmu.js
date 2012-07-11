@@ -94,13 +94,18 @@ GameBoyAdvanceMMU.prototype.setCPU = function(cpu) {
 	this.cpu = cpu;
 }
 
+GameBoyAdvanceMMU.prototype.setIO = function(io) {
+	this.io = io;
+	io.setMMU(this);
+}
+
 GameBoyAdvanceMMU.prototype.clear = function() {
 	this.memory = [
 		null,
 		null, // Unused
 		new ArrayBuffer(this.SIZE_WORKING_RAM),
 		new ArrayBuffer(this.SIZE_WORKING_IRAM),
-		new ArrayBuffer(this.SIZE_IO),
+		null, // This is owned by GameBoyAdvanceIO
 		new ArrayBuffer(this.SIZE_PALETTE_RAM),
 		new ArrayBuffer(this.SIZE_VRAM),
 		new ArrayBuffer(this.SIZE_OAM),
@@ -119,7 +124,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null, // Unused
 		new DataView(this.memory[2]),
 		new DataView(this.memory[3]),
-		new DataView(this.memory[4]),
+		null,
 		new DataView(this.memory[5]),
 		new DataView(this.memory[6]),
 		new DataView(this.memory[7]),
@@ -135,7 +140,6 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 
 	this.memoryView[2].cachedInstructions = 0;
 	this.memoryView[3].cachedInstructions = 0;
-	this.memoryView[4].cachedInstructions = 0;
 	this.memoryView[5].cachedInstructions = 0;
 	this.memoryView[6].cachedInstructions = 0;
 	this.memoryView[7].cachedInstructions = 0;
@@ -190,6 +194,9 @@ GameBoyAdvanceMMU.prototype.load8 = function(offset) {
 GameBoyAdvanceMMU.prototype.load16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
+	if (memoryRegion == this.REGION_IO) {
+		return this.io.access(offset & 0x00FFFFFE) >> 0;
+	}
 	return this.memoryView[memoryRegion].getInt16(this.maskOffset(offset), true);
 };
 
@@ -208,6 +215,9 @@ GameBoyAdvanceMMU.prototype.loadU8 = function(offset) {
 GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
+	if (memoryRegion == this.REGION_IO) {
+		return this.io.access(offset & 0x00FFFFFE);
+	}
 	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
 };
 
@@ -243,6 +253,10 @@ GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	}
 	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
 	var maskedOffset = offset & 0x00FFFFFE;
+	if (memoryRegion == this.REGION_IO) {
+		this.io.store(maskedOffset, value);
+		return;
+	}
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt16(maskedOffset, value, true);
 	if (memory.cachedInstructions) {

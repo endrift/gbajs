@@ -7,6 +7,7 @@ canvas {
 </style>
 <script src="core.js"></script>
 <script src="mmu.js"></script>
+<script src="io.js"></script>
 <script src="irq.js"></script>
 <script src="xhr.js"></script>
 <script>
@@ -36,7 +37,9 @@ function runTest(r) {
 var core = new ARMCore();
 var mmu = new GameBoyAdvanceMMU();
 var irq = new GameBoyAdvanceInterruptHandler();
-core.resetCPU(0x08000000, mmu, irq);
+var io = new GameBoyAdvanceIO();
+mmu.setIO(io);
+core.resetCPU(0x08000000, mmu, irq, io);
 window.onload = function() { loadRom('test.rom', runTest) };
 </script>
 </head>
