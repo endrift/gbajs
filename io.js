@@ -73,14 +73,28 @@ GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
+	case this.DISPCNT:
+		// Handled transparently by the written registers
+		break;
+	case this.DISPSTAT:
+		return this.registers[offset >> 1] | this.video.readDisplayStat();
 	default:
+		throw "Unimplemented I/O register read: 0x" + offset.toString(16);
 	}
 	return this.registers[offset >> 1];
 };
 
 GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	switch (offset) {
+	case this.DISPCNT:
+		this.video.writeDisplayControl(value);
+		break;
+	case this.DISPSTAT:
+		value &= this.video.DISPSTAT_MASK;
+		this.video.writeDisplayStat(value);
+		break;
 	default:
+		throw "Unimplemented I/O register write: 0x" + offset.toString(16);
 	}
 	this.registers[offset >> 1] = value;
 };

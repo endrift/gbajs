@@ -22,6 +22,16 @@ GameBoyAdvanceVideo = function() {
 	this.win1 = 0;
 	this.objwin = 0;
 
+	// DISPSTAT
+	this.DISPSTAT_MASK = 0xFF380;
+	this.vblanking = 0;
+	this.hblanking = 0;
+	this.vcounter = 0;
+	this.vblankIRQ = 0;
+	this.hblankIRQ = 0;
+	this.vcounterIRQ = 0;
+	this.vcountSetting = 0;
+
 	// VCOUNT
 	this.vcount = 0;
 
@@ -33,10 +43,12 @@ GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
 }
 
 GameBoyAdvanceVideo.prototype.handleIrq = function(cpu) {
+	if (cpu.cycles - this.lastHblank > this.HBLANK_INTERVAL) {
+	}
 	return false;
 };
 
-GameBoyAdvanceVideo.prototype.displayControl = function(value) {
+GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 	this.backgroundMode = value & 0x0007;
 	this.displayFrameSelect = value & 0x0010;
 	this.hblankIntervalFree = value & 0x0020;
@@ -50,4 +62,15 @@ GameBoyAdvanceVideo.prototype.displayControl = function(value) {
 	this.win0 = 0x2000;
 	this.win1 = 0x4000;
 	this.objwin = 0x8000;
+};
+
+GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
+	this.vblankIRQ = value & 0x0080;
+	this.hblankIRQ = value & 0x0100;
+	this.vcounterIRQ = value & 0x0200;
+	this.vcounterSetting = (value & 0xFF00) >> 8;
+};
+
+GameBoyAdvanceVideo.prototype.readDisplayStat = function() {
+	return (this.vblanking) | (this.hblanking << 1) | (this.vcounter << 2);
 };
