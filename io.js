@@ -1,4 +1,5 @@
 GameBoyAdvanceIO = function() {
+	// Video
 	this.DISPCNT = 0x000;
 	this.GREENSWP = 0x002;
 	this.DISPSTAT = 0x004;
@@ -42,6 +43,33 @@ GameBoyAdvanceIO = function() {
 	this.BLDALPHA = 0x052;
 	this.BLDY = 0x054;
 
+	// DMA
+	this.DMA0SAD_LO = 0x0B0;
+	this.DMA0SAD_HI = 0x0B2;
+	this.DMA0DAD_LO = 0x0B4;
+	this.DMA0DAD_HI = 0x0B6;
+	this.DMA0CNT_LO = 0x0B8;
+	this.DMA0CNT_HI = 0x0BA;
+	this.DMA1SAD_LO = 0x0BC;
+	this.DMA1SAD_HI = 0x0BE;
+	this.DMA1DAD_LO = 0x0C0;
+	this.DMA1DAD_HI = 0x0C2;
+	this.DMA1CNT_LO = 0x0C4;
+	this.DMA1CNT_HI = 0x0C6;
+	this.DMA2SAD_LO = 0x0C8;
+	this.DMA2SAD_HI = 0x0CA;
+	this.DMA2DAD_LO = 0x0CC;
+	this.DMA2DAD_HI = 0x0CE;
+	this.DMA2CNT_LO = 0x0D0;
+	this.DMA2CNT_HI = 0x0D2;
+	this.DMA2SAD_LO = 0x0D4;
+	this.DMA2SAD_HI = 0x0D6;
+	this.DMA2DAD_LO = 0x0D8;
+	this.DMA2DAD_HI = 0x0DA;
+	this.DMA2CNT_LO = 0x0DC;
+	this.DMA2CNT_HI = 0x0DE;
+
+	// Interrupts, etc
 	this.IME = 0x208;
 };
 
