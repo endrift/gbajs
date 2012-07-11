@@ -243,7 +243,7 @@ GameBoyAdvanceMMU.prototype.iload32 = function(offset) {
 
 GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_ROM0) {
+	if (memoryRegion >= this.REGION_CART0) {
 		throw "Bad access";
 	}
 	this.cpu.cycles += this.TIMINGS_8[memoryRegion];
@@ -261,7 +261,7 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 
 GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_ROM0) {
+	if (memoryRegion >= this.REGION_CART0) {
 		throw "Bad access";
 	}
 	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
@@ -279,7 +279,7 @@ GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 
 GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_ROM0) {
+	if (memoryRegion >= this.REGION_CART0) {
 		throw "Bad access";
 	}
 	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
