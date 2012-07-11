@@ -188,6 +188,9 @@ GameBoyAdvanceMMU.prototype.maskOffset = function(offset) {
 GameBoyAdvanceMMU.prototype.load8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	this.cpu.cycles += this.TIMINGS_8[memoryRegion];
+	if (memoryRegion == this.REGION_IO) {
+		return this.io.load8(offset & 0x00FFFFFF);
+	}
 	return this.memoryView[memoryRegion].getInt8(this.maskOffset(offset));
 };
 
@@ -195,7 +198,7 @@ GameBoyAdvanceMMU.prototype.load16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
-		return this.io.access(offset & 0x00FFFFFE) >> 0;
+		return this.io.load16(offset & 0x00FFFFFE);
 	}
 	return this.memoryView[memoryRegion].getInt16(this.maskOffset(offset), true);
 };
@@ -203,12 +206,18 @@ GameBoyAdvanceMMU.prototype.load16 = function(offset) {
 GameBoyAdvanceMMU.prototype.load32 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
+	if (memoryRegion == this.REGION_IO) {
+		return this.io.load32(offset & 0x00FFFFFC);
+	}
 	return this.memoryView[memoryRegion].getInt32(this.maskOffset(offset), true);
 };
 
 GameBoyAdvanceMMU.prototype.loadU8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	this.cpu.cycles += this.TIMINGS_8[memoryRegion];
+	if (memoryRegion == this.REGION_IO) {
+		return this.io.loadU8(offset & 0x00FFFFFF);
+	}
 	return this.memoryView[memoryRegion].getUint8(this.maskOffset(offset));
 };
 
@@ -216,7 +225,7 @@ GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
-		return this.io.access(offset & 0x00FFFFFE);
+		return this.io.loadU16(offset & 0x00FFFFFE);
 	}
 	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
 };
@@ -239,6 +248,10 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	}
 	this.cpu.cycles += this.TIMINGS_8[memoryRegion];
 	var maskedOffset = offset & 0x00FFFFFF;
+	if (memoryRegion == this.REGION_IO) {
+		this.io.store8(maskedOffset, value);
+		return;
+	}
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt8(maskedOffset, value);
 	if (memory.cachedInstructions) {
@@ -254,7 +267,7 @@ GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
 	var maskedOffset = offset & 0x00FFFFFE;
 	if (memoryRegion == this.REGION_IO) {
-		this.io.store(maskedOffset, value);
+		this.io.store16(maskedOffset, value);
 		return;
 	}
 	var memory = this.memoryView[memoryRegion];
@@ -271,6 +284,10 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	}
 	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
 	var maskedOffset = offset & 0x00FFFFFC;
+	if (memoryRegion == this.REGION_IO) {
+		this.io.store32(maskedOffset, value);
+		return;
+	}
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt32(maskedOffset, value, true);
 	if (memory.cachedInstructions) {

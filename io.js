@@ -55,16 +55,38 @@ GameBoyAdvanceIO.prototype.clear = function() {
 	this.registers = new Uint32Array(this.mmu.SIZE_IO);
 };
 
-GameBoyAdvanceIO.prototype.access = function(offset) {
+GameBoyAdvanceIO.prototype.load8 = function(offset) {
+	throw "Unimplmeneted unaligned I/O access";
+}
+
+GameBoyAdvanceIO.prototype.load16 = function(offset) {
+	return this.loadU16(offset) >> 0;
+}
+
+GameBoyAdvanceIO.prototype.load32 = function(offset) {
+	return this.loadU16(offset) | (this.loadU16(offset + 2) << 16);
+};
+
+GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
+	throw "Unimplmeneted unaligned I/O access";
+}
+
+GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
+	switch (offset) {
+	default:
+		throw "Unimplemented I/O register: 0x" + offset.toString(16);
+	}
+	return 0;
+};
+
+GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	switch (offset) {
 	default:
 		throw "Unimplemented I/O register: 0x" + offset.toString(16);
 	}
 };
 
-GameBoyAdvanceIO.prototype.store = function(offset, value) {
-	switch (offset) {
-	default:
-		throw "Unimplemented I/O register: 0x" + offset.toString(16);
-	}
+GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
+	this.store16(offset, value & 0xFFFF);
+	this.store16(offset + 2, value >> 16);
 };
