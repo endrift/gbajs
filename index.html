@@ -42,6 +42,7 @@ var io = new GameBoyAdvanceIO();
 var video = new GameBoyAdvanceVideo();
 mmu.setIO(io);
 io.setVideo(video);
+io.setCPU(core);
 irq.addIrqProvider(video);
 core.resetCPU(0x08000000, mmu, irq, io);
 window.onload = function() {

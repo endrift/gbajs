@@ -1,6 +1,7 @@
 GameBoyAdvanceInterruptHandler = function() {
 	this.cpu = null;
 	this.irqProviders = new Array();
+	this.enable = true;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.setCPU = function(cpu) {
@@ -71,4 +72,8 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 	default:
 		throw "Unimplemented software interrupt: 0x" + opcode.toString(16);
 	}
-}
+};
+
+GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
+	this.enable = value;
+};

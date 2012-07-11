@@ -96,7 +96,6 @@ GameBoyAdvanceMMU.prototype.setCPU = function(cpu) {
 
 GameBoyAdvanceMMU.prototype.setIO = function(io) {
 	this.io = io;
-	io.setMMU(this);
 }
 
 GameBoyAdvanceMMU.prototype.clear = function() {

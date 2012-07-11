@@ -41,10 +41,12 @@ GameBoyAdvanceIO = function() {
 	this.BLDCNT = 0x050;
 	this.BLDALPHA = 0x052;
 	this.BLDY = 0x054;
+
+	this.IME = 0x208;
 };
 
-GameBoyAdvanceIO.prototype.setMMU = function(mmu) {
-	this.mmu = mmu;
+GameBoyAdvanceIO.prototype.setCPU = function(cpu) {
+	this.cpu = cpu;
 };
 
 GameBoyAdvanceIO.prototype.setVideo = function(video) {
@@ -52,7 +54,7 @@ GameBoyAdvanceIO.prototype.setVideo = function(video) {
 };
 
 GameBoyAdvanceIO.prototype.clear = function() {
-	this.registers = new Uint32Array(this.mmu.SIZE_IO);
+	this.registers = new Uint32Array(this.cpu.mmu.SIZE_IO);
 };
 
 GameBoyAdvanceIO.prototype.load8 = function(offset) {
@@ -74,6 +76,7 @@ GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
 	case this.DISPCNT:
+	case this.IME:
 		// Handled transparently by the written registers
 		break;
 	case this.DISPSTAT:
@@ -92,6 +95,10 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.DISPSTAT:
 		value &= this.video.DISPSTAT_MASK;
 		this.video.writeDisplayStat(value);
+		break;
+	case this.IME:
+		value &= 0x0001;
+		this.cpu.irq.masterEnable(value);
 		break;
 	default:
 		throw "Unimplemented I/O register write: 0x" + offset.toString(16);

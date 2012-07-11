@@ -53,7 +53,7 @@ ARMCore.prototype.ASSERT = function(test, err) {
 	}
 };
 
-ARMCore.prototype.resetCPU = function(startOffset, mmu, irq, io) {
+ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.gprs = new Int32Array(16);
 	this.gprs[this.PC] = startOffset;
 
@@ -61,7 +61,6 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq, io) {
 	this.irq = irq;
 
 	mmu.setCPU(this);
-	mmu.setIO(io);
 	irq.setCPU(this);
 
 	this.execMode = this.MODE_ARM;
