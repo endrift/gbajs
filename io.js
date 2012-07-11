@@ -74,16 +74,15 @@ GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
 	default:
-		throw "Unimplemented I/O register: 0x" + offset.toString(16);
 	}
-	return 0;
+	return this.registers[offset >> 1];
 };
 
 GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	switch (offset) {
 	default:
-		throw "Unimplemented I/O register: 0x" + offset.toString(16);
 	}
+	this.registers[offset >> 1] = value;
 };
 
 GameBoyAdvanceIO.prototype.store32 = function(offset, value) {

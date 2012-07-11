@@ -160,6 +160,8 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null,
 		null // Unused
 	];
+
+	this.io.clear();
 };
 
 GameBoyAdvanceMMU.prototype.loadRom = function(rom) {
