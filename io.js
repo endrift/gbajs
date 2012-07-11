@@ -62,12 +62,12 @@ GameBoyAdvanceIO = function() {
 	this.DMA2DAD_HI = 0x0CE;
 	this.DMA2CNT_LO = 0x0D0;
 	this.DMA2CNT_HI = 0x0D2;
-	this.DMA2SAD_LO = 0x0D4;
-	this.DMA2SAD_HI = 0x0D6;
-	this.DMA2DAD_LO = 0x0D8;
-	this.DMA2DAD_HI = 0x0DA;
-	this.DMA2CNT_LO = 0x0DC;
-	this.DMA2CNT_HI = 0x0DE;
+	this.DMA3SAD_LO = 0x0D4;
+	this.DMA3SAD_HI = 0x0D6;
+	this.DMA3DAD_LO = 0x0D8;
+	this.DMA3DAD_HI = 0x0DA;
+	this.DMA3CNT_LO = 0x0DC;
+	this.DMA3CNT_HI = 0x0DE;
 
 	// Interrupts, etc
 	this.IME = 0x208;
