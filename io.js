@@ -47,6 +47,10 @@ GameBoyAdvanceIO.prototype.setMMU = function(mmu) {
 	this.mmu = mmu;
 };
 
+GameBoyAdvanceIO.prototype.setVideo = function(video) {
+	this.video = video;
+};
+
 GameBoyAdvanceIO.prototype.clear = function() {
 	this.registers = new Uint32Array(this.mmu.SIZE_IO);
 };

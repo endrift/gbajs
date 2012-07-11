@@ -144,6 +144,9 @@ ARMCore.prototype.loadInstruction = function(address) {
 };
 
 ARMCore.prototype.step = function() {
+	if (this.irq.runIrq()) {
+		return;
+	}
 	var instruction = this.loadInstruction(this.nextPC);
 	if (instruction.touchesPC) {
 		var nextPC = this.nextPC + this.instructionWidth;
