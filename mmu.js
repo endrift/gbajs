@@ -219,6 +219,8 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 		cart.maker = maker;
 	}
 
+	this.cpu.prefetch(this.BASE_CART0);
+
 	return cart;
 };
 
@@ -275,14 +277,16 @@ GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
 	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
 };
 
-// Instruction loads -- don't affect timings
+// Instruction loads -- we'll ignore advanced timings for now
 GameBoyAdvanceMMU.prototype.iload16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
+	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
 	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
 };
 
 GameBoyAdvanceMMU.prototype.iload32 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
+	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
 	return this.memoryView[memoryRegion].getInt32(this.maskOffset(offset), true);
 };
 

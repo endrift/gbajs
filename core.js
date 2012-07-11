@@ -55,7 +55,7 @@ ARMCore.prototype.ASSERT = function(test, err) {
 
 ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.gprs = new Int32Array(16);
-	this.gprs[this.PC] = startOffset;
+	this.gprs[this.PC] = startOffset + this.WORD_SIZE_ARM;
 
 	this.mmu = mmu;
 	this.irq = irq;
@@ -78,7 +78,6 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 
 	this.spsr = 0;
 
-	this.nextPC = this.gprs[this.PC];
 	this.cycles = 0;
 
 	this.shifterOperand = 0;
@@ -87,18 +86,13 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.mmu.clear();
 
 	this.skipStatusBits = false;
-	this.prefetch = {
-		'address': 0,
-		'instruction': null
-	};
+	this.prefetch0 = null;
+	this.prefetch1 = null;
 };
 
-ARMCore.prototype.loadInstruction = function(address) {
+ARMCore.prototype.prefetch = function(address) {
 	var compiled = null;
 	var next = null;
-	if (address == this.prefetch.address && this.prefetch.instruction) {
-		return this.prefetch.instruction;
-	}
 	var memoryRegion = this.mmu.getMemoryRegion(address);
 	if (this.execMode == this.MODE_ARM) {
 		var block = this.mmu.icache[memoryRegion];
@@ -111,14 +105,14 @@ ARMCore.prototype.loadInstruction = function(address) {
 			block[offset] = compiled;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
+		this.prefetch0 = compiled;
 		if (!next) {
 			var instruction = this.mmu.iload32(address + this.WORD_SIZE_ARM) >>> 0;
 			next = this.compile(instruction);
 			block[offset + 2] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
-			this.prefetch.address = address + this.WORD_SIZE_ARM;
-			this.prefetch.instruction = next;
 		}
+		this.prefetch1 = next;
 	} else {
 		var block = this.mmu.icache[memoryRegion];
 		var offset = (this.mmu.maskOffset(address)) >> 1;
@@ -130,45 +124,64 @@ ARMCore.prototype.loadInstruction = function(address) {
 			block[offset] = compiled;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
+		this.prefetch0 = compiled;
 		if (!next) {
 			var instruction = this.mmu.iload16(address + this.WORD_SIZE_THUMB);
 			next = this.compileThumb(instruction);
 			block[offset + 1] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
-			this.prefetch.address = address + this.WORD_SIZE_THUMB;
-			this.prefetch.instruction = next;
 		}
+		this.prefetch1 = next;
 	}
-	return compiled;
+};
+
+ARMCore.prototype.prefetchNext = function(address) {
+	var next = null;
+	var memoryRegion = this.mmu.getMemoryRegion(address);
+	if (this.execMode == this.MODE_ARM) {
+		var block = this.mmu.icache[memoryRegion];
+		var offset = (this.mmu.maskOffset(address)) >> 1;
+		next = block[offset];
+		if (!next) {
+			var instruction = this.mmu.iload32(address) >>> 0;
+			next = this.compile(instruction);
+			block[offset] = next;
+			++mmu.memoryView[memoryRegion].cachedInstructions;
+		}
+		this.prefetch1 = next;
+	} else {
+		var block = this.mmu.icache[memoryRegion];
+		var offset = (this.mmu.maskOffset(address)) >> 1;
+		next = block[offset];
+		if (!next) {
+			var instruction = this.mmu.iload16(address);
+			next = this.compileThumb(instruction);
+			block[offset] = next;
+			++mmu.memoryView[memoryRegion].cachedInstructions;
+		}
+		this.prefetch1 = next;
+	}
 };
 
 ARMCore.prototype.step = function() {
 	if (this.irq.runIrq()) {
 		return;
 	}
-	var instruction = this.loadInstruction(this.nextPC);
-	if (instruction.touchesPC) {
-		var nextPC = this.nextPC + this.instructionWidth;
-		var shownPC = nextPC + this.instructionWidth;
-		this.gprs[this.PC] = shownPC;
+	var instruction = this.prefetch0;
+	this.prefetch0 = this.prefetch1;
+	this.gprs[this.PC] += this.instructionWidth;
+	this.prefetchNext(this.gprs[this.PC]);
+	instruction();
 
-		instruction();
-
-		if (this.gprs[this.PC] == shownPC) {
-			this.nextPC = nextPC;
+	if (instruction.writesPC) {
+		this.prefetch(this.gprs[this.PC]);
+		if (this.execMode == this.MODE_ARM) {
+			this.instructionWidth = this.WORD_SIZE_ARM;
 		} else {
-			this.nextPC = this.gprs[this.PC] & 0xFFFFFFFE;
-			if (this.execMode == this.MODE_ARM) {
-				this.instructionWidth = this.WORD_SIZE_ARM;
-			} else {
-				this.instructionWidth = this.WORD_SIZE_THUMB;
-			}
+			this.instructionWidth = this.WORD_SIZE_THUMB;
 		}
-	} else {
-		instruction();
-		this.nextPC += this.instructionWidth;
+		this.gprs[this.PC] += this.instructionWidth;
 	}
-	this.cycles += 1 + instruction.extraCycles;
 };
 
 ARMCore.prototype.switchMode = function(newMode) {
@@ -278,8 +291,7 @@ ARMCore.prototype.compile = function(instruction) {
 			cpu.execMode = cpu.gprs[rm] & 0x00000001;
 			cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
 		};
-		op.extraCycles = this.PC_CYCLES;
-		op.touchesPC = true;
+		op.writesPC = true;
 		op.writeCpsr = false;
 	} else if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
 		var opcode = instruction & 0x01E00000;
@@ -331,14 +343,13 @@ ARMCore.prototype.compile = function(instruction) {
 						}
 					}
 				};
-				op.touchesPC = rm == this.PC;
+				op.writesPC = false;
 			}
 		} else {
 			// Data processing/FSR transfer
 			var op = null;
 			var rn = (instruction & 0x000F0000) >> 16;
 			var rd = (instruction & 0x0000F000) >> 12;
-			var touchesPC = rn == this.PC || rd == this.PC;
 
 			// Parse shifter operand
 			var shiftType = instruction & 0x00000060;
@@ -358,7 +369,6 @@ ARMCore.prototype.compile = function(instruction) {
 				};
 			} else if (instruction & 0x00000010) {
 				var rs = (instruction & 0x00000F00) >> 8;
-				touchesPC = touchesPC || rs == this.PC || rm == this.PC;
 				shiftsRs = true;
 				switch (shiftType) {
 				case 0:
@@ -438,7 +448,6 @@ ARMCore.prototype.compile = function(instruction) {
 				}
 			} else {
 				var immediate = (instruction & 0x00000F80) >> 8;
-				touchesPC = touchesPC || rm == this.PC;
 				switch (shiftType) {
 				case 0:
 					// LSL
@@ -766,10 +775,9 @@ ARMCore.prototype.compile = function(instruction) {
 				};
 				break;
 			}
-			op.touchesPC = touchesPC;
+			op.writesPC = rd == this.PC;;
 		}
 		op.writeCpsr = s;
-		op.extraCycles = op.touchesPC * this.PC_CYCLES + shiftsRs * this.SHIFT_RS_CYCLES;
 	} else if ((instruction & 0x0E000010) == 0x06000000) {
 		// Single data transfer
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
@@ -838,7 +846,6 @@ ARMCore.prototype.compile = function(instruction) {
 						cpu.gprs[rd] = cpu.mmu.load32(a);
 					};
 				}
-				op.extraCycles = this.LDR_CYCLES;
 			} else {
 				if (b) {
 					// STRB
@@ -852,10 +859,8 @@ ARMCore.prototype.compile = function(instruction) {
 						cpu.mmu.store32(a, cpu.gprs[rd]);
 					};
 				}
-				op.extraCycles = this.STR_CYCLES;
 			}
-			op.touchesPC = rn == this.PC || rd == this.PC;
-			op.extraCycles += this.PC_CYCLES * op.touchesPC;
+			op.writesPC = rd == this.PC;
 			op.writeCpsr = false;
 			break;
 		case 0x06000000:
@@ -881,8 +886,7 @@ ARMCore.prototype.compile = function(instruction) {
 				}
 				cpu.gprs[cpu.PC] += immediate;
 			};
-			op.extraCycles = this.PC_CYCLES;
-			op.touchesPC = true;
+			op.writesPC = true;
 			op.writeCpsr = false;
 			break;
 		case 0x0C000000:
@@ -896,10 +900,6 @@ ARMCore.prototype.compile = function(instruction) {
 		}
 	}
 	op.readCpsr = true;
-
-	this.ASSERT(typeof(op.touchesPC) !== "undefined", "touchesPC undefined");
-	this.ASSERT(typeof(op.extraCycles) !== "undefined", "extraCycles undefined");
-	this.ASSERT(typeof(op.writeCpsr) !== "undefined", "writeCpsr undefined");
 
 	return op;
 };
@@ -1120,8 +1120,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		}
-		op.touchesPC = false;
-		op.extraCycles = 0;
+		op.writesPC = false;
 		op.readCpsr = false;
 		op.writeCpsr = true;
 	} else if ((instruction & 0xFC00) == 0x4400) {
@@ -1136,7 +1135,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] += cpu.gprs[rm];
 			};
-			op.touchesPC = (rm == this.PC) || (rd == this.PC);
+			op.writesPC = (rm == this.PC) || (rd == this.PC);
 			op.writeCpsr = false;
 			break;
 		case 0x0100:
@@ -1149,7 +1148,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
 					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000;
 			}
-			op.touchesPC = (rm == this.PC) || (rd == this.PC);
+			op.writesPC = (rm == this.PC) || (rd == this.PC);
 			op.writeCpsr = true;
 			break;
 		case 0x0200:
@@ -1157,7 +1156,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = cpu.gprs[rm];
 			};
-			op.touchesPC = (rm == this.PC) || (rd == this.PC);
+			op.writesPC = (rm == this.PC) || (rd == this.PC);
 			op.writeCpsr = false;
 			break;
 		case 0x0300:
@@ -1166,11 +1165,10 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.execMode = cpu.gprs[rm] & 0x00000001;
 				cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
 			};
-			op.touchesPC = true;
+			op.writesPC = true;
 			op.writeCpsr = false;
 			break;
 		}
-		op.extraCycles = op.touchesPC * this.PC_CYCLES;
 		op.readCpsr = false;
 	} else if ((instruction & 0xF800) == 0x1800) {
 		// Add/subtract
@@ -1243,8 +1241,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		}
-		op.touchesPC = false;
-		op.extraCycles = 0;
+		op.writesPC = false;
 		op.readCpsr = false;
 		op.writeCpsr = true;
 	} else if (!(instruction & 0xE000)) {
@@ -1301,8 +1298,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x1800:
 			break;
 		}
-		op.touchesPC = false;
-		op.extraCycles = 0;
+		op.writesPC = false;
 		op.readCpsr = false;
 		op.writeCpsr = true;
 	} else if ((instruction & 0xE000) == 0x2000) {
@@ -1355,8 +1351,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			};
 			break;
 		}
-		op.touchesPC = false;
-		op.extraCycles = 0;
+		op.writesPC = false;
 		op.readCpsr = false;
 		op.writeCpsr = true;
 	} else if ((instruction & 0xF800) == 0x4800) {
@@ -1366,8 +1361,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		op = function() {
 			cpu.gprs[rd] = cpu.mmu.load32((cpu.gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
 		};
-		op.touchesPC = true;
-		op.extraCycles = this.LDR_CYCLES;
+		op.writesPC = true;
 		op.readCpsr = false;
 		op.writeCpsr = false;
 	} else if ((instruction & 0xF200) == 0x5000) {
@@ -1393,7 +1387,6 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[rn] + immediate);
 				}
 			}
-			op.extraCycles = this.LDR_CYCLES;
 		} else {
 			if (b) {
 				// STRB(1)
@@ -1406,9 +1399,8 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.mmu.store32(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				}
 			}
-			op.extraCycles = this.STR_CYCLES;
 		}
-		op.touchesPC = false;
+		op.writesPC = false;
 		op.readCpsr = false;
 		op.writeCpsr = false;
 	} else if ((instruction & 0xF600) == 0xB400) {
@@ -1431,11 +1423,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				}
 				cpu.gprs[cpu.SP] = address;
 			};
-			op.touchesPC = r;
-			op.extraCycles = this.LDR_CYCLES + op.touchesPC ? this.PC_CYCLES : 0;
+			op.writesPC = r;
 			for (var x = rs; x; x >>= 1) {
 				if (x & 1) {
-					++op.extraCycles;
 				}
 			}
 		} else {
@@ -1455,11 +1445,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				}
 				cpu.gprs[cpu.SP] = address + 4;
 			};
-			op.touchesPC = false;
-			op.extraCycles = this.STR_CYCLES;
+			op.writesPC = false;
 			for (var x = rs; x; x >>= 1) {
 				if (x & 1) {
-					++op.extraCycles;
 				}
 			}
 		}
@@ -1475,8 +1463,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		op = function() {
 			cpu.gprs[cpu.PC] += immediate;
 		};
-		op.touchesPC = true;
-		op.extraCycles = this.PC_CYCLES;
+		op.writesPC = true;
 		op.readCpsr = false;
 		op.writeCpsr = false;
 	} else if (instruction & 0x8000) {
@@ -1491,15 +1478,13 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.gprs[rd] = cpu.mmu.loadU16(cpu.gprs[rn] + immediate);
 				};
-				op.extraCycles = this.LDR_CYCLES;
 			} else {
 				// STRH(1)
 				op = function() {
 					cpu.mmu.store16(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				};
-				op.extraCycles = this.STR_CYCLES;
 			}
-			op.touchesPC = false;
+			op.writesPC = false;
 			op.readCpsr = false;
 			op.writeCpsr = false;
 			break;
@@ -1513,15 +1498,13 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[cpu.SP] + immediate);
 				}
-				op.extraCycles = this.LDR_CYCLES;
 			} else {
 				// STR(3)
 				op = function() {
 					cpu.mmu.store32(cpu.gprs[cpu.SP] + immediate, cpu.gprs[rd]);
 				}
-				op.extraCycles = this.STR_CYCLES;
 			}
-			op.touchesPC = false;
+			op.writesPC = false;
 			op.readCpsr = false;
 			op.writeCpsr = false;
 			break;
@@ -1534,8 +1517,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.gprs[rd] = cpu.gprs[cpu.SP] + immediate;
 				};
-				op.touchesPC = false;
-				op.extraCycles = this.STR_CYCLES;
+				op.writesPC = false;
 				op.readCpsr = false;
 				op.writeCpsr = false;
 			}
@@ -1553,8 +1535,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.gprs[cpu.SP] += immediate;
 				};
-				op.touchesPC = false;
-				op.extraCycles = 0;
+				op.writesPC = false;
 				op.readCpsr = false;
 				op.writeCpsr = false;
 			}
@@ -1576,10 +1557,8 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 					cpu.gprs[rn] = address;
 				};
-				op.extraCycles = this.LDR_CYCLES;
 				for (var x = rs; x; x >>= 1) {
 					if (x & 1) {
-						++op.extraCycles;
 					}
 				}
 			} else {
@@ -1595,14 +1574,12 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 					cpu.gprs[rn] = address;
 				};
-				op.extraCycles = this.STR_CYCLES;
 				for (var x = rs; x; x >>= 1) {
 					if (x & 1) {
-						++op.extraCycles;
 					}
 				}
 			}
-			op.touchesPC = false;
+			op.writesPC = false;
 			op.readCpsr = false;
 			op.writeCpsr = false;
 			break;
@@ -1615,8 +1592,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.irq.swi(immediate);
 				}
-				op.touchesPC = false;
-				op.extraCycles = 0;
+				op.writesPC = false;
 				op.readCpsr = false;
 				op.writeCpsr = false;
 			} else {
@@ -1631,8 +1607,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 						cpu.gprs[cpu.PC] += immediate;
 					}
 				}
-				op.touchesPC = true;
-				op.extraCycles = this.PC_CYCLES;
+				op.writesPC = true;
 				op.readCpsr = false;
 				op.writeCpsr = false;
 			}
@@ -1661,6 +1636,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					cpu.gprs[cpu.LR] = cpu.gprs[cpu.PC] + immediate;
 				}
+				op.writesPC = false;
 				break;
 			case 0x1800:
 				// BL(2)
@@ -1669,10 +1645,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1)) & 0xFFFFFFFC;
 					cpu.gprs[cpu.LR] = pc - 1;
 				}
+				op.writesPC = true;
 				break;
 			}
-			op.touchesPC = true;
-			op.extraCycles = this.B_THUMB_CYCLES;
 			op.readCpsr = false;
 			op.writeCpsr = false;
 			break;
@@ -1680,13 +1655,8 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			this.WARN("Undefined instruction: 0x" + instruction.toString(16));
 		}
 	} else {
-		this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
+		this.ASSERT_UNREACHED("zxBad opcode: 0x" + instruction.toString(16));
 	}
-
-	this.ASSERT(typeof(op.touchesPC) !== "undefined", "touchesPC undefined");
-	this.ASSERT(typeof(op.extraCycles) !== "undefined", "extraCycles undefined");
-	this.ASSERT(typeof(op.readCpsr) !== "undefined", "readCpsr undefined");
-	this.ASSERT(typeof(op.writeCpsr) !== "undefined", "writeCpsr undefined");
 
 	return op;
 };
