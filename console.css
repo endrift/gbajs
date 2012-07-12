@@ -1,0 +1,73 @@
+h3 {
+	font-size: 14px;
+	height: 18px;
+	margin: 2px 0 -20px 4px;
+	padding: 0 6px 0 4px;
+	background-color: #2A2F32;
+	position: relative;
+	display: inline-block;
+}
+
+#top {
+	display: -webkit-flex;
+	-webkit-flex-flow: row;
+}
+
+#display {
+	float: left;
+	margin: 40px;
+}
+
+#console, #devtools {
+	font-family: 'Lucida Sans Typewriter', 'Monaco', 'Andale Mono', monospace;
+	font-size: 13px;
+	background-color: #2A2F32;
+	color: #DADDE1;
+	padding: 10px;
+}
+
+#devtools {
+	margin: 10px 10px 10px 20px;
+	height: 432px;
+}
+
+#console {
+	overflow-y: auto;
+	white-space: pre-wrap;
+	height: 200px;
+	margin: 10px;
+	clear: left;
+}
+
+#gprs {
+	width: 350px;
+	text-align: center;
+}
+
+#registers ol {
+	border: 1px solid #DADDE1;
+	padding: 5px;
+}
+
+#registers ol > li {
+	padding: 0;
+	display: inline;
+}
+
+#devtools {
+	float: right;
+}
+
+#console li:before {
+	content: "-";
+	color: #5C616F;
+	padding-right: 1em;
+}
+
+#console li {
+	list-style-type: none;
+}
+
+.disabled {
+	color: #5C616F;
+}

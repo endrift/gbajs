@@ -10,36 +10,22 @@ canvas {
 <script src="io.js"></script>
 <script src="video.js"></script>
 <script src="irq.js"></script>
+
 <script src="xhr.js"></script>
+<script src="console.js"></script>
+<link href="console.css" rel="stylesheet">
 <script>
-function simulate() {
-	var start = new Date().getTime();
-	// The GBA runs at 16.78MHz, so let's see how long it takes to simulate a GBA-second.
-	try {
-		for (var i = 0; i < 16780000; ++i) {
-			core.step();
-		}
-
-		var elapsed = (new Date().getTime() - start) / 1000.0;
-		document.getElementById('elapsed').innerText = elapsed;
-
-		//setTimeout(simulate, (elapsed < 1000) ? (1000 - elapsed) : 0);
-	} catch (e) {
-		var elapsed = (new Date().getTime() - start) / 1000.0;
-		document.write(e + " at 0x" + core.nextPC.toString(16) + " after " + elapsed + " seconds");
-	}
-}
-
 function runTest(r) {
+	gbaCon.log("ROM loaded: " + r.byteLength + " bytes");
 	mmu.loadRom(r);
-
-	simulate();
 }
+
 var core = new ARMCore();
 var mmu = new GameBoyAdvanceMMU();
 var irq = new GameBoyAdvanceInterruptHandler();
 var io = new GameBoyAdvanceIO();
 var video = new GameBoyAdvanceVideo();
+var gbaCon;
 mmu.setIO(io);
 io.setVideo(video);
 io.setCPU(core);
@@ -48,13 +34,56 @@ core.resetCPU(0x08000000, mmu, irq, io);
 window.onload = function() {
 	var canvas = document.getElementById('screen');
 	video.setCanvas(canvas);
+
+	gbaCon = new Console(core);
+	gbaCon.log("Logging begun!");
 	loadRom('test.rom', runTest);
 };
 </script>
 </head>
 <body>
-<canvas id="screen" width="240" height="160"></canvas>
-<p>1 GBA-second emulated in <span id="elapsed">undefined</span> seconds.</p>
-<button onclick="simulate()">Once more</button>
+<section id="top">
+	<section id="display">
+		<canvas id="screen" width="240" height="160"></canvas>
+	</section>
+	<section id="devtools">
+		<section id="controls">
+			<button onclick="gbaCon.step()">Step</button>
+			<button>Continue</button>
+			<button>Pause</button>
+		</section>
+		<section id="registers">
+			<h3>GPRs</h3>
+			<ol id="gprs">
+				<li id="r0">0x00000000</li>
+				<li id="r1">0x00000000</li>
+				<li id="r2">0x00000000</li>
+				<li id="r3">0x00000000</li>
+				<li id="r4">0x00000000</li>
+				<li id="r5">0x00000000</li>
+				<li id="r6">0x00000000</li>
+				<li id="r7">0x00000000</li>
+				<li id="r8">0x00000000</li>
+				<li id="r9">0x00000000</li>
+				<li id="r10">0x00000000</li>
+				<li id="r11">0x00000000</li>
+				<li id="r12">0x00000000</li>
+				<li id="r13">0x00000000</li>
+				<li id="r14">0x00000000</li>
+				<li id="r15">0x00000000</li>
+			</ol>
+			<h3>Status bits</h3>
+			<ol id="psr">
+				<li id="cpsrN">N</li>
+				<li id="cpsrZ">Z</li>
+				<li id="cpsrC">C</li>
+				<li id="cpsrV">V</li>
+				<li id="cpsrI">I</li>
+				<li id="cpsrT">T</li>
+			</ol>
+		</section>
+	</section>
+	<ul id="console"></ul>
+</section>
 </body>
 </html>
