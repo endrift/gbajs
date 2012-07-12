@@ -1135,7 +1135,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] += cpu.gprs[rm];
 			};
-			op.writesPC = (rm == this.PC) || (rd == this.PC);
+			op.writesPC = rd == this.PC;
 			op.writeCpsr = false;
 			break;
 		case 0x0100:
@@ -1148,7 +1148,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
 					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000;
 			}
-			op.writesPC = (rm == this.PC) || (rd == this.PC);
+			op.writesPC = false;
 			op.writeCpsr = true;
 			break;
 		case 0x0200:
@@ -1156,7 +1156,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = cpu.gprs[rm];
 			};
-			op.writesPC = (rm == this.PC) || (rd == this.PC);
+			op.writesPC = rd == this.PC;
 			op.writeCpsr = false;
 			break;
 		case 0x0300:
@@ -1361,7 +1361,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		op = function() {
 			cpu.gprs[rd] = cpu.mmu.load32((cpu.gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
 		};
-		op.writesPC = true;
+		op.writesPC = false;
 		op.readCpsr = false;
 		op.writeCpsr = false;
 	} else if ((instruction & 0xF200) == 0x5000) {
@@ -1655,7 +1655,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			this.WARN("Undefined instruction: 0x" + instruction.toString(16));
 		}
 	} else {
-		this.ASSERT_UNREACHED("zxBad opcode: 0x" + instruction.toString(16));
+		this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
 	}
 
 	return op;
