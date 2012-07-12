@@ -41,8 +41,12 @@ Console.prototype.updateCPSR = function() {
 
 Console.prototype.log = function(message) {
 	var entry = document.createElement('li');
+	var doScroll = this.ul.scrollTop == this.ul.scrollHeight - this.ul.offsetHeight;
 	entry.innerText = message;
 	this.ul.appendChild(entry);
+	if (doScroll) {
+		this.ul.scrollTop = this.ul.scrollHeight - this.ul.offsetHeight;
+	}
 }
 
 Console.prototype.step = function() {
