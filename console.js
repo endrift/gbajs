@@ -87,6 +87,8 @@ Console.prototype.run = function() {
 	}
 
 	this.stillRunning = true;
+	var regs = document.getElementById('registers');
+	regs.setAttribute('class', 'disabled');
 	var self = this;
 	run = function() {
 		if (self.stillRunning) {
@@ -100,8 +102,11 @@ Console.prototype.run = function() {
 				self.log(exception);
 				self.updateGPRs();
 				self.updateCPSR();
+				regs.removeAttribute('class');
 				throw exception;
 			}
+		} else {
+			regs.removeAttribute('class');
 		}
 	}
 	run();
