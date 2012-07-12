@@ -171,9 +171,10 @@ ARMCore.prototype.step = function() {
 	this.prefetch0 = this.prefetch1;
 	this.gprs[this.PC] += this.instructionWidth;
 	this.prefetchNext(this.gprs[this.PC]);
+	this.conditionPassed = true;
 	instruction();
 
-	if (instruction.writesPC) {
+	if (instruction.writesPC && this.conditionPassed) {
 		this.prefetch(this.gprs[this.PC]);
 		if (this.execMode == this.MODE_ARM) {
 			this.instructionWidth = this.WORD_SIZE_ARM;
@@ -200,72 +201,72 @@ ARMCore.prototype.generateCond = function(cond) {
 	case 0x0:
 		// EQ
 		return function() {
-			return cpu.cpsrZ;
+			return cpu.conditionPassed = cpu.cpsrZ;
 		};
 	case 0x1:
 		// NE
 		return function() {
-			return !cpu.cpsrZ;
+			return cpu.conditionPassed = !cpu.cpsrZ;
 		};
 	case 0x2:
 		// CS
 		return function() {
-			return cpu.cpsrC;
+			return cpu.conditionPassed = cpu.cpsrC;
 		};
 	case 0x3:
 		// CC
 		return function() {
-			return !cpu.cpsrC;
+			return cpu.conditionPassed = !cpu.cpsrC;
 		};
 	case 0x4:
 		// MI
 		return function() {
-			return cpu.cpsrN;
+			return cpu.conditionPassed = cpu.cpsrN;
 		};
 	case 0x5:
 		// PL
 		return function() {
-			return !cpu.cpsrN;
+			return cpu.conditionPassed = !cpu.cpsrN;
 		};
 	case 0x6:
 		// VS
 		return function() {
-			return cpu.cpsrV;
+			return cpu.conditionPassed = cpu.cpsrV;
 		};
 	case 0x7:
 		// VC
 		return function() {
-			return !cpu.cpsrV;
+			return cpu.conditionPassed = !cpu.cpsrV;
 		};
 	case 0x8:
 		// HI
 		return function () {
-			return cpu.cpsrC && !cpu.cpsrZ;
+			return cpu.conditionPassed = cpu.cpsrC && !cpu.cpsrZ;
 		};
 	case 0x9:
 		// LS
 		return function () {
-			return !cpu.cpsrC || cpu.cpsrZ;
+			return cpu.conditionPassed = !cpu.cpsrC || cpu.cpsrZ;
 		};
 	case 0xA:
 		// GE
 		return function () {
-			return !cpu.cpsrN == !cpu.cpsrV;
+			return cpu.conditionPassed = !cpu.cpsrN == !cpu.cpsrV;
 		};
 	case 0xB:
 		// LT
 		return function () {
-			return !cpu.cpsrN != !cpu.cpsrV;
+			return cpu.conditionPassed = !cpu.cpsrN != !cpu.cpsrV;
 		};
 	case 0xC:
 		// GT
 		return function () {
-			return !cpu.cpsrZ && !cpu.cpsrN == !cpu.cpsrV;
+			return cpu.conditionPassed = !cpu.cpsrZ && !cpu.cpsrN == !cpu.cpsrV;
 		};
 	case 0xD:
 		// LE
 		return function () {
-			return cpu.cpsrZ || !cpu.cpsrN != !cpu.cpsrV;
+			return cpu.conditionPassed = cpu.cpsrZ || !cpu.cpsrN != !cpu.cpsrV;
 		};
 	case 0xE:
 		// AL
