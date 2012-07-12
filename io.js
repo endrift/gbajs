@@ -82,7 +82,7 @@ GameBoyAdvanceIO.prototype.setVideo = function(video) {
 };
 
 GameBoyAdvanceIO.prototype.clear = function() {
-	this.registers = new Uint32Array(this.cpu.mmu.SIZE_IO);
+	this.registers = new Uint16Array(this.cpu.mmu.SIZE_IO);
 };
 
 GameBoyAdvanceIO.prototype.load8 = function(offset) {
@@ -99,7 +99,7 @@ GameBoyAdvanceIO.prototype.load32 = function(offset) {
 	case this.DMA1CNT_LO:
 	case this.DMA2CNT_LO:
 	case this.DMA3CNT_LO:
-		return this.loadU16(offset | 2);
+		return this.loadU16(offset | 2) << 16;
 	}
 
 	return this.loadU16(offset) | (this.loadU16(offset | 2) << 16);
@@ -121,7 +121,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DMA1CNT_HI:
 	case this.DMA2CNT_HI:
 	case this.DMA3CNT_HI:
-		break; // FIXME: DMAs will disable themselves, we need to read that out
+		break;
 	default:
 		throw "Unimplemented I/O register read: 0x" + offset.toString(16);
 	}
@@ -139,32 +139,34 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.DMA0CNT_LO:
 		this.cpu.irq.dmaSetWordCount(0, value);
-		value &= 0xFFE0;
-		break;
+		return;
 	case this.DMA0CNT_HI:
+		// The DMA registers need to set the values before writing the control, as writing the
+		// control can synchronously trigger a DMA transfer
+		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(0, value);
 		break;
 	case this.DMA1CNT_LO:
 		this.cpu.irq.dmaSetWordCount(1, value);
-		value &= 0xFFE0;
-		break;
+		return;
 	case this.DMA1CNT_HI:
+		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(1, value);
 		break;
 	case this.DMA2CNT_LO:
 		this.cpu.irq.dmaSetWordCount(2, value);
-		value &= 0xFFE0;
-		break;
+		return;
 	case this.DMA2CNT_HI:
+		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(2, value);
 		break;
 	case this.DMA3CNT_LO:
 		this.cpu.irq.dmaSetWordCount(3, value);
-		value &= 0xFFE0;
-		break;
+		return;
 	case this.DMA3CNT_HI:
+		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(3, value);
-		break;
+		return;
 	case this.IME:
 		value &= 0x0001;
 		this.cpu.irq.masterEnable(value);

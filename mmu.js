@@ -353,16 +353,16 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		var dmaRegister;
 		switch (number) {
 		case 0:
-			dmaRegister = this.io.DMA0CNT_LO >> 1;
+			dmaRegister = this.io.DMA0CNT_HI >> 1;
 			break;
 		case 1:
-			dmaRegister = this.io.DMA1CNT_LO >> 1;
+			dmaRegister = this.io.DMA1CNT_HI >> 1;
 			break;
 		case 2:
-			dmaRegister = this.io.DMA2CNT_LO >> 1;
+			dmaRegister = this.io.DMA2CNT_HI >> 1;
 			break;
 		case 3:
-			dmaRegister = this.io.DMA3CNT_LO >> 1;
+			dmaRegister = this.io.DMA3CNT_HI >> 1;
 			break;
 		}
 		io[dmaRegister] &= 0x7FE0;
