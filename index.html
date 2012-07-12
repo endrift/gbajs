@@ -49,8 +49,9 @@ window.onload = function() {
 	<section id="devtools">
 		<section id="controls">
 			<button onclick="gbaCon.step()">Step</button>
-			<button>Continue</button>
-			<button>Pause</button>
+			<button onclick="gbaCon.runVisible()">Run slowly</button>
+			<button onclick="gbaCon.run()">Run quickly</button>
+			<button onclick="gbaCon.pause()">Pause</button>
 		</section>
 		<section id="registers">
 			<h3>GPRs</h3>

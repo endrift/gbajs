@@ -46,7 +46,63 @@ Console.prototype.log = function(message) {
 }
 
 Console.prototype.step = function() {
-	this.cpu.step();
-	this.updateGPRs();
-	this.updateCPSR();
+	try {
+		this.cpu.step();
+		this.updateGPRs();
+		this.updateCPSR();
+	} catch (exception) {
+		this.log(exception);
+		throw exception;
+	}
+}
+
+Console.prototype.runVisible = function() {
+	if (this.stillRunning) {
+		return;
+	}
+
+	this.stillRunning = true;
+	var self = this;
+	run = function() {
+		if (self.stillRunning) {
+			try {
+				self.step();
+				setTimeout(run, 0);
+			} catch (exception) {
+				self.stillRunning = false;
+				throw exception;
+			}
+		}
+	}
+	run();
+}
+
+Console.prototype.run = function() {
+	if (this.stillRunning) {
+		return;
+	}
+
+	this.stillRunning = true;
+	var self = this;
+	run = function() {
+		if (self.stillRunning) {
+			try {
+				for (var i = 0; i < 16780; ++i) {
+					self.cpu.step();
+				}
+				setTimeout(run, 0);
+			} catch (exception) {
+				self.stillRunning = false;
+				self.log(exception);
+				self.updateGPRs();
+				self.updateCPSR();
+				throw exception;
+			}
+		}
+	}
+	run();
+}
+
+Console.prototype.pause = function() {
+	this.stillRunning = false;
 }
