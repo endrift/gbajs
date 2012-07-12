@@ -296,6 +296,78 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	}
 };
 
+GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
+	var INCREMENT = 0;
+	var DECREMENT = 1;
+	var FIXED = 2;
+
+	var sourceOffset;
+	var destOffset;
+
+	var width = info.width ? 4 : 2;
+
+	switch (info.srcControl) {
+	case INCREMENT:
+		sourceOffset = width;
+		break;
+	case DECREMENT:
+		sourceOffset = -width;
+		break;
+	case FIXED:
+		sourceOffset = 0;
+		break;
+	}
+
+	switch (info.dstControl) {
+	case INCREMENT:
+		destOffset = width;
+		break;
+	case DECREMENT:
+		destOffset = -width;
+		break;
+	case FIXED:
+		destOffset = 0;
+		break;
+	}
+
+	var wordsRemaining = info.count;
+	var source = this.maskOffset(info.source);
+	var dest = this.maskOffset(info.dest);
+	var sourceRegion = this.memoryView[this.getMemoryRegion(info.source)];
+	var destRegion = this.memoryView[this.getMemoryRegion(info.dest)];
+	if (width == 4) {
+		for (var i = 0; i < wordsRemaining; ++i) {
+			var word = sourceRegion.getInt32(source);
+			destRegion.setInt32(dest, word);
+			source += sourceOffset;
+			dest += destOffset;
+		}
+	} else {
+	}
+
+	if (!info.repeat) {
+		info.enable = false;
+
+		// Clear the enable bit in memory
+		var io = this.io.registers;
+		var dmaRegister;
+		switch (number) {
+		case 0:
+			dmaRegister = this.io.DMA0CNT_LO >> 1;
+			break;
+		case 1:
+			dmaRegister = this.io.DMA1CNT_LO >> 1;
+			break;
+		case 2:
+			dmaRegister = this.io.DMA2CNT_LO >> 1;
+			break;
+		case 3:
+			dmaRegister = this.io.DMA3CNT_LO >> 1;
+			break;
+		}
+		io[dmaRegister] &= 0x7FE0;
+	}
+};
 
 GameBoyAdvanceMMU.prototype.getMemoryRegion = function(offset) {
 	var memoryRegion = offset >> this.BASE_OFFSET;

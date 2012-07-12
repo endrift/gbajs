@@ -3,9 +3,22 @@ GameBoyAdvanceInterruptHandler = function() {
 	this.irqProviders = new Array();
 	this.enable = true;
 
-	this.dmaSource = new Uint32Array(4);
-	this.dmaDest = new Uint32Array(4);
-	this.dmaWordCount = new Uint32Array(4);
+	this.dma = new Array();
+	for (var i = 0; i < 4; ++i) {
+		this.dma.push({
+			source: 0,
+			dest: 0,
+			count: 0,
+			srcControl: 0,
+			dstControl: 0,
+			repeat: 0,
+			width: 0,
+			drq: 0,
+			timing: 0,
+			doIrq: 0,
+			enable: 0
+		});
+	}
 };
 
 GameBoyAdvanceInterruptHandler.prototype.setCPU = function(cpu) {
@@ -83,16 +96,29 @@ GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetSourceAddress = function(dma, address) {
-	this.dmaSource[dma] = address;
+	this.dma[dma].source = address;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetDestAddress = function(dma, address) {
-	this.dmaDest[dma] = address;
+	this.dma[dma].dest = address;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetWordCount = function(dma, count) {
-	this.dmaWordCount[dma] = count ? count : (dma == 3 ? 0x10000 : 0x4000);
+	this.dma[dma].count = count ? count : (dma == 3 ? 0x10000 : 0x4000);
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control) {
+	var currentDma = this.dma[dma];
+	currentDma.dstControl = (control & 0x0060) >> 5;
+	currentDma.srcControl = (control & 0x0180) >> 7;
+	currentDma.repeat = control & 0x0200;
+	currentDma.width = control & 0x0400;
+	currentDma.drq = control & 0x0800;
+	currentDma.timing = control & 0x3000;
+	currentDma.doIrq = control & 0x4000;
+	currentDma.enable = control & 0x8000;
+
+	if (!currentDma.timing && currentDma.enable) {
+		this.cpu.mmu.serviceDma(dma, currentDma);
+	}
 };

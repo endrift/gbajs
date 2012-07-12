@@ -139,25 +139,29 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.DMA0CNT_LO:
 		this.cpu.irq.dmaSetWordCount(0, value);
-		return;
+		value &= 0xFFE0;
+		break;
 	case this.DMA0CNT_HI:
 		this.cpu.irq.dmaWriteControl(0, value);
 		break;
 	case this.DMA1CNT_LO:
 		this.cpu.irq.dmaSetWordCount(1, value);
-		return;
+		value &= 0xFFE0;
+		break;
 	case this.DMA1CNT_HI:
 		this.cpu.irq.dmaWriteControl(1, value);
 		break;
 	case this.DMA2CNT_LO:
 		this.cpu.irq.dmaSetWordCount(2, value);
-		return;
+		value &= 0xFFE0;
+		break;
 	case this.DMA2CNT_HI:
 		this.cpu.irq.dmaWriteControl(2, value);
 		break;
 	case this.DMA3CNT_LO:
 		this.cpu.irq.dmaSetWordCount(3, value);
-		return;
+		value &= 0xFFE0;
+		break;
 	case this.DMA3CNT_HI:
 		this.cpu.irq.dmaWriteControl(3, value);
 		break;
