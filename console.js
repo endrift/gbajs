@@ -88,6 +88,7 @@ Console.prototype.run = function() {
 
 	this.stillRunning = true;
 	var regs = document.getElementById('registers');
+	var start = new Date().getTime();
 	regs.setAttribute('class', 'disabled');
 	var self = this;
 	run = function() {
@@ -99,6 +100,7 @@ Console.prototype.run = function() {
 				setTimeout(run, 0);
 			} catch (exception) {
 				self.stillRunning = false;
+				self.log("Exception hit after " + (new Date().getTime() - start) + " milliseconds!");
 				self.log(exception);
 				self.updateGPRs();
 				self.updateCPSR();
