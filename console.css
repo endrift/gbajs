@@ -1,61 +1,92 @@
+body {
+	margin: 0;
+	background-color: #2A2F32;
+}
+
 h3 {
 	font-size: 14px;
 	height: 18px;
 	margin: 2px 0 -20px 4px;
 	padding: 0 6px 0 4px;
-	background-color: #2A2F32;
 	position: relative;
 	display: inline-block;
+	background-color: #2A2F32;
 }
 
-#top {
-	display: -webkit-flex;
-	-webkit-flex-flow: row;
+canvas {
+	background-color: gray;
 }
 
-#display {
-	float: left;
+#screen {
 	margin: 40px;
 }
 
-#console, #devtools {
+section {
+	display: -webkit-box;
+	display: -moz-box;
+	display: box;
+
+	-webkit-box-pack: center;
+}
+
+#top {
+	-webkit-box-orient: horizontal;
+	width: 100%;
+	height: 100%;
+}
+
+#main {
+	-webkit-box-orient: vertical;
+	min-width: 242px;
+	max-width: 410px;
+}
+
+ul, ol, #registers {
 	font-family: 'Lucida Sans Typewriter', 'Monaco', 'Andale Mono', monospace;
 	font-size: 13px;
-	background-color: #2A2F32;
 	color: #DADDE1;
 	padding: 10px;
 }
 
-#devtools {
-	margin: 10px 10px 10px 20px;
-	height: 432px;
+#devtools, #registers {
+	-webkit-box-orient: vertical;
 }
 
 #console {
 	overflow-y: auto;
 	white-space: pre-wrap;
-	height: 200px;
-	margin: 10px;
-	clear: left;
+	margin: 0;
+	-webkit-box-flex: 1;
+	max-height: 100%;
+	border-right: 1px solid #DADDE1;
+}
+
+#memory {
+	white-space: nowrap;
+	margin: 0;
+	-webkit-box-flex: 1;
+	max-height: 100%;
+	border-left: 1px solid #DADDE1;
 }
 
 #gprs {
-	width: 350px;
 	text-align: center;
 }
 
 #registers ol {
 	border: 1px solid #DADDE1;
-	padding: 5px;
+	padding: 8px;
 }
 
 #registers ol > li {
 	padding: 0;
+	margin: 3px;
+	line-height: 16px;
 	display: inline;
 }
 
-#devtools {
-	float: right;
+#registers {
+	-webkit-box-flex: 1;
 }
 
 #console li:before {

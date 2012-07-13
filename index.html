@@ -1,10 +1,5 @@
 <html>
 <head>
-<style>
-canvas {
-	border: 1px solid black;
-}
-</style>
 <script src="core.js"></script>
 <script src="mmu.js"></script>
 <script src="io.js"></script>
@@ -44,10 +39,11 @@ window.onload = function() {
 </head>
 <body>
 <section id="top">
-	<section id="display">
-		<canvas id="screen" width="240" height="160"></canvas>
-	</section>
-	<section id="devtools">
+	<ul id="console"></ul>
+	<section id="main">
+		<section id="display">
+			<canvas id="screen" width="240" height="160"></canvas>
+		</section>
 		<section id="controls">
 			<button onclick="gbaCon.step()">Step</button>
 			<button onclick="gbaCon.runVisible()">Run slowly</button>
@@ -55,37 +51,41 @@ window.onload = function() {
 			<button onclick="gbaCon.pause()">Pause</button>
 		</section>
 		<section id="registers">
-			<h3>GPRs</h3>
-			<ol id="gprs">
-				<li id="r0">0x00000000</li>
-				<li id="r1">0x00000000</li>
-				<li id="r2">0x00000000</li>
-				<li id="r3">0x00000000</li>
-				<li id="r4">0x00000000</li>
-				<li id="r5">0x00000000</li>
-				<li id="r6">0x00000000</li>
-				<li id="r7">0x00000000</li>
-				<li id="r8">0x00000000</li>
-				<li id="r9">0x00000000</li>
-				<li id="r10">0x00000000</li>
-				<li id="r11">0x00000000</li>
-				<li id="r12">0x00000000</li>
-				<li id="r13">0x00000000</li>
-				<li id="r14">0x00000000</li>
-				<li id="r15">0x00000000</li>
-			</ol>
-			<h3>Status bits</h3>
-			<ol id="psr">
-				<li id="cpsrN">N</li>
-				<li id="cpsrZ">Z</li>
-				<li id="cpsrC">C</li>
-				<li id="cpsrV">V</li>
-				<li id="cpsrI">I</li>
-				<li id="cpsrT">T</li>
-			</ol>
+			<div>
+				<h3>GPRs</h3>
+				<ol id="gprs">
+					<li id="r0">0x00000000</li>
+					<li id="r1">0x00000000</li>
+					<li id="r2">0x00000000</li>
+					<li id="r3">0x00000000</li>
+					<li id="r4">0x00000000</li>
+					<li id="r5">0x00000000</li>
+					<li id="r6">0x00000000</li>
+					<li id="r7">0x00000000</li>
+					<li id="r8">0x00000000</li>
+					<li id="r9">0x00000000</li>
+					<li id="r10">0x00000000</li>
+					<li id="r11">0x00000000</li>
+					<li id="r12">0x00000000</li>
+					<li id="r13">0x00000000</li>
+					<li id="r14">0x00000000</li>
+					<li id="r15">0x00000000</li>
+				</ol>
+			</div>
+			<div>
+				<h3>Status bits</h3>
+				<ol id="psr">
+					<li id="cpsrN">N</li>
+					<li id="cpsrZ">Z</li>
+					<li id="cpsrC">C</li>
+					<li id="cpsrV">V</li>
+					<li id="cpsrI">I</li>
+					<li id="cpsrT">T</li>
+				</ol>
+			</div>
 		</section>
 	</section>
-	<ul id="console"></ul>
+	<ul id="memory"></ul>
 </section>
 </body>
 </html>
