@@ -148,7 +148,7 @@ Console.prototype.pause = function() {
 
 Memory = function(mmu) {
 	this.mmu = mmu;
-	this.ul = document.getElementById('memory');
+	this.ul = document.getElementById('memoryView');
 	row = this.createRow(0);
 	this.ul.appendChild(row);
 	this.rowHeight = row.offsetHeight;
@@ -156,7 +156,7 @@ Memory = function(mmu) {
 	this.ul.removeChild(row);
 
 	for (var i = 0; i < this.numberRows; ++i) {
-		this.ul.appendChild(this.createRow(0x08000000 | (i << 4)));
+		this.ul.appendChild(this.createRow(i << 4));
 	}
 
 	var self = this;
@@ -217,4 +217,23 @@ Memory.prototype.createRow = function(startOffset) {
 	}
 	li.offset = startOffset;
 	return li;
+}
+
+Memory.prototype.scrollTo = function(offset) {
+	offset &= 0xFFFFFFF0;
+	if (offset) {
+		for (var i = 0; i < this.ul.children.length; ++i) {
+			var child = this.ul.children[i];
+			child.offset = offset + (i - 1) * 16;
+			this.refresh(child);
+		}
+		this.ul.scrollTop = this.rowHeight;
+	} else {
+		for (var i = 0; i < this.ul.children.length; ++i) {
+			var child = this.ul.children[i];
+			child.offset = offset + i * 16;
+			this.refresh(child);
+		}
+		this.ul.scrollTop = 0;
+	}
 }

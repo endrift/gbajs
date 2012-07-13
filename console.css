@@ -1,6 +1,8 @@
 body {
 	margin: 0;
+	font-family: 'Lucida Sans Typewriter', 'Monaco', 'Andale Mono', monospace;
 	background-color: #2A2F32;
+	color: #DADDE1;
 }
 
 h3 {
@@ -43,9 +45,7 @@ section {
 }
 
 ul, ol, #registers {
-	font-family: 'Lucida Sans Typewriter', 'Monaco', 'Andale Mono', monospace;
 	font-size: 13px;
-	color: #DADDE1;
 	padding: 10px;
 }
 
@@ -131,10 +131,36 @@ ul, ol, #registers {
 }
 
 #memory {
-	overflow: scroll;
 	min-width: 400px;
+	display: -webkit-box;
+	display: -moz-box;
+	-webkit-box-orient: vertical;
+	-moz-box-orient: vertical;
+	padding: 0;
+}
+
+#memoryControls {
+	border-bottom: 1px solid #DADDE1;
+	padding: 2px;
+}
+
+#memoryControls ul {
+	margin: 0;
+	padding: 0;
+	float: right;
+}
+
+#memoryControls ul > li {
+	float: left;
+	margin-left: 16px;
+}
+
+#memoryView {
+	margin: 0;
+	overflow-y: scroll;
 	display: -moz-box;
 	-moz-box-orient: vertical;
+	-webkit-box-flex: 1;
 }
 
 #memory li {
