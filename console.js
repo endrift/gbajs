@@ -37,6 +37,28 @@ Console.prototype.updateCPSR = function() {
 	bit('cpsrV', 'cpsrV');
 	bit('cpsrI', 'cpsrI');
 	bit('cpsrT', 'execMode');
+	
+	var mode = document.getElementById('mode');
+	switch (cpu.mode) {
+	case cpu.MODE_USER:
+		mode.innerText = 'USER';
+		break;
+	case cpu.MODE_IRQ:
+		mode.innerText = 'IRQ';
+		break;
+	case cpu.MODE_ABORT:
+		mode.innerText = 'ABORT';
+		break;
+	case cpu.MODE_UNDEFINED:
+		mode.innerText = 'UNDEFINED';
+		break;
+	case cpu.MODE_SYSTEM:
+		mode.innerText = 'SYSTEM';
+		break;
+	default:
+		mode.innerText = '???';
+		break;
+	}
 }
 
 Console.prototype.log = function(message) {

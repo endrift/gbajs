@@ -73,15 +73,37 @@ ul, ol, #registers {
 	text-align: center;
 }
 
+#psr {
+	display: -webkit-box;
+	-webkit-box-orient: horizontal;
+}
+
+#psr > * {
+	display: block;
+	padding: 2px 10px;
+}
+
+#psr > *:last-child {
+	-webkit-box-flex: 1;
+	text-align: right;
+}
+
+#mode {
+	display: inline-block;
+	width: 80px;
+}
+
 #registers ol {
 	border: 1px solid #DADDE1;
 	padding: 8px;
 }
 
 #registers ol > li {
-	padding: 0;
 	margin: 3px;
 	line-height: 16px;
+}
+
+#gprs > li {
 	display: inline;
 }
 
