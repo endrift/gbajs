@@ -121,6 +121,29 @@ ul, ol, #registers {
 	list-style-type: none;
 }
 
+#memory {
+	overflow: scroll;
+	min-width: 400px;
+}
+
+#memory li {
+	display: -webkit-box;
+	-webkit-box-orient: horizontal;
+	list-style-type: none;
+}
+
+#memory .memoryOffset {
+	margin-right: 5px;
+	display: block;
+	-webkit-box-flex: 0;
+}
+
+#memory .memoryCell {
+	margin: 0 3px;
+	display: block;
+	-webkit-box-flex: 1;
+}
+
 .disabled {
 	color: #5C616F;
 }

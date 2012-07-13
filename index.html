@@ -21,7 +21,9 @@ var irq = new GameBoyAdvanceInterruptHandler();
 var io = new GameBoyAdvanceIO();
 var video = new GameBoyAdvanceVideo();
 var rom = null;
+
 var gbaCon;
+var gbaMem;
 mmu.setIO(io);
 io.setVideo(video);
 io.setCPU(core);
@@ -32,6 +34,7 @@ window.onload = function() {
 	video.setCanvas(canvas);
 
 	gbaCon = new Console(core);
+	gbaMem = new Memory(mmu);
 	gbaCon.log("Logging begun!");
 	loadRom('test.rom', runTest);
 };

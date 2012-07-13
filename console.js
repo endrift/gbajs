@@ -1,12 +1,4 @@
-Console = function(cpu) {
-	this.cpu = cpu;
-	this.ul = document.getElementById('console');
-	this.gprs = document.getElementById('gprs');
-	this.updateGPRs();
-	this.updateCPSR();
-}
-
-Console.prototype.hex = function(number, leading) {
+function hex(number, leading) {
 	if (typeof(leading) === 'undefined') {
 		leading = 8;
 	}
@@ -15,9 +7,17 @@ Console.prototype.hex = function(number, leading) {
 	return '0x' + new Array(leading + 1).join('0') + string;
 }
 
+Console = function(cpu) {
+	this.cpu = cpu;
+	this.ul = document.getElementById('console');
+	this.gprs = document.getElementById('gprs');
+	this.updateGPRs();
+	this.updateCPSR();
+}
+
 Console.prototype.updateGPRs = function() {
 	for (var i = 0; i < 16; ++i) {
-		this.gprs.children[i].innerText = this.hex(this.cpu.gprs[i]);
+		this.gprs.children[i].innerText = hex(this.cpu.gprs[i]);
 	}
 }
 
@@ -138,4 +138,52 @@ Console.prototype.run = function() {
 
 Console.prototype.pause = function() {
 	this.stillRunning = false;
+}
+
+Memory = function(mmu) {
+	this.mmu = mmu;
+	this.ul = document.getElementById('memory');
+	row = this.createRow(0);
+	this.ul.appendChild(row);
+	this.rowHeight = row.offsetHeight;
+	this.numberRows = this.ul.offsetHeight / this.rowHeight + 2;
+	this.ul.removeChild(row);
+
+	for (var i = 0; i < this.numberRows; ++i) {
+		this.ul.appendChild(this.createRow(i << 4));
+	}
+
+	var self = this;
+	this.ul.addEventListener('scroll', function(e) { self.scroll() }, true);
+}
+
+Memory.prototype.scroll = function() {
+	while (this.ul.scrollTop < this.rowHeight) {
+		var victim = this.ul.lastChild;
+		this.ul.removeChild(victim);
+		this.ul.insertBefore(victim, this.ul.firstChild);
+		this.ul.scrollTop += this.rowHeight;
+	}
+	while (this.ul.scrollTop > this.rowHeight * 2) {
+		var victim = this.ul.firstChild;
+		this.ul.removeChild(victim);
+		this.ul.appendChild(victim);
+		this.ul.scrollTop -= this.rowHeight;
+	}
+}
+
+Memory.prototype.createRow = function(startOffset) {
+	var li = document.createElement('li');
+	var offset = document.createElement('span');
+	offset.setAttribute('class', 'memoryOffset');
+	offset.innerText = hex(startOffset);
+	li.appendChild(offset);
+
+	for (var i = 0; i < 16; ++i) {
+		var b = document.createElement('span');
+		b.innerText = '00';
+		b.setAttribute('class', 'memoryCell');
+		li.appendChild(b);
+	}
+	return li;
 }
