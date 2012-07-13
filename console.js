@@ -1,10 +1,13 @@
-function hex(number, leading) {
+function hex(number, leading, usePrefix) {
+	if (typeof(usePrefix) === 'undefined') {
+		usePrefix = true;
+	}
 	if (typeof(leading) === 'undefined') {
 		leading = 8;
 	}
 	var string = (number >>> 0).toString(16).toUpperCase();
 	leading -= string.length;
-	return '0x' + new Array(leading + 1).join('0') + string;
+	return (usePrefix ? '0x' : '')  + new Array(leading + 1).join('0') + string;
 }
 
 Console = function(cpu) {
@@ -150,7 +153,7 @@ Memory = function(mmu) {
 	this.ul.removeChild(row);
 
 	for (var i = 0; i < this.numberRows; ++i) {
-		this.ul.appendChild(this.createRow(i << 4));
+		this.ul.appendChild(this.createRow(0x08000000 | (i << 4)));
 	}
 
 	var self = this;
@@ -159,16 +162,34 @@ Memory = function(mmu) {
 
 Memory.prototype.scroll = function() {
 	while (this.ul.scrollTop < this.rowHeight) {
+		if (this.ul.firstChild.offset == 0) {
+			break;
+		}
 		var victim = this.ul.lastChild;
 		this.ul.removeChild(victim);
+		victim.offset = this.ul.firstChild.offset - 16;
+		this.refresh(victim);
 		this.ul.insertBefore(victim, this.ul.firstChild);
 		this.ul.scrollTop += this.rowHeight;
 	}
 	while (this.ul.scrollTop > this.rowHeight * 2) {
 		var victim = this.ul.firstChild;
 		this.ul.removeChild(victim);
+		victim.offset = this.ul.lastChild.offset + 16;
+		this.refresh(victim);
 		this.ul.appendChild(victim);
 		this.ul.scrollTop -= this.rowHeight;
+	}
+}
+
+Memory.prototype.refresh = function(row) {
+	row.firstChild.innerText = hex(row.offset);
+	for (var i = 0; i < 16; ++i) {
+		try {
+			row.children[i + 1].innerText = hex(this.mmu.freeLoadU8(row.offset + i), 2, false);
+		} catch (exception) {
+			row.children[i + 1].innerText = '??';
+		}
 	}
 }
 
@@ -185,5 +206,6 @@ Memory.prototype.createRow = function(startOffset) {
 		b.setAttribute('class', 'memoryCell');
 		li.appendChild(b);
 	}
+	li.offset = startOffset;
 	return li;
 }
