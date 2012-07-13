@@ -24,19 +24,20 @@ canvas {
 section {
 	display: -webkit-box;
 	display: -moz-box;
-	display: box;
-
 	-webkit-box-pack: center;
+	-moz-box-pack: center;
 }
 
 #top {
 	-webkit-box-orient: horizontal;
+	-moz-box-orient: horizontal;
 	width: 100%;
 	height: 100%;
 }
 
 #main {
 	-webkit-box-orient: vertical;
+	-moz-box-orient: vertical;
 	min-width: 242px;
 	max-width: 410px;
 }
@@ -50,6 +51,7 @@ ul, ol, #registers {
 
 #devtools, #registers {
 	-webkit-box-orient: vertical;
+	-moz-box-orient: vertical;
 }
 
 #console {
@@ -57,7 +59,9 @@ ul, ol, #registers {
 	white-space: pre-wrap;
 	margin: 0;
 	-webkit-box-flex: 1;
+	-moz-box-flex: 1;
 	max-height: 100%;
+	min-width: 300px;
 	border-right: 1px solid #DADDE1;
 }
 
@@ -65,6 +69,7 @@ ul, ol, #registers {
 	white-space: nowrap;
 	margin: 0;
 	-webkit-box-flex: 1;
+	-moz-box-flex: 1;
 	max-height: 100%;
 	border-left: 1px solid #DADDE1;
 }
@@ -75,7 +80,9 @@ ul, ol, #registers {
 
 #psr {
 	display: -webkit-box;
+	display: -moz-box;
 	-webkit-box-orient: horizontal;
+	-moz-box-orient: horizontal;
 }
 
 #psr > * {
@@ -85,6 +92,7 @@ ul, ol, #registers {
 
 #psr > *:last-child {
 	-webkit-box-flex: 1;
+	-moz-box-flex: 1;
 	text-align: right;
 }
 
@@ -109,6 +117,7 @@ ul, ol, #registers {
 
 #registers {
 	-webkit-box-flex: 1;
+	-moz-box-flex: 1;
 }
 
 #console li:before {
@@ -124,11 +133,15 @@ ul, ol, #registers {
 #memory {
 	overflow: scroll;
 	min-width: 400px;
+	display: -moz-box;
+	-moz-box-orient: vertical;
 }
 
 #memory li {
 	display: -webkit-box;
+	display: -moz-box;
 	-webkit-box-orient: horizontal;
+	-moz-box-orient: horizontal;
 	list-style-type: none;
 }
 
@@ -136,12 +149,14 @@ ul, ol, #registers {
 	margin-right: 5px;
 	display: block;
 	-webkit-box-flex: 0;
+	-moz-box-flex: 0;
 }
 
 #memory .memoryCell {
 	margin: 0 3px;
 	display: block;
 	-webkit-box-flex: 1;
+	-moz-box-flex: 1;
 }
 
 .disabled {
