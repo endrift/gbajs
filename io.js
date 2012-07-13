@@ -70,6 +70,7 @@ GameBoyAdvanceIO = function() {
 	this.DMA3CNT_HI = 0x0DE;
 
 	// Interrupts, etc
+	this.WAITCNT = 0x204;
 	this.IME = 0x208;
 };
 
@@ -112,6 +113,7 @@ GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
 	case this.DISPCNT:
+	case this.WAITCNT:
 	case this.IME:
 		// Handled transparently by the written registers
 		break;
@@ -167,6 +169,10 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(3, value);
 		return;
+	case this.WAITCNT:
+		// TODO: implement this
+		value &= 0x5FFF;
+		break;
 	case this.IME:
 		value &= 0x0001;
 		this.cpu.irq.masterEnable(value);
