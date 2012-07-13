@@ -16,8 +16,8 @@ canvas {
 <link href="console.css" rel="stylesheet">
 <script>
 function runTest(r) {
-	gbaCon.log("ROM loaded: " + r.byteLength + " bytes");
-	mmu.loadRom(r);
+	rom = mmu.loadRom(r, true);
+	gbaCon.log("ROM loaded: " + rom.title + " [" + rom.code + "] (" + r.byteLength + " bytes)");
 }
 
 var core = new ARMCore();
@@ -25,6 +25,7 @@ var mmu = new GameBoyAdvanceMMU();
 var irq = new GameBoyAdvanceInterruptHandler();
 var io = new GameBoyAdvanceIO();
 var video = new GameBoyAdvanceVideo();
+var rom = null;
 var gbaCon;
 mmu.setIO(io);
 io.setVideo(video);

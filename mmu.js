@@ -163,7 +163,14 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.io.clear();
 };
 
-GameBoyAdvanceMMU.prototype.loadRom = function(rom) {
+GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
+	cart = {
+		title: null,
+		code: null,
+		maker: null,
+		memory: rom,
+	};
+
 	this.memory[this.REGION_CART0] = rom;
 	this.memory[this.REGION_CART1] = rom;
 	this.memory[this.REGION_CART2] = rom;
@@ -176,6 +183,40 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom) {
 	this.icache[this.REGION_CART0] = icache;
 	this.icache[this.REGION_CART1] = icache;
 	this.icache[this.REGION_CART2] = icache;
+
+	if (process) {
+		var name = '';
+		for (var i = 0; i < 12; ++i) {
+			var c = view.getUint8(i + 0xA0);
+			if (!c) {
+				break;
+			}
+			name += String.fromCharCode(c);
+		}
+		cart.title = name;
+
+		var code = '';
+		for (var i = 0; i < 4; ++i) {
+			var c = view.getUint8(i + 0xAC);
+			if (!c) {
+				break;
+			}
+			code += String.fromCharCode(c);
+		}
+		cart.code = code;
+
+		var maker = '';
+		for (var i = 0; i < 2; ++i) {
+			var c = view.getUint8(i + 0xB0);
+			if (!c) {
+				break;
+			}
+			maker += String.fromCharCode(c);
+		}
+		cart.maker = maker;
+	}
+
+	return cart;
 };
 
 GameBoyAdvanceMMU.prototype.maskOffset = function(offset) {
