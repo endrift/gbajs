@@ -14,8 +14,10 @@ Console = function(cpu) {
 	this.cpu = cpu;
 	this.ul = document.getElementById('console');
 	this.gprs = document.getElementById('gprs');
+	this.memory = new Memory(cpu.mmu);
 	this.updateGPRs();
 	this.updateCPSR();
+	this.memory.refreshAll();
 }
 
 Console.prototype.updateGPRs = function() {
@@ -79,6 +81,7 @@ Console.prototype.step = function() {
 		this.cpu.step();
 		this.updateGPRs();
 		this.updateCPSR();
+		this.memory.refreshAll();
 	} catch (exception) {
 		this.log(exception);
 		throw exception;
@@ -190,6 +193,12 @@ Memory.prototype.refresh = function(row) {
 		} catch (exception) {
 			row.children[i + 1].innerText = '??';
 		}
+	}
+}
+
+Memory.prototype.refreshAll = function() {
+	for (var i = 0; i < this.ul.children.length; ++i) {
+		this.refresh(this.ul.children[i]);
 	}
 }
 

@@ -13,6 +13,7 @@
 function runTest(r) {
 	rom = mmu.loadRom(r, true);
 	gbaCon.log("ROM loaded: " + rom.title + " [" + rom.code + "] (" + r.byteLength + " bytes)");
+	gbaCon.memory.refreshAll();
 }
 
 var core = new ARMCore();
@@ -23,7 +24,6 @@ var video = new GameBoyAdvanceVideo();
 var rom = null;
 
 var gbaCon;
-var gbaMem;
 mmu.setIO(io);
 io.setVideo(video);
 io.setCPU(core);
@@ -34,7 +34,6 @@ window.onload = function() {
 	video.setCanvas(canvas);
 
 	gbaCon = new Console(core);
-	gbaMem = new Memory(mmu);
 	gbaCon.log("Logging begun!");
 	loadRom('test.rom', runTest);
 };
