@@ -168,6 +168,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 
 GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	switch (offset) {
+	// Video
 	case this.DISPCNT:
 		this.video.writeDisplayControl(value);
 		break;
@@ -175,6 +176,20 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		value &= this.video.DISPSTAT_MASK;
 		this.video.writeDisplayStat(value);
 		break;
+
+	// Sound
+	// TODO: implement sound
+	case this.SOUNDCNT_LO:
+		value &= 0xFF77;
+		break;
+	case this.SOUNDCNT_HI:
+		value &= 0xFF0F;
+		break;
+	case this.SOUNDCNT_X:
+		value &= 0x0080;
+		break;
+
+	// DMA
 	case this.DMA0CNT_LO:
 		this.cpu.irq.dmaSetWordCount(0, value);
 		return;
@@ -205,6 +220,8 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(3, value);
 		return;
+
+	// Misc
 	case this.WAITCNT:
 		// TODO: implement this
 		value &= 0x5FFF;
