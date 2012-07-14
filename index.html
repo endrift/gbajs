@@ -87,6 +87,14 @@ window.onload = function() {
 				</ol>
 			</div>
 		</section>
+		<section id="breakpoints">
+			<div id="breakpointControls">
+				Add breakpoint:
+				<input type="text" onchange="gbaCon.addBreakpoint(parseInt(this.value, 16))">
+			</div>
+			<ul id="breakpointView">
+			</ul>
+		</section>
 	</section>
 	<section id="memory">
 		<div id="memoryControls">

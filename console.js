@@ -17,6 +17,7 @@ Console = function(cpu) {
 	this.memory = new Memory(cpu.mmu);
 	this.updateGPRs();
 	this.updateCPSR();
+	this.breakpoints = [];
 	this.memory.refreshAll();
 }
 
@@ -99,6 +100,10 @@ Console.prototype.runVisible = function() {
 		if (self.stillRunning) {
 			try {
 				self.step();
+				if (self.breakpoints.length && self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
+					self.breakpointHit();
+					return;
+				}
 				setTimeout(run, 0);
 			} catch (exception) {
 				self.stillRunning = false;
@@ -116,8 +121,10 @@ Console.prototype.run = function() {
 
 	this.stillRunning = true;
 	var regs = document.getElementById('registers');
+	var mem = document.getElementById('memory');
 	var start = new Date().getTime();
 	regs.setAttribute('class', 'disabled');
+	mem.setAttribute('class', 'disabled');
 	var self = this;
 	var instructions = 0;
 	run = function() {
@@ -126,6 +133,12 @@ Console.prototype.run = function() {
 				for (var i = 0; i < 281590; ++i) {
 					++instructions;
 					self.cpu.step();
+					if (self.breakpoints.length && self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
+						mem.removeAttribute('class');
+						regs.removeAttribute('class');
+						self.breakpointHit();
+						return;
+					}
 				}
 				setTimeout(run, 0);
 			} catch (exception) {
@@ -134,6 +147,7 @@ Console.prototype.run = function() {
 				self.log(exception);
 				self.updateGPRs();
 				self.updateCPSR();
+				mem.removeAttribute('class');
 				regs.removeAttribute('class');
 				throw exception;
 			}
@@ -146,6 +160,28 @@ Console.prototype.run = function() {
 
 Console.prototype.pause = function() {
 	this.stillRunning = false;
+}
+
+Console.prototype.breakpointHit = function() {
+	this.stillRunning = false;
+	this.updateGPRs();
+	this.updateCPSR();
+	this.log('Hit breakpoint at ' + hex(this.cpu.gprs[this.cpu.PC]));
+}
+
+Console.prototype.addBreakpoint = function(addr) {
+	this.breakpoints[addr] = true;
+	var bpLi = document.getElementById('bp' + addr);
+	if (!bpLi) {
+		bpLi = document.createElement('li');
+		bpLi.address = addr;
+		var cb = document.createElement('input');
+		cb.setAttribute('type', 'checkbox');
+		cb.setAttribute('checked', 'checked');
+		bpLi.appendChild(cb);
+		bpLi.appendChild(document.createTextNode(hex(addr)));
+		document.getElementById('breakpointView').appendChild(bpLi);
+	}
 }
 
 Memory = function(mmu) {

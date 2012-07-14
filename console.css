@@ -3,6 +3,7 @@ body {
 	font-family: 'Lucida Sans Typewriter', 'Monaco', 'Andale Mono', monospace;
 	background-color: #2A2F32;
 	color: #DADDE1;
+	font-size: 13px;
 }
 
 h3 {
@@ -45,7 +46,6 @@ section {
 }
 
 ul, ol, #registers {
-	font-size: 13px;
 	padding: 10px;
 }
 
@@ -115,7 +115,19 @@ ul, ol, #registers {
 	display: inline;
 }
 
-#registers {
+#breakpoints {
+	-webkit-box-flex: 1;
+	-moz-box-flex: 1;
+	border-top: 1px solid #DADDE1;
+	-webkit-box-orient: vertical;
+}
+
+#breakpointControls {
+	padding: 2px 4px;
+	border-bottom: 1px solid #DADDE1;
+}
+
+#memory {
 	-webkit-box-flex: 1;
 	-moz-box-flex: 1;
 }
@@ -155,7 +167,7 @@ ul, ol, #registers {
 	margin-left: 16px;
 }
 
-#memoryView {
+#memoryView, #breakpointView {
 	margin: 0;
 	overflow-y: scroll;
 	display: -moz-box;
