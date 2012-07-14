@@ -160,6 +160,7 @@ ul, ol, #registers {
 	overflow-y: scroll;
 	display: -moz-box;
 	-moz-box-orient: vertical;
+	-moz-box-flex: 1;
 	-webkit-box-flex: 1;
 }
 
