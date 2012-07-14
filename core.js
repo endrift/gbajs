@@ -1395,6 +1395,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				}
 				if (r) {
 					cpu.gprs[cpu.PC] = cpu.mmu.load32(address) & 0xFFFFFFFE;
+					address += 4;
 				}
 				cpu.gprs[cpu.SP] = address;
 			};
