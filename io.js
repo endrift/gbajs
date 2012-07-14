@@ -108,6 +108,8 @@ GameBoyAdvanceIO = function() {
 	this.IF = 0x202;
 	this.WAITCNT = 0x204;
 	this.IME = 0x208;
+
+	this.DEFAULT_SOUNDBIAS = 0x200;
 };
 
 GameBoyAdvanceIO.prototype.setCPU = function(cpu) {
@@ -120,6 +122,8 @@ GameBoyAdvanceIO.prototype.setVideo = function(video) {
 
 GameBoyAdvanceIO.prototype.clear = function() {
 	this.registers = new Uint16Array(this.cpu.mmu.SIZE_IO);
+
+	this.registers[this.SOUNDBIAS >> 1] = this.DEFAULT_SOUNDBIAS;
 };
 
 GameBoyAdvanceIO.prototype.load8 = function(offset) {
@@ -151,6 +155,7 @@ GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
 	case this.DISPCNT:
+	case this.SOUNDBIAS:
 	case this.WAITCNT:
 	case this.IME:
 		// Handled transparently by the written registers
