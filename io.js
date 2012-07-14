@@ -157,6 +157,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DISPCNT:
 	case this.SOUNDBIAS:
 	case this.WAITCNT:
+	case this.IE:
 	case this.IME:
 		// Handled transparently by the written registers
 		break;
@@ -233,6 +234,10 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		return;
 
 	// Misc
+	case this.IE:
+		value &= 0x3FFF;
+		this.cpu.irq.setInterruptsEnabled(value);
+		break;
 	case this.WAITCNT:
 		// TODO: implement this
 		value &= 0x5FFF;

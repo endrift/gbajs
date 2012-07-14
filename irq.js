@@ -95,6 +95,10 @@ GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 	this.enable = value;
 };
 
+GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) {
+	// TODO
+};
+
 GameBoyAdvanceInterruptHandler.prototype.dmaSetSourceAddress = function(dma, address) {
 	this.dma[dma].source = address;
 };
