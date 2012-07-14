@@ -305,7 +305,7 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt8(maskedOffset, value);
 	if (memory.cachedInstructions) {
-		delete this.icache[maskedOffset >> 1];
+		delete this.icache[memoryRegion][maskedOffset >> 1];
 	}
 };
 
@@ -323,7 +323,7 @@ GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt16(maskedOffset, value, true);
 	if (memory.cachedInstructions) {
-		delete this.icache[maskedOffset >> 1];
+		delete this.icache[memoryRegion][maskedOffset >> 1];
 	}
 };
 
@@ -341,7 +341,8 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt32(maskedOffset, value, true);
 	if (memory.cachedInstructions) {
-		delete this.icache[maskedOffset >> 1];
+		delete this.icache[memoryRegion][maskedOffset >> 1];
+		delete this.icache[memoryRegion][(maskedOffset >> 1) + 1];
 	}
 };
 
