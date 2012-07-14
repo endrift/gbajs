@@ -119,16 +119,18 @@ Console.prototype.run = function() {
 	var start = new Date().getTime();
 	regs.setAttribute('class', 'disabled');
 	var self = this;
+	var instructions = 0;
 	run = function() {
 		if (self.stillRunning) {
 			try {
-				for (var i = 0; i < 16780; ++i) {
+				for (var i = 0; i < 281590; ++i) {
+					++instructions;
 					self.cpu.step();
 				}
 				setTimeout(run, 0);
 			} catch (exception) {
 				self.stillRunning = false;
-				self.log("Exception hit after " + (new Date().getTime() - start) + " milliseconds!");
+				self.log("Exception hit after " + instructions + " instructions in " + (new Date().getTime() - start) + " milliseconds!");
 				self.log(exception);
 				self.updateGPRs();
 				self.updateCPSR();
