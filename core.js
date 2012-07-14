@@ -1259,7 +1259,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				if (immediate == 0) {
 					cpu.gprs[rd] = cpu.gprs[rm];
 				} else {
-					cpu.cpsrC = cpu.gprs[rm] & (32 - immediate);
+					cpu.cpsrC = cpu.gprs[rm] & (1 << (32 - immediate));
 					cpu.gprs[rd] = cpu.gprs[rm] << immediate;
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
@@ -1273,7 +1273,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.cpsrC = cpu.gprs[rm] & 0x80000000;
 					cpu.gprs[rd] = 0;
 				} else {
-					cpu.cpsrC = cpu.gprs[rm] & (immediate - 1);
+					cpu.cpsrC = cpu.gprs[rm] & (1 << (immediate - 1));
 					cpu.gprs[rd] = cpu.gprs[rm] >>> immediate;
 				}
 				cpu.cpsrN = 0;
@@ -1291,7 +1291,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 						cpu.gprs[rd] = 0;
 					}
 				} else {
-					cpu.cpsrC = cpu.gprs[rm] & (immediate - 1);
+					cpu.cpsrC = cpu.gprs[rm] & (1 << (immediate - 1));
 					cpu.gprs[rd] = cpu.gprs[rm] >> immediate;
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
