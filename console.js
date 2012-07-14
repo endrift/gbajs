@@ -130,14 +130,21 @@ Console.prototype.run = function() {
 	run = function() {
 		if (self.stillRunning) {
 			try {
-				for (var i = 0; i < 281590; ++i) {
-					++instructions;
-					self.cpu.step();
-					if (self.breakpoints.length && self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
-						mem.removeAttribute('class');
-						regs.removeAttribute('class');
-						self.breakpointHit();
-						return;
+				if (self.breakpoints.length) {
+					for (var i = 0; i < 281590; ++i) {
+						++instructions;
+						self.cpu.step();
+						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
+							mem.removeAttribute('class');
+							regs.removeAttribute('class');
+							self.breakpointHit();
+							return;
+						}
+					}
+				} else {
+					for (var i = 0; i < 281590; ++i) {
+						++instructions;
+						self.cpu.step();
 					}
 				}
 				setTimeout(run, 0);
