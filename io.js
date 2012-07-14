@@ -43,6 +43,26 @@ GameBoyAdvanceIO = function() {
 	this.BLDALPHA = 0x052;
 	this.BLDY = 0x054;
 
+	// Sound
+	this.SOUND1CNT_LO = 0x060;
+	this.SOUND1CNT_HI = 0x062;
+	this.SOUND1CNT_X = 0x064;
+	this.SOUND2CNT_LO = 0x068;
+	this.SOUND2CNT_HI = 0x06C;
+	this.SOUND3CNT_LO = 0x070;
+	this.SOUND3CNT_HI = 0x072;
+	this.SOUND3CNT_X = 0x074;
+	this.SOUND4CNT_LO = 0x078;
+	this.SOUND4CNT_HI = 0x07C;
+	this.SOUNDCNT_L0 = 0x080;
+	this.SOUNDCNT_HI = 0x082;
+	this.SOUNDCNT_X = 0x084;
+	this.SOUNDBIAS = 0x088;
+	this.FIFO_A_LO = 0x0A0;
+	this.FIFO_A_HI = 0x0A2;
+	this.FIFO_B_LO = 0x0A4;
+	this.FIFO_B_HI = 0x0A6;
+
 	// DMA
 	this.DMA0SAD_LO = 0x0B0;
 	this.DMA0SAD_HI = 0x0B2;
@@ -69,7 +89,23 @@ GameBoyAdvanceIO = function() {
 	this.DMA3CNT_LO = 0x0DC;
 	this.DMA3CNT_HI = 0x0DE;
 
+	// Timers
+	this.TM0CNT_LO = 0x100;
+	this.TM0CNT_HI = 0x102;
+	this.TM1CNT_LO = 0x104;
+	this.TM1CNT_HI = 0x106;
+	this.TM2CNT_LO = 0x108;
+	this.TM2CNT_HI = 0x10A;
+	this.TM3CNT_LO = 0x10C;
+	this.TM3CNT_HI = 0x10E;
+
+	// Keypad
+	this.KEYINPUT = 0x130;
+	this.KEYCNT = 0x132;
+
 	// Interrupts, etc
+	this.IE = 0x200;
+	this.IF = 0x202;
 	this.WAITCNT = 0x204;
 	this.IME = 0x208;
 };
