@@ -249,13 +249,13 @@ Memory.prototype.scrollTo = function(offset) {
 			child.offset = offset + (i - 1) * 16;
 			this.refresh(child);
 		}
-		this.ul.scrollTop = this.rowHeight;
+		this.ul.scrollTop = 100+ this.rowHeight;
 	} else {
 		for (var i = 0; i < this.ul.children.length; ++i) {
 			var child = this.ul.children[i];
 			child.offset = offset + i * 16;
 			this.refresh(child);
 		}
-		this.ul.scrollTop = 0;
+		this.ul.scrollTop = 100;
 	}
 }
