@@ -143,7 +143,9 @@ GameBoyAdvanceIO.prototype.load32 = function(offset) {
 };
 
 GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
-	throw "Unimplmeneted unaligned I/O access";
+	var odd = offset & 0x0001;
+	var value = this.loadU16(offset & 0xFFFE);
+	return (value >>> (odd << 3)) & 0xFF;
 }
 
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
