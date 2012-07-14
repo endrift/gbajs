@@ -158,13 +158,15 @@ Memory = function(mmu) {
 	for (var i = 0; i < this.numberRows; ++i) {
 		this.ul.appendChild(this.createRow(i << 4));
 	}
+	this.ul.scrollTop = 100;
 
 	var self = this;
 	this.ul.addEventListener('scroll', function(e) { self.scroll() }, true);
+	window.addEventListener('resize', function(e) { self.resize() }, true);
 }
 
 Memory.prototype.scroll = function() {
-	while (this.ul.scrollTop < this.rowHeight) {
+	while (this.ul.scrollTop - 100 < this.rowHeight) {
 		if (this.ul.firstChild.offset == 0) {
 			break;
 		}
@@ -175,13 +177,33 @@ Memory.prototype.scroll = function() {
 		this.ul.insertBefore(victim, this.ul.firstChild);
 		this.ul.scrollTop += this.rowHeight;
 	}
-	while (this.ul.scrollTop > this.rowHeight * 2) {
+	while (this.ul.scrollTop - 100 > this.rowHeight * 2) {
 		var victim = this.ul.firstChild;
 		this.ul.removeChild(victim);
 		victim.offset = this.ul.lastChild.offset + 16;
 		this.refresh(victim);
 		this.ul.appendChild(victim);
 		this.ul.scrollTop -= this.rowHeight;
+	}
+	if (this.ul.scrollTop < 100) {
+		this.ul.scrollTop = 100;
+	}
+}
+
+Memory.prototype.resize = function() {
+	this.numberRows = this.ul.offsetHeight / this.rowHeight + 2;
+	if (this.numberRows > this.ul.children.length) {
+		var offset = this.ul.lastChild.offset + 16;
+		for (var i = 0; i < this.numberRows - this.ul.children.length; ++i) {
+			var row = this.createRow(offset);
+			this.refresh(row);
+			this.ul.appendChild(row);
+			offset += 16;
+		}
+	} else {
+		for (var i = 0; i < this.ul.children.length - this.numberRows; ++i) {
+			this.ul.removeChild(this.ul.lastChild);
+		}
 	}
 }
 

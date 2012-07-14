@@ -164,6 +164,14 @@ ul, ol, #registers {
 	-webkit-box-flex: 1;
 }
 
+#memoryView li:first-child {
+	margin-top: 100px;
+}
+
+#memoryView li:last-child {
+	margin-bottom: 100px;
+}
+
 #memory li {
 	display: -webkit-box;
 	display: -moz-box;
@@ -175,15 +183,15 @@ ul, ol, #registers {
 #memory .memoryOffset {
 	margin-right: 5px;
 	display: block;
-	-webkit-box-flex: 0;
-	-moz-box-flex: 0;
+	-webkit-box-flex: 1;
+	-moz-box-flex: 1;
 }
 
 #memory .memoryCell {
 	margin: 0 3px;
 	display: block;
-	-webkit-box-flex: 1;
-	-moz-box-flex: 1;
+	-webkit-box-flex: 2;
+	-moz-box-flex: 2;
 }
 
 .disabled {
