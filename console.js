@@ -162,7 +162,6 @@ Console.prototype.run = function() {
 				}
 				setTimeout(run, 0);
 			} catch (exception) {
-				self.stillRunning = false;
 				self.log("Exception hit after " + instructions + " instructions in " + (new Date().getTime() - start) + " milliseconds!");
 				self.log(exception);
 				self.pause();
@@ -186,7 +185,6 @@ Console.prototype.pause = function() {
 }
 
 Console.prototype.breakpointHit = function() {
-	this.stillRunning = false;
 	this.pause();
 	this.log('Hit breakpoint at ' + hex(this.cpu.gprs[this.cpu.PC]));
 }
