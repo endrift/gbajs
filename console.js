@@ -72,6 +72,9 @@ Console.prototype.updateCPSR = function() {
 
 Console.prototype.log = function(message) {
 	this.logQueue.push(message);
+	if (!this.stillRunning) {
+		this.flushLog();
+	}
 }
 
 Console.prototype.flushLog = function() {
@@ -112,14 +115,12 @@ Console.prototype.runVisible = function() {
 				self.step();
 				if (self.breakpoints.length && self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
 					self.breakpointHit();
-					self.flushLog();
-					self.stillRunning = false;
 					return;
 				}
 				self.flushLog();
 				setTimeout(run, 0);
 			} catch (exception) {
-				self.stillRunning = false;
+				self.pause();
 				throw exception;
 			}
 		}
@@ -148,10 +149,7 @@ Console.prototype.run = function() {
 						++instructions;
 						self.cpu.step();
 						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
-							mem.removeAttribute('class');
-							regs.removeAttribute('class');
 							self.breakpointHit();
-							self.flushLog();
 							return;
 						}
 					}
@@ -166,15 +164,9 @@ Console.prototype.run = function() {
 				self.stillRunning = false;
 				self.log("Exception hit after " + instructions + " instructions in " + (new Date().getTime() - start) + " milliseconds!");
 				self.log(exception);
-				self.flushLog();
-				self.updateGPRs();
-				self.updateCPSR();
-				mem.removeAttribute('class');
-				regs.removeAttribute('class');
+				self.pause();
 				throw exception;
 			}
-		} else {
-			regs.removeAttribute('class');
 		}
 	}
 	run();
@@ -182,12 +174,19 @@ Console.prototype.run = function() {
 
 Console.prototype.pause = function() {
 	this.stillRunning = false;
+	var regs = document.getElementById('registers');
+	var mem = document.getElementById('memory');
+	mem.removeAttribute('class');
+	regs.removeAttribute('class');
+	this.updateGPRs();
+	this.updateCPSR();
+	this.memory.refreshAll();
+	this.flushLog();
 }
 
 Console.prototype.breakpointHit = function() {
 	this.stillRunning = false;
-	this.updateGPRs();
-	this.updateCPSR();
+	this.pause();
 	this.log('Hit breakpoint at ' + hex(this.cpu.gprs[this.cpu.PC]));
 }
 
