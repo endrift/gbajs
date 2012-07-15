@@ -1088,6 +1088,70 @@ ARMCore.prototype.compile = function(instruction) {
 			break;
 		case 0x08000000:
 			// Block data transfer
+			var load = instruction & 0x00100000;
+			var w = instruction & 0x00200000;
+			var user = instruction & 0x00400000;
+			var u = instruction & 0x00800000;
+			var p = instruction & 0x01000000;
+			var rs = instruction & 0x0000FFFF;
+			var rn = (instruction & 0x000F0000) >> 16;
+
+			var address;
+			if (u) {
+				if (p) {
+					address = function() {
+						return cpu.gprs[rn] - 4;
+					}
+				} else {
+					address = function() {
+						return cpu.gprs[rn];
+					}
+				}
+			} else {
+				var immediate = 4;
+				if (p) {
+					immediate = 0;
+				}
+				for (var m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
+					if (rs & m) {
+						immediate -= 4;
+					}
+				}
+				address = function() {
+					return cpu.gprs[rn] + immediate;
+				}
+			}
+			if (load) {
+				// LDM
+				op = function() {
+					var addr = address();
+					var m, i;
+					for (m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
+						if (rs & m) {
+							cpu.gprs[i] = cpu.mmu.sload32(addr);
+							addr += 4;
+						}
+					}
+					if (w) {
+						cpu.gprs[rn] = addr;
+					}
+				};
+			} else {
+				// STM
+				op = function() {
+					var addr = address();
+					var m, i;
+					for (m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
+						if (rs & m) {
+							cpu.mmu.sstore32(addr, cpu.gprs[i]);
+							addr += 4;
+						}
+					}
+					if (w) {
+						cpu.gprs[rn] = addr;
+					}
+				}
+			}
 			break;
 		case 0x0A000000:
 			// Branch
