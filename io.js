@@ -241,33 +241,29 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	// DMA
 	case this.DMA0CNT_LO:
 		this.cpu.irq.dmaSetWordCount(0, value);
-		//return;
 		break;
 	case this.DMA0CNT_HI:
 		// The DMA registers need to set the values before writing the control, as writing the
 		// control can synchronously trigger a DMA transfer
 		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(0, value);
-		break;
+		return;
 	case this.DMA1CNT_LO:
 		this.cpu.irq.dmaSetWordCount(1, value);
-		//return;
 		break;
 	case this.DMA1CNT_HI:
 		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(1, value);
-		break;
+		return;
 	case this.DMA2CNT_LO:
 		this.cpu.irq.dmaSetWordCount(2, value);
-		//return;
 		break;
 	case this.DMA2CNT_HI:
 		this.registers[offset >> 1] = value & 0xFFE0;
 		this.cpu.irq.dmaWriteControl(2, value);
-		break;
+		return;
 	case this.DMA3CNT_LO:
 		this.cpu.irq.dmaSetWordCount(3, value);
-		//return;
 		break;
 	case this.DMA3CNT_HI:
 		this.registers[offset >> 1] = value & 0xFFE0;
@@ -297,30 +293,34 @@ GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
 	switch (offset) {
 	case this.DMA0SAD_LO:
 		this.cpu.irq.dmaSetSourceAddress(0, value);
-		return;
+		break;
 	case this.DMA0DAD_LO:
 		this.cpu.irq.dmaSetDestAddress(0, value);
-		return;
+		break;
 	case this.DMA1SAD_LO:
 		this.cpu.irq.dmaSetSourceAddress(1, value);
-		return;
+		break;
 	case this.DMA1DAD_LO:
 		this.cpu.irq.dmaSetDestAddress(1, value);
-		return;
+		break;
 	case this.DMA2SAD_LO:
 		this.cpu.irq.dmaSetSourceAddress(2, value);
-		return;
+		break;
 	case this.DMA2DAD_LO:
 		this.cpu.irq.dmaSetDestAddress(2, value);
-		return;
+		break;
 	case this.DMA3SAD_LO:
 		this.cpu.irq.dmaSetSourceAddress(3, value);
-		return;
+		break;
 	case this.DMA3DAD_LO:
 		this.cpu.irq.dmaSetDestAddress(3, value);
+		break;
+	default:
+		this.store16(offset, value & 0xFFFF);
+		this.store16(offset | 2, value >>> 16);
 		return;
 	}
 
-	this.store16(offset, value & 0xFFFF);
-	this.store16(offset + 2, value >> 16);
+	this.registers[offset >> 1] = value & 0xFFFF;
+	this.registers[(offset >> 1) + 1] = value >>> 16;
 };
