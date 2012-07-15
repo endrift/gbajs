@@ -34,15 +34,15 @@ ARMCore = function() {
 };
 
 ARMCore.prototype.WARN = function(warn) {
-	console.log("[WARNING] " + warn);
+	this.log("[WARNING] " + warn);
 };
 
 ARMCore.prototype.STUB = function(func) {
-	console.log("[STUB] Unimplemented function: " + func);
+	this.log("[STUB] Unimplemented function: " + func);
 };
 
 ARMCore.prototype.OP_STUB = function(op) {
-	console.log("[STUB] Unimplemented opcode: " + op);
+	this.log("[STUB] Unimplemented opcode: " + op);
 };
 
 ARMCore.prototype.ASSERT_UNREACHED = function(err) {
@@ -189,7 +189,7 @@ ARMCore.prototype.step = function() {
 };
 
 ARMCore.prototype.switchMode = function(newMode) {
-	//this.STUB("switchMode");
+	this.STUB("switchMode");
 };
 
 ARMCore.prototype.badOp = function(instruction) {
