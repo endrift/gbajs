@@ -96,14 +96,14 @@ ARMCore.prototype.prefetch = function(address) {
 		var offset = (address & this.mmu.OFFSET_MASK) >> 1;
 		compiled = block[offset];
 		next = block[offset + 2];
-		if (!compiled) {
+		if (!compiled || compiled.execMode != this.MODE_ARM) {
 			var instruction = this.mmu.load32(address) >>> 0;
 			compiled = this.compile(instruction);
 			block[offset] = compiled;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
 		this.prefetch0 = compiled;
-		if (!next) {
+		if (!next || next.execMode != this.MODE_ARM) {
 			var instruction = this.mmu.sload32(address + this.WORD_SIZE_ARM) >>> 0;
 			next = this.compile(instruction);
 			block[offset + 2] = next;
@@ -115,14 +115,14 @@ ARMCore.prototype.prefetch = function(address) {
 		var offset = (address & this.mmu.OFFSET_MASK) >> 1;
 		compiled = block[offset];
 		next = block[offset + 1];
-		if (!compiled) {
+		if (!compiled || compiled.execMode != this.MODE_THUMB) {
 			var instruction = this.mmu.load16(address);
 			compiled = this.compileThumb(instruction);
 			block[offset] = compiled;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
 		this.prefetch0 = compiled;
-		if (!next) {
+		if (!next || next.execMode != this.MODE_THUMB) {
 			var instruction = this.mmu.sload16(address + this.WORD_SIZE_THUMB);
 			next = this.compileThumb(instruction);
 			block[offset + 1] = next;
@@ -1088,6 +1088,7 @@ ARMCore.prototype.compile = function(instruction) {
 		}
 	}
 
+	op.execMode = this.MODE_ARM;
 	return op;
 };
 
@@ -1856,5 +1857,6 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
 	}
 
+	op.execMode = this.MODE_THUMB;
 	return op;
 };
