@@ -786,35 +786,126 @@ ARMCore.prototype.compile = function(instruction) {
 			var load = instruction & 0x00100000;
 			var rn = (instruction & 0x000F0000) >> 16;
 			var rd = (instruction & 0x0000F000) >> 12;
-			var hiOffset = (instruction & 0x00000F00) >> 8;
+			var hiOffset = (instruction & 0x00000F00) >> 4;
 			var loOffset = rm = instruction & 0x0000000F;
+			var h = instruction & 0x00000020;
+			var s = instruction & 0x00000040;
 			var w = instruction & 0x00200000;
+			var i = instruction & 0x00400000;
 			var u = instruction & 0x00800000;
 			var p = instruction & 0x01000000;
 
-			switch (instruction & 0x000000F0) {
-			case 0x00000090:
-				break;
-			case 0x000000B0:
-				// Load/store halfword
-				break;
-			case 0x000000D0:
-			case 0x000000F0:
-				// Load signed halfword/byte
-				var h = instruction & 0x00000020;
-				switch (instruction & 0x00500000) {
-				case 0x00000000:
-				case 0x00400000:
-					// Load/store doubleword (ARMv5)
-					break;
-				case 0x00100000:
-					// Load signed halfword/byte register offset
-					break;
-				case 0x00500000:
-					// Load signed halfword/byte immediate offset
-					break;
+			var address;
+			if (i) {
+				var immediate = loOffset | hiOffset;
+				if (p) {
+					if (u) {
+						address = function() {
+							var addr = cpu.gprs[rn] + immediate;
+							if (w && (!condOp || condOp())) {
+								cpu.gprs[rn] = addr;
+							}
+							return addr;
+						};
+					} else {
+						address = function() {
+							var addr = cpu.gprs[rn] - immediate;
+							if (w && (!condOp || condOp())) {
+								cpu.gprs[rn] = addr;
+							}
+							return addr;
+						};
+					}
+				} else {
+					if (u) {
+						address = function() {
+							var addr = cpu.gprs[rn];
+							if (w && (!condOp || condOp())) {
+								cpu.gprs[rn] += immediate;
+							}
+							return addr;
+						};
+					} else {
+						address = function() {
+							var addr = cpu.gprs[rn];
+							if (w && (!condOp || condOp())) {
+								cpu.gprs[rn] -= immediate;
+							}
+							return addr;
+						};
+					}
 				}
-				break;
+			} else {
+				var rn = (instruction & 0x000F0000) >> 16;
+				if (p) {
+					if (u) {
+						address = function() {
+							var addr = cpu.gprs[rn] + cpu.gprs[rm];
+							if (w && (!condOp || condOp())) {
+								cpu.gprs[rn] = addr;
+							}
+							return addr;
+						};
+					} else {
+						address = function() {
+							var addr = cpu.gprs[rn] - cpu.gprs[rm];
+							if (w && (!condOp || condOp())) {
+								cpu.gprs[rn] = addr;
+							}
+							return addr;
+						};
+					}
+				} else {
+					if (u) {
+						address = function() {
+							var addr = cpu.gprs[rn];
+							if (w && (!condOp || condOp())) {
+								cpu.gprs[rn] += cpu.gprs[rm];
+							}
+							return addr;
+						};
+					} else {
+						address = function() {
+							var addr = cpu.gprs[rn];
+							if (w && (!condOp || condOp())) {
+								cpu.gprs[rn] -= cpu.gprs[rm];
+							}
+							return addr;
+						};
+					}
+				}
+			}
+
+			if ((instruction & 0x00000090) == 0x00000090) {
+				if (load) {
+					// Load [signed] halfword/byte
+					if (h) {
+						if (s) {
+							op = function() {
+								var addr = address();
+								cpu.gprs[rd] = cpu.mmu.load16(addr);
+							};
+						} else {
+							op = function() {
+								var addr = address();
+								cpu.gprs[rd] = cpu.mmu.loadU16(addr);
+							};
+						}
+					} else {
+						if (s) {
+							op = function() {
+								var addr = address();
+								cpu.gprs[rd] = cpu.mmu.load8(addr);
+							};
+						}
+					}
+				} else if (!s && h) {
+					// Store halfword
+					op = function() {
+						var addr = address();
+						cpu.gprs[rd] = cpu.mmu.store16(addr, cpu.gprs[rd]);
+					};
+				}
 			}
 			break;
 		case 0x04000000:
