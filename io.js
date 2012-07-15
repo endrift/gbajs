@@ -312,6 +312,21 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.cpu.irq.dmaWriteControl(3, value);
 		return;
 
+	// Timers
+	
+	case this.TM0CNT_LO:
+	case this.TM1CNT_LO:
+	case this.TM2CNT_LO:
+	case this.TM3CNT_LO:
+		return;
+
+	case this.TM0CNT_HI:
+	case this.TM1CNT_HI:
+	case this.TM2CNT_HI:
+	case this.TM3CNT_HI:
+		value &= 0x00C7;
+		break;
+
 	// Misc
 	case this.IE:
 		value &= 0x3FFF;
