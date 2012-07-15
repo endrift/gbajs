@@ -333,7 +333,6 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		return;
 
 	// Timers
-	
 	case this.TM0CNT_LO:
 	case this.TM1CNT_LO:
 	case this.TM2CNT_LO:
@@ -355,8 +354,8 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.cpu.irq.setInterruptsEnabled(value);
 		break;
 	case this.WAITCNT:
-		value &= 0x5FFF;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		value &= 0xDFFF;
+		this.cpu.mmu.adjustTimings(value);
 		break;
 	case this.IME:
 		value &= 0x0001;

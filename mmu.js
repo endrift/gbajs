@@ -38,55 +38,16 @@ GameBoyAdvanceMMU = function() {
 	this.SIZE_CART2 = 0x02000000;
 	this.SIZE_CART_SRAM = 0x00010000;
 
-	this.TIMINGS_8 = [
-		1,
-		0,
-		1,
-		3,
-		1,
-		1,
-		1,
-		1,
-		5,
-		0,
-		5,
-		0,
-		5,
-		0
-	];
+	this.WAITSTATES = [ 0, 0, 2, 0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4 ];
+	this.WAITSTATES_32 = [ 0, 0, 5, 0, 0, 1, 0, 1, 7, 0, 9, 0, 13, 0, 8 ];
+	this.WAITSTATES_SEQ = [ 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 4, 0, 8, 0, 4 ];
+	this.WAITSTATES_SEQ_32 = [ 0, 0, 5, 0, 0, 1, 0, 1, 5, 0, 9, 0, 17, 0, 8 ];
 
-	this.TIMINGS_16 = [
-		1,
-		0,
-		1,
-		3,
-		1,
-		1,
-		1,
-		1,
-		5,
-		0,
-		5,
-		0,
-		5,
-		0
-	];
-
-	this.TIMINGS_32 = [
-		1,
-		0,
-		1,
-		6,
-		1,
-		2,
-		2,
-		1,
-		8,
-		0,
-		8,
-		0,
-		8,
-		0
+	this.ROM_WS = [ 4, 3, 2, 8 ];
+	this.ROM_WS_SEQ = [
+		[ 2, 1 ],
+		[ 4, 1 ],
+		[ 8, 1 ]
 	];
 };
 
@@ -159,6 +120,11 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null,
 		null // Unused
 	];
+
+	this.waitstates = this.WAITSTATES.slice(0);
+	this.waitstatesSeq = this.WAITSTATES_SEQ.slice(0);
+	this.waitstates32 = this.WAITSTATES_32.slice(0);
+	this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
 
 	this.io.clear();
 };
@@ -448,4 +414,36 @@ GameBoyAdvanceMMU.prototype.getMemoryRegion = function(offset) {
 		return memoryRegion & 0xE;
 	}
 	return memoryRegion;
+};
+
+GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
+	var sram = word & 0x0003;
+	var ws0 = (word & 0x000C) >> 2;
+	var ws0seq = (word & 0x0010) >> 4;
+	var ws1 = (word & 0x0060) >> 5;
+	var ws1seq = (word & 0x0080) >> 7;
+	var ws2 = (word & 0x0300) >> 8;
+	var ws2seq = (word & 0x0400) >> 10;
+
+	// FIXME: are these seq and 32-bit correct?
+	this.waitstates[this.REGION_CART_SRAM] = this.ROM_WS[sram];
+	this.waitstatesSeq[this.REGION_CART_SRAM] = this.ROM_WS[sram];
+	this.waitstates32[this.REGION_CART_SRAM] = this.ROM_WS[sram];
+	this.waitstatesSeq32[this.REGION_CART_SRAM] = this.ROM_WS[sram];
+
+	this.waitstates[this.REGION_CART0] = this.ROM_WS[ws0];
+	this.waitstates[this.REGION_CART1] = this.ROM_WS[ws1];
+	this.waitstates[this.REGION_CART2] = this.ROM_WS[ws2];
+
+	this.waitstatesSeq[this.REGION_CART0] = this.ROM_WS_SEQ[0][ws0seq];
+	this.waitstatesSeq[this.REGION_CART1] = this.ROM_WS_SEQ[1][ws1seq];
+	this.waitstatesSeq[this.REGION_CART2] = this.ROM_WS_SEQ[2][ws2seq];
+
+	this.waitstates32[this.REGION_CART0] = this.waitstates[this.REGION_CART0] + 1 + this.waitstatesSeq[this.REGION_CART0];
+	this.waitstates32[this.REGION_CART1] = this.waitstates[this.REGION_CART1] + 1 + this.waitstatesSeq[this.REGION_CART1];
+	this.waitstates32[this.REGION_CART2] = this.waitstates[this.REGION_CART2] + 1 + this.waitstatesSeq[this.REGION_CART2];
+
+	this.waitstatesSeq32[this.REGION_CART0] = 2 * this.waitstatesSeq[this.REGION_CART0] + 1;
+	this.waitstatesSeq32[this.REGION_CART1] = 2 * this.waitstatesSeq[this.REGION_CART1] + 1;
+	this.waitstatesSeq32[this.REGION_CART2] = 2 * this.waitstatesSeq[this.REGION_CART2] + 1;
 };
