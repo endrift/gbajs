@@ -834,6 +834,13 @@ ARMCore.prototype.compile = function(instruction) {
 			if (load) {
 				if (b) {
 					// LDRB
+					op = function() {
+						if (condOp && !condOp()) {
+							return;
+						}
+						var a = address();
+						cpu.gprs[rd] = cpu.mmu.loadU8(a);
+					};
 				} else {
 					// LDR
 					op = function() {
@@ -847,6 +854,13 @@ ARMCore.prototype.compile = function(instruction) {
 			} else {
 				if (b) {
 					// STRB
+					op = function() {
+						if (condOp && !condOp()) {
+							return;
+						}
+						var a = address();
+						cpu.mmu.store8(a, cpu.gprs[rd]);
+					};
 				} else {
 					// STR
 					op = function() {
