@@ -875,6 +875,7 @@ ARMCore.prototype.compile = function(instruction) {
 					}
 				}
 			}
+			address.writesPC = w && rn == this.PC;
 
 			if ((instruction & 0x00000090) == 0x00000090) {
 				if (load) {
@@ -907,6 +908,7 @@ ARMCore.prototype.compile = function(instruction) {
 					};
 				}
 			}
+			op.writesPC = rd == this.PC || address.writesPC;
 			break;
 		case 0x04000000:
 		case 0x06000000:
