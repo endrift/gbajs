@@ -177,6 +177,7 @@ ARMCore.prototype.step = function() {
 	instruction();
 
 	if (instruction.writesPC && this.conditionPassed) {
+		this.gprs[this.PC] &= 0xFFFFFFFE;
 		this.prefetch(this.gprs[this.PC]);
 		if (this.execMode == this.MODE_ARM) {
 			this.instructionWidth = this.WORD_SIZE_ARM;
@@ -779,7 +780,7 @@ ARMCore.prototype.compile = function(instruction) {
 				};
 				break;
 			}
-			op.writesPC = rd == this.PC;;
+			op.writesPC = rd == this.PC;
 		}
 	} else if ((instruction & 0x0E000010) == 0x06000000) {
 		// Single data transfer
