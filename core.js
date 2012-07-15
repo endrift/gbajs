@@ -97,14 +97,14 @@ ARMCore.prototype.prefetch = function(address) {
 		compiled = block[offset];
 		next = block[offset + 2];
 		if (!compiled) {
-			var instruction = this.mmu.iload32(address) >>> 0;
+			var instruction = this.mmu.load32(address) >>> 0;
 			compiled = this.compile(instruction);
 			block[offset] = compiled;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
 		this.prefetch0 = compiled;
 		if (!next) {
-			var instruction = this.mmu.iload32(address + this.WORD_SIZE_ARM) >>> 0;
+			var instruction = this.mmu.sload32(address + this.WORD_SIZE_ARM) >>> 0;
 			next = this.compile(instruction);
 			block[offset + 2] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -116,14 +116,14 @@ ARMCore.prototype.prefetch = function(address) {
 		compiled = block[offset];
 		next = block[offset + 1];
 		if (!compiled) {
-			var instruction = this.mmu.iload16(address);
+			var instruction = this.mmu.load16(address);
 			compiled = this.compileThumb(instruction);
 			block[offset] = compiled;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
 		}
 		this.prefetch0 = compiled;
 		if (!next) {
-			var instruction = this.mmu.iload16(address + this.WORD_SIZE_THUMB);
+			var instruction = this.mmu.sload16(address + this.WORD_SIZE_THUMB);
 			next = this.compileThumb(instruction);
 			block[offset + 1] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -140,7 +140,7 @@ ARMCore.prototype.prefetchNext = function(address) {
 		var offset = (this.mmu.maskOffset(address)) >> 1;
 		next = block[offset];
 		if (!next) {
-			var instruction = this.mmu.iload32(address) >>> 0;
+			var instruction = this.mmu.sload32(address) >>> 0;
 			next = this.compile(instruction);
 			block[offset] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -151,7 +151,7 @@ ARMCore.prototype.prefetchNext = function(address) {
 		var offset = (this.mmu.maskOffset(address)) >> 1;
 		next = block[offset];
 		if (!next) {
-			var instruction = this.mmu.iload16(address);
+			var instruction = this.mmu.sload16(address);
 			next = this.compileThumb(instruction);
 			block[offset] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -1568,16 +1568,12 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					var m, i;
 					for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 						if (rs & m) {
-							cpu.gprs[i] = cpu.mmu.load32(address);
+							cpu.gprs[i] = cpu.mmu.sload32(address);
 							address += 4;
 						}
 					}
 					cpu.gprs[rn] = address;
 				};
-				for (var x = rs; x; x >>= 1) {
-					if (x & 1) {
-					}
-				}
 			} else {
 				// STMIA
 				op = function() {
@@ -1585,16 +1581,12 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					var m, i;
 					for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 						if (rs & m) {
-							cpu.mmu.store32(address, cpu.gprs[i]);
+							cpu.mmu.sstore32(address, cpu.gprs[i]);
 							address += 4;
 						}
 					}
 					cpu.gprs[rn] = address;
 				};
-				for (var x = rs; x; x >>= 1) {
-					if (x & 1) {
-					}
-				}
 			}
 			op.writesPC = false;
 			break;
