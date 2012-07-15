@@ -1341,10 +1341,62 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			cpu.gprs[rd] = cpu.mmu.load32((cpu.gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
 		};
 		op.writesPC = false;
-	} else if ((instruction & 0xF200) == 0x5000) {
+	} else if ((instruction & 0xF000) == 0x5000) {
 		// Load and store with relative offset
-	} else if ((instruction & 0xF200) == 0x5200) {
-		// Load and store sign-extend byte and halfword
+		var rd = instruction & 0x0007;
+		var rn = (instruction & 0x0038) >> 3;
+		var rm = (instruction & 0x01C0) >> 6;
+		var opcode = instruction & 0x0E00;
+		switch (opcode) {
+		case 0x0000:
+			// STR(2)
+			op = function() {
+				cpu.mmu.store32(cpu.gprs[rn] + cpu.gprs[rm], cpu.gprs[rd]);
+			}
+			break;
+		case 0x0200:
+			// STRH(2)
+			op = function() {
+				cpu.mmu.store16(cpu.gprs[rn] + cpu.gprs[rm], cpu.gprs[rd]);
+			}
+			break;
+		case 0x0400:
+			// STRB(2)
+			op = function() {
+				cpu.mmu.store8(cpu.gprs[rn] + cpu.gprs[rm], cpu.gprs[rd]);
+			}
+			break;
+		case 0x0600:
+			// LDRSB
+			op = function() {
+				cpu.gprs[rd] = cpu.mmu.load8(cpu.gprs[rn] + cpu.gprs[rm]);
+			}
+			break;
+		case 0x0800:
+			// LDR(2)
+			op = function() {
+				cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[rn] + cpu.gprs[rm]);
+			}
+			break;
+		case 0x0A00:
+			// LDRH(2)
+			op = function() {
+				cpu.gprs[rd] = cpu.mmu.loadU16(cpu.gprs[rn] + cpu.gprs[rm]);
+			}
+			break;
+		case 0x0C00:
+			// LDRB(2)
+			op = function() {
+				cpu.gprs[rd] = cpu.mmu.loadU8(cpu.gprs[rn] + cpu.gprs[rm]);
+			}
+			break;
+		case 0x0E00:
+			// LDRSH
+			op = function() {
+				cpu.gprs[rd] = cpu.mmu.load16(cpu.gprs[rn] + cpu.gprs[rm]);
+			}
+			break;
+		}
 	} else if ((instruction & 0xE000) == 0x6000) {
 		// Load and store with immediate offset
 		var rd = instruction & 0x0007;
