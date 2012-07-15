@@ -392,14 +392,40 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var dest = this.maskOffset(info.dest);
 	var sourceRegion = this.memoryView[this.getMemoryRegion(info.source)];
 	var destRegion = this.memoryView[this.getMemoryRegion(info.dest)];
-	if (width == 4) {
-		for (var i = 0; i < wordsRemaining; ++i) {
-			var word = sourceRegion.getInt32(source);
-			destRegion.setInt32(dest, word);
-			source += sourceOffset;
-			dest += destOffset;
+	if (sourceRegion && destRegion) {
+		if (width == 4) {
+			for (var i = 0; i < wordsRemaining; ++i) {
+				var word = sourceRegion.getInt32(source);
+				destRegion.setInt32(dest, word);
+				source += sourceOffset;
+				dest += destOffset;
+			}
+		} else {
+			if (source & 0x2) {
+				var word = sourceRegion.getInt16(source);
+				destRegion.setInt16(dest, word);
+				source += sourceOffset;
+				dest += destOffset;
+				--wordsRemaining;
+			}
+
+			while (wordsRemaining > 1) {
+				var word = sourceRegion.getInt32(source);
+				destRegion.setInt32(dest, word);
+				source += sourceOffset << 1;
+				dest += destOffset << 1;
+				wordsRemaining -= 2;
+			}
+
+			if (wordsRemaining) {
+				var word = sourceRegion.getInt16(source);
+				destRegion.setInt16(dest, word);
+				source += sourceOffset;
+				dest += destOffset;
+			}
 		}
 	} else {
+		this.cpu.log('Invalid DMA');
 	}
 
 	if (!info.repeat) {
