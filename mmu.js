@@ -25,6 +25,7 @@ GameBoyAdvanceMMU = function() {
 
 	this.BASE_MASK = 0x0F000000;
 	this.BASE_OFFSET = 24;
+	this.OFFSET_MASK = 0x00FFFFFF;
 
 	this.SIZE_BIOS = 0x00004000;
 	this.SIZE_WORKING_RAM = 0x00040000;
@@ -70,11 +71,11 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		new ArrayBuffer(this.SIZE_VRAM),
 		new ArrayBuffer(this.SIZE_OAM),
 		null,
-		null, // Unused
 		null,
-		null, // Unused
 		null,
-		null, // Unused
+		null,
+		null,
+		null,
 		null,
 		null // Unused
 	];
@@ -89,11 +90,11 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		new DataView(this.memory[6]),
 		new DataView(this.memory[7]),
 		null,
-		null, // Unused
 		null,
-		null, // Unused
 		null,
-		null, // Unused
+		null,
+		null,
+		null,
 		null,
 		null // Unused
 	];
@@ -114,11 +115,11 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null,
 		null,
 		null,
-		null, // Unusued
 		null,
-		null, // Unusued
 		null,
-		null // Unused
+		null,
+		null,
+		null
 	];
 
 	this.waitstates = this.WAITSTATES.slice(0);
@@ -145,6 +146,14 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 	this.memoryView[this.REGION_CART1] = view;
 	this.memoryView[this.REGION_CART2] = view;
 
+	if (rom.byteLength > 0x01000000) {
+		var viewOffset = new DataView(rom, 0x01000000);
+		this.memoryView[this.REGION_CART0 + 1] = viewOffset;
+		this.memoryView[this.REGION_CART1 + 1] = viewOffset;
+		this.memoryView[this.REGION_CART2 + 1] = viewOffset;
+	}
+
+	// TODO: icache for extended ROMs
 	var icache = new Array(rom.byteLength >> 1);
 	this.icache[this.REGION_CART0] = icache;
 	this.icache[this.REGION_CART1] = icache;
@@ -191,11 +200,7 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 };
 
 GameBoyAdvanceMMU.prototype.maskOffset = function(offset) {
-	if (offset < this.BASE_CART0) {
-		return offset & 0x00FFFFFF;
-	} else {
-		return offset & 0x01FFFFFF;
-	}
+	return offset & 0x00FFFFFF;
 };
 
 GameBoyAdvanceMMU.prototype.load8 = function(offset) {
@@ -487,11 +492,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 };
 
 GameBoyAdvanceMMU.prototype.getMemoryRegion = function(offset) {
-	var memoryRegion = offset >> this.BASE_OFFSET;
-	if (memoryRegion > this.REGION_CART0) {
-		return memoryRegion & 0xE;
-	}
-	return memoryRegion;
+	return offset >> this.BASE_OFFSET;
 };
 
 GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
@@ -509,6 +510,7 @@ GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
 	this.waitstates32[this.REGION_CART_SRAM] = this.ROM_WS[sram];
 	this.waitstatesSeq32[this.REGION_CART_SRAM] = this.ROM_WS[sram];
 
+	// TODO: waitstates for second ROM half
 	this.waitstates[this.REGION_CART0] = this.ROM_WS[ws0];
 	this.waitstates[this.REGION_CART1] = this.ROM_WS[ws1];
 	this.waitstates[this.REGION_CART2] = this.ROM_WS[ws2];

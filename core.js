@@ -90,10 +90,10 @@ ARMCore.prototype.setLogger = function(logger) {
 ARMCore.prototype.prefetch = function(address) {
 	var compiled = null;
 	var next = null;
-	var memoryRegion = this.mmu.getMemoryRegion(address);
+	var memoryRegion = address >> this.mmu.BASE_OFFSET;
 	if (this.execMode == this.MODE_ARM) {
 		var block = this.mmu.icache[memoryRegion];
-		var offset = (this.mmu.maskOffset(address)) >> 1;
+		var offset = (address & this.mmu.OFFSET_MASK) >> 1;
 		compiled = block[offset];
 		next = block[offset + 2];
 		if (!compiled) {
@@ -112,7 +112,7 @@ ARMCore.prototype.prefetch = function(address) {
 		this.prefetch1 = next;
 	} else {
 		var block = this.mmu.icache[memoryRegion];
-		var offset = (this.mmu.maskOffset(address)) >> 1;
+		var offset = (address & this.mmu.OFFSET_MASK) >> 1;
 		compiled = block[offset];
 		next = block[offset + 1];
 		if (!compiled) {
@@ -134,10 +134,10 @@ ARMCore.prototype.prefetch = function(address) {
 
 ARMCore.prototype.prefetchNext = function(address) {
 	var next = null;
-	var memoryRegion = this.mmu.getMemoryRegion(address);
+	var memoryRegion = address >> this.mmu.BASE_OFFSET;
 	if (this.execMode == this.MODE_ARM) {
 		var block = this.mmu.icache[memoryRegion];
-		var offset = (this.mmu.maskOffset(address)) >> 1;
+		var offset = (address & this.mmu.OFFSET_MASK) >> 1;
 		next = block[offset];
 		if (!next) {
 			var instruction = this.mmu.sload32(address) >>> 0;
@@ -148,7 +148,7 @@ ARMCore.prototype.prefetchNext = function(address) {
 		this.prefetch1 = next;
 	} else {
 		var block = this.mmu.icache[memoryRegion];
-		var offset = (this.mmu.maskOffset(address)) >> 1;
+		var offset = (address & this.mmu.OFFSET_MASK) >> 1;
 		next = block[offset];
 		if (!next) {
 			var instruction = this.mmu.sload16(address);
