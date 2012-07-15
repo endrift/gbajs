@@ -900,7 +900,7 @@ ARMCore.prototype.compile = function(instruction) {
 };
 
 ARMCore.prototype.compileThumb = function(instruction) {
-	var op = this.badOp(instruction);
+	var op = this.badOp(instruction & 0xFFFF);
 	var cpu = this;
 	if ((instruction & 0xFC00) == 0x4000) {
 		// Data-processing register
@@ -1531,15 +1531,20 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			break;
 		case 0x2000:
 			// Load address
+			var rd = (instruction & 0x0700) >> 8;
+			var immediate = (instruction & 0x00FF) << 2;
 			if (instruction & 0x0800) {
 				// ADD(6)
-				var rd = (instruction & 0x0700) >> 8;
-				var immediate = (instruction & 0x00FF) << 2;
 				op = function() {
 					cpu.gprs[rd] = cpu.gprs[cpu.SP] + immediate;
 				};
-				op.writesPC = false;
+			} else {
+				// ADD(5)
+				op = function() {
+					cpu.gprs[rd] = cpu.gprs[cpu.PC] + immediate;
+				};
 			}
+			op.writesPC = false;
 			break;
 		case 0x3000:
 			// Miscellaneous
