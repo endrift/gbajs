@@ -156,6 +156,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
 	case this.DISPCNT:
 	case this.SOUNDBIAS:
+	case this.KEYINPUT:
 	case this.WAITCNT:
 	case this.IE:
 	case this.IME:
