@@ -19,6 +19,7 @@ Console = function(cpu) {
 	this.updateCPSR();
 	this.breakpoints = [];
 	this.memory.refreshAll();
+	this.logQueue = [];
 	var self = this;
 	cpu.setLogger(function (message) { self.log(message) });
 }
@@ -70,13 +71,20 @@ Console.prototype.updateCPSR = function() {
 }
 
 Console.prototype.log = function(message) {
-	var entry = document.createElement('li');
+	this.logQueue.push(message);
+}
+
+Console.prototype.flushLog = function() {
 	var doScroll = this.ul.scrollTop == this.ul.scrollHeight - this.ul.offsetHeight;
-	entry.textContent = message;
-	this.ul.appendChild(entry);
+	while (this.logQueue.length) {
+		var entry = document.createElement('li');
+		entry.textContent = this.logQueue.shift();
+		this.ul.appendChild(entry);
+	}
 	if (doScroll) {
 		this.ul.scrollTop = this.ul.scrollHeight - this.ul.offsetHeight;
 	}
+
 }
 
 Console.prototype.step = function() {
@@ -104,8 +112,11 @@ Console.prototype.runVisible = function() {
 				self.step();
 				if (self.breakpoints.length && self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
 					self.breakpointHit();
+					self.flushLog();
+					self.stillRunning = false;
 					return;
 				}
+				self.flushLog();
 				setTimeout(run, 0);
 			} catch (exception) {
 				self.stillRunning = false;
@@ -140,6 +151,7 @@ Console.prototype.run = function() {
 							mem.removeAttribute('class');
 							regs.removeAttribute('class');
 							self.breakpointHit();
+							self.flushLog();
 							return;
 						}
 					}
@@ -154,6 +166,7 @@ Console.prototype.run = function() {
 				self.stillRunning = false;
 				self.log("Exception hit after " + instructions + " instructions in " + (new Date().getTime() - start) + " milliseconds!");
 				self.log(exception);
+				self.flushLog();
 				self.updateGPRs();
 				self.updateCPSR();
 				mem.removeAttribute('class');

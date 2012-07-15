@@ -13,6 +13,7 @@
 function runTest(r) {
 	rom = mmu.loadRom(r, true);
 	gbaCon.log("ROM loaded: " + rom.title + " [" + rom.code + "] (" + r.byteLength + " bytes)");
+	gbaCon.flushLog();
 	gbaCon.memory.refreshAll();
 }
 
@@ -35,6 +36,7 @@ window.onload = function() {
 
 	gbaCon = new Console(core);
 	gbaCon.log("Logging begun!");
+	gbaCon.flushLog();
 	loadRom('test.rom', runTest);
 };
 </script>
