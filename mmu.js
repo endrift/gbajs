@@ -292,6 +292,9 @@ GameBoyAdvanceMMU.prototype.iload32 = function(offset) {
 
 GameBoyAdvanceMMU.prototype.freeLoadU8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
+	if (memoryRegion == this.REGION_IO) {
+		return this.io.loadU8(offset & 0x00FFFFFF);
+	}
 	return this.memoryView[memoryRegion].getUint8(this.maskOffset(offset));
 };
 
