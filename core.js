@@ -855,6 +855,7 @@ ARMCore.prototype.compile = function(instruction) {
 								}
 							};
 						}
+						address.writesPC = w && rn == this.PC;
 					}
 				} else {
 					if (shift || shiftImmediate) {
@@ -874,6 +875,7 @@ ARMCore.prototype.compile = function(instruction) {
 								}
 							};
 						}
+						address.writesPC = rn == this.PC;
 					}
 				}
 			} else {
@@ -897,6 +899,7 @@ ARMCore.prototype.compile = function(instruction) {
 							return addr;
 						};
 					}
+					address.writesPC = w && rn == this.PC;
 				} else if (!w) {
 					if (u) {
 						address = function() {
@@ -915,6 +918,7 @@ ARMCore.prototype.compile = function(instruction) {
 							return addr;
 						};
 					}
+					address.writesPC = rn == this.PC;
 				}
 			}
 			if (load) {
@@ -958,7 +962,7 @@ ARMCore.prototype.compile = function(instruction) {
 					};
 				}
 			}
-			op.writesPC = rd == this.PC;
+			op.writesPC = rd == this.PC || address.writesPC;
 			break;
 		case 0x08000000:
 			// Block data transfer
