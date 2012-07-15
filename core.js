@@ -775,8 +775,6 @@ ARMCore.prototype.compile = function(instruction) {
 			}
 			op.writesPC = rd == this.PC;
 		}
-	} else if ((instruction & 0x0E000010) == 0x06000000) {
-		// Single data transfer
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
 		// Single data swap
 	} else {
@@ -960,7 +958,7 @@ ARMCore.prototype.compile = function(instruction) {
 				var shiftType = instruction & 0x00000060;
 				var shiftImmediate = instruction & 0x00000F80;
 				if (p) {
-					if (shift || shiftImmediate) {
+					if (shiftType || shiftImmediate) {
 					} else {
 						if (u) {
 							address = function() {
@@ -968,6 +966,7 @@ ARMCore.prototype.compile = function(instruction) {
 								if (w && (!condOp || condOp())) {
 									cpu.gprs[rn] = addr;
 								}
+								return addr;
 							};
 						} else {
 							address = function() {
@@ -975,12 +974,13 @@ ARMCore.prototype.compile = function(instruction) {
 								if (w && (!condOp || condOp())) {
 									cpu.gprs[rn] = addr;
 								}
+								return addr;
 							};
 						}
 						address.writesPC = w && rn == this.PC;
 					}
 				} else {
-					if (shift || shiftImmediate) {
+					if (shiftType || shiftImmediate) {
 					} else {
 						if (u) {
 							address = function() {
@@ -988,6 +988,7 @@ ARMCore.prototype.compile = function(instruction) {
 								if (!condOp || condOp()) {
 									cpu.gprs[rn] += cpu.gprs[rm];
 								}
+								return addr;
 							};
 						} else {
 							address = function() {
@@ -995,6 +996,7 @@ ARMCore.prototype.compile = function(instruction) {
 								if (!condOp || condOp()) {
 									cpu.gprs[rn] -= cpu.gprs[rm];
 								}
+								return addr;
 							};
 						}
 						address.writesPC = rn == this.PC;
