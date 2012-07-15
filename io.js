@@ -164,6 +164,8 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		break;
 	case this.DISPSTAT:
 		return this.registers[offset >> 1] | this.video.readDisplayStat();
+	case this.VCOUNT:
+		return this.video.vcount;
 	case this.DMA0CNT_HI:
 	case this.DMA1CNT_HI:
 	case this.DMA2CNT_HI:
@@ -225,6 +227,15 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.DISPSTAT:
 		value &= this.video.DISPSTAT_MASK;
 		this.video.writeDisplayStat(value);
+		break;
+	case this.BLDCNT:
+		value &= 0x4FFF;
+		break;
+	case this.BLDALPHA:
+		value &= 0x1F1F;
+		break;
+	case this.BLDY:
+		value &= 0x001F;
 		break;
 
 	// Sound
