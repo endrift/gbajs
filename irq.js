@@ -113,11 +113,11 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetSourceAddress = function(dma, address) {
-	this.dma[dma].source = address;
+	this.dma[dma].source = address & 0xFFFFFFFE;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetDestAddress = function(dma, address) {
-	this.dma[dma].dest = address;
+	this.dma[dma].dest = address & 0xFFFFFFFE;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetWordCount = function(dma, count) {
