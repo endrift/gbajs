@@ -19,6 +19,8 @@ Console = function(cpu) {
 	this.updateCPSR();
 	this.breakpoints = [];
 	this.memory.refreshAll();
+	var self = this;
+	cpu.setLogger(function (message) { self.log(message) });
 }
 
 Console.prototype.updateGPRs = function() {

@@ -29,6 +29,8 @@ ARMCore = function() {
 	this.PC_CYCLES = 2;
 	this.B_THUMB_CYCLES = 3;
 	this.SHIFT_RS_CYCLES = 1;
+
+	this.log = function () {}
 };
 
 ARMCore.prototype.WARN = function(warn) {
@@ -88,6 +90,10 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.prefetch0 = null;
 	this.prefetch1 = null;
 };
+
+ARMCore.prototype.setLogger = function(logger) {
+	this.log = logger;
+}
 
 ARMCore.prototype.prefetch = function(address) {
 	var compiled = null;
