@@ -3,7 +3,8 @@ GameBoyAdvanceVideo = function() {
 
 	this.HORIZONTAL_PIXELS = 240;
 	this.HBLANK_PIXELS = 68;
-	this.HBLANK_INTERVAL = 1006;
+	this.HDRAW_LENGTH = 1006;
+	this.HBLANK_LENGTH = 228;
 	this.VERTICAL_PIXELS = 160;
 	this.VBLANK_PIXELS = 68;
 
@@ -35,17 +36,39 @@ GameBoyAdvanceVideo = function() {
 	// VCOUNT
 	this.vcount = 0;
 
-	this.lastHblank = 0;
+	this.lastHInterval = 0;
+	this.inHblank = false;
+	this.inVblank = false;
 };
 
 GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
 	this.canvas = canvas;
 }
 
-GameBoyAdvanceVideo.prototype.handleIrq = function(cpu) {
-	if (cpu.cycles - this.lastHblank > this.HBLANK_INTERVAL) {
+GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
+	var cycles = cpu.cycles;
+	if (this.inHblank) {
+		if (cycles - this.lastHInterval > this.HBLANK_LENGTH) {
+			this.lastHInterval += this.HBLANK_LENGTH;
+			this.inHblank = false;
+			++this.vcount;
+		}
+	} else {
+		if (cycles - this.lastHInterval > this.HDRAW_LENGTH) {
+			this.lastHInterval += this.HDRAW_LENGTH;
+			this.inHblank = true;
+		}
 	}
-	return false;
+	if (this.inVblank) {
+		if (this.vcount == this.VERTICAL_PIXELS + this.VBLANK_PIXELS) {
+			this.vcount = 0;
+			this.inVblank = false;
+		}
+	} else {
+		if (this.vcount == this.VERTICAL_PIXELS) {
+			this.inVblank = true;
+		}
+	}
 };
 
 GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {

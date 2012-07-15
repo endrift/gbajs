@@ -234,7 +234,6 @@ GameBoyAdvanceMMU.prototype.maskOffset = function(offset) {
 
 GameBoyAdvanceMMU.prototype.load8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += this.TIMINGS_8[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.load8(offset & 0x00FFFFFF);
 	}
@@ -243,7 +242,6 @@ GameBoyAdvanceMMU.prototype.load8 = function(offset) {
 
 GameBoyAdvanceMMU.prototype.load16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.load16(offset & 0x00FFFFFE);
 	}
@@ -252,7 +250,6 @@ GameBoyAdvanceMMU.prototype.load16 = function(offset) {
 
 GameBoyAdvanceMMU.prototype.load32 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.load32(offset & 0x00FFFFFC);
 	}
@@ -261,7 +258,6 @@ GameBoyAdvanceMMU.prototype.load32 = function(offset) {
 
 GameBoyAdvanceMMU.prototype.loadU8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += this.TIMINGS_8[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.loadU8(offset & 0x00FFFFFF);
 	}
@@ -270,7 +266,6 @@ GameBoyAdvanceMMU.prototype.loadU8 = function(offset) {
 
 GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.loadU16(offset & 0x00FFFFFE);
 	}
@@ -280,13 +275,11 @@ GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
 // Instruction loads -- we'll ignore advanced timings for now
 GameBoyAdvanceMMU.prototype.iload16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
 	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
 };
 
 GameBoyAdvanceMMU.prototype.iload32 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
 	return this.memoryView[memoryRegion].getInt32(this.maskOffset(offset), true);
 };
 
@@ -303,7 +296,6 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
 		throw "Bad access";
 	}
-	this.cpu.cycles += this.TIMINGS_8[memoryRegion];
 	var maskedOffset = offset & 0x00FFFFFF;
 	if (memoryRegion == this.REGION_IO) {
 		this.io.store8(maskedOffset, value);
@@ -321,7 +313,6 @@ GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
 		throw "Bad access";
 	}
-	this.cpu.cycles += this.TIMINGS_16[memoryRegion];
 	var maskedOffset = offset & 0x00FFFFFE;
 	if (memoryRegion == this.REGION_IO) {
 		this.io.store16(maskedOffset, value);
@@ -339,7 +330,6 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
 		throw "Bad access";
 	}
-	this.cpu.cycles += this.TIMINGS_32[memoryRegion];
 	var maskedOffset = offset & 0x00FFFFFC;
 	if (memoryRegion == this.REGION_IO) {
 		this.io.store32(maskedOffset, value);

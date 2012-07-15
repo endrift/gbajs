@@ -22,14 +22,6 @@ ARMCore = function() {
 	this.WORD_SIZE_ARM = 4;
 	this.WORD_SIZE_THUMB = 2;
 
-	// These are all extra cycles above the normal
-	this.LDR_CYCLES = 2;
-	this.STR_CYCLES = 1;
-
-	this.PC_CYCLES = 2;
-	this.B_THUMB_CYCLES = 3;
-	this.SHIFT_RS_CYCLES = 1;
-
 	this.log = function () {}
 };
 
@@ -186,6 +178,8 @@ ARMCore.prototype.step = function() {
 		}
 		this.gprs[this.PC] += this.instructionWidth;
 	}
+	this.cycles += 1;
+	this.irq.updateTimers();
 };
 
 ARMCore.prototype.switchMode = function(newMode) {

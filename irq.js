@@ -25,19 +25,13 @@ GameBoyAdvanceInterruptHandler.prototype.setCPU = function(cpu) {
 	this.cpu = cpu;
 }
 
-GameBoyAdvanceInterruptHandler.prototype.addIrqProvider = function(irq) {
-	this.irqProviders.push(irq);
-};
+GameBoyAdvanceInterruptHandler.prototype.setVideo = function(video) {
+	this.video = video;
+}
 
-GameBoyAdvanceInterruptHandler.prototype.runIrq = function() {
-	// The GBA does not support FIQs, so let's just jump to IRQs
-	for (var i = 0; i < this.irqProviders.length; ++i) {
-		if (this.irqProviders[i].handleIrq(this.cpu)) {
-			return true;
-		}
-	}
-	return false;
-};
+GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
+	this.video.updateTimers(this.cpu);
+}
 
 GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 	switch (opcode) {

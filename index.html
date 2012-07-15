@@ -27,7 +27,7 @@ var gbaCon;
 mmu.setIO(io);
 io.setVideo(video);
 io.setCPU(core);
-irq.addIrqProvider(video);
+irq.setVideo(video);
 core.resetCPU(0x08000000, mmu, irq, io);
 window.onload = function() {
 	var canvas = document.getElementById('screen');
