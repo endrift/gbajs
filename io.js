@@ -54,7 +54,7 @@ GameBoyAdvanceIO = function() {
 	this.SOUND3CNT_X = 0x074;
 	this.SOUND4CNT_LO = 0x078;
 	this.SOUND4CNT_HI = 0x07C;
-	this.SOUNDCNT_L0 = 0x080;
+	this.SOUNDCNT_LO = 0x080;
 	this.SOUNDCNT_HI = 0x082;
 	this.SOUNDCNT_X = 0x084;
 	this.SOUNDBIAS = 0x088;
@@ -172,6 +172,47 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		throw "Unimplemented I/O register read: 0x" + offset.toString(16);
 	}
 	return this.registers[offset >> 1];
+};
+
+GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
+	switch (offset) {
+	case this.SOUND1CNT_HI | 1:
+	case this.SOUND2CNT_LO | 1:
+	case this.SOUND3CNT_HI:
+	case this.SOUND4CNT_LO | 1:
+		break;
+	case this.SOUND1CNT_X | 1:
+	case this.SOUND2CNT_HI | 1:
+		value &= 0xC7;
+		break;
+	case this.SOUND1CNT_LO:
+		value &= 0x7F;
+		break;
+	case this.SOUND3CNT_LO:
+	case this.SOUND3CNT_HI | 1:
+		value &= 0xE0;
+		break;
+	case this.SOUND4CNT_HI | 1:
+		value &= 0xC0;
+		break;
+	case this.SOUNDCNT_LO:
+		value &= 0x77;
+		break;
+	case this.SOUNDCNT_X:
+		value &= 0x80;
+		break;
+	case this.SOUNDBIAS | 1:
+		value &= 0xC3;
+		break;
+	default:
+		throw "Unimplemented 8-bit I/O register write: 0x" + offset.toString(16);
+	}
+
+	if (offset & 1) {
+		value <<= 8;
+		value |= (this.registers[offset >> 1] & 0x00FF);
+	}
+	this.registers[offset >> 1] = value;
 };
 
 GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
