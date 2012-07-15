@@ -429,39 +429,51 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var wordsRemaining = info.count;
 	var source = this.maskOffset(info.source);
 	var dest = this.maskOffset(info.dest);
-	var sourceRegion = this.memoryView[this.getMemoryRegion(info.source)];
-	var destRegion = this.memoryView[this.getMemoryRegion(info.dest)];
-	if (sourceRegion && destRegion) {
+	var sourceRegion = this.getMemoryRegion(info.source);
+	var destRegion = this.getMemoryRegion(info.dest);
+	var sourceBlock = this.memoryView[sourceRegion];
+	var destBlock = this.memoryView[destRegion];
+	if (sourceBlock && destBlock) {
 		if (width == 4) {
 			for (var i = 0; i < wordsRemaining; ++i) {
-				var word = sourceRegion.getInt32(source);
-				destRegion.setInt32(dest, word);
+				var word = sourceBlock.getInt32(source);
+				destBlock.setInt32(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
 			}
+
+			// Approximate taken cycles
+			this.cpu.cycles += this.waitstates32[sourceRegion] + this.waitstates32[destRegion];
+			this.cpu.cycles += (info.count - 1) * (this.waitstatesSeq32[sourceRegion] + this.waitstatesSeq32[destRegion]);
+			this.cpu.cycles += 2; // Extra 2I cycles
 		} else {
 			if (source & 0x2) {
-				var word = sourceRegion.getInt16(source);
-				destRegion.setInt16(dest, word);
+				var word = sourceBlock.getInt16(source);
+				destBlock.setInt16(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
 				--wordsRemaining;
 			}
 
 			while (wordsRemaining > 1) {
-				var word = sourceRegion.getInt32(source);
-				destRegion.setInt32(dest, word);
+				var word = sourceBlock.getInt32(source);
+				destBlock.setInt32(dest, word);
 				source += sourceOffset << 1;
 				dest += destOffset << 1;
 				wordsRemaining -= 2;
 			}
 
 			if (wordsRemaining) {
-				var word = sourceRegion.getInt16(source);
-				destRegion.setInt16(dest, word);
+				var word = sourceBlock.getInt16(source);
+				destBlock.setInt16(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
 			}
+
+			// Approximate taken cycles
+			this.cpu.cycles += this.waitstates[sourceRegion] + this.waitstates[destRegion];
+			this.cpu.cycles += (info.count - 1) * (this.waitstatesSeq[sourceRegion] + this.waitstatesSeq[destRegion]);
+			this.cpu.cycles += 2; // Extra 2I cycles
 		}
 	} else {
 		this.cpu.log('Invalid DMA');
