@@ -131,7 +131,7 @@ GameBoyAdvanceIO.prototype.load8 = function(offset) {
 }
 
 GameBoyAdvanceIO.prototype.load16 = function(offset) {
-	return this.loadU16(offset) >> 0;
+	return (this.loadU16(offset) << 16) >> 16;
 }
 
 GameBoyAdvanceIO.prototype.load32 = function(offset) {
