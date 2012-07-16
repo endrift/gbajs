@@ -247,7 +247,7 @@ GameBoyAdvanceInterruptHandler.prototype.raiseIRQ = function(irqType) {
 	this.cpu.mmu.io.registers[this.cpu.mmu.io.IF] = this.interruptFlags;
 
 	if (this.enabledIRQs & this.interruptFlags) {
-		this.cpu.irq();
+		this.cpu.raiseIRQ();
 	}
 };
 

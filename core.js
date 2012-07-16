@@ -245,7 +245,7 @@ ARMCore.prototype.switchMode = function(newMode) {
 	this.mode = newMode;
 };
 
-ARMCore.prototype.irq = function() {
+ARMCore.prototype.raiseIRQ = function() {
 	throw "Interrupts are not yet implemented";
 };
 

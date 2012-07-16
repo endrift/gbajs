@@ -24,7 +24,7 @@ GameBoyAdvanceVideo = function() {
 	this.objwin = 0;
 
 	// DISPSTAT
-	this.DISPSTAT_MASK = 0xFF380;
+	this.DISPSTAT_MASK = 0xFF38;
 	this.inHblank = false;
 	this.inVblank = false;
 	this.vcounter = 0;
@@ -59,7 +59,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			this.lastHInterval += this.HDRAW_LENGTH;
 			this.inHblank = true;
 			if (this.hblankIRQ) {
-				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
+				cpu.irq.raiseIRQ(cpu.irq.IRQ_HBLANK);
 			}
 		}
 	}
@@ -71,7 +71,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 		if (this.vcount == this.VERTICAL_PIXELS) {
 			this.inVblank = true;
 			if (this.vblankIRQ) {
-				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
+				cpu.irq.raiseIRQ(cpu.irq.IRQ_VBLANK);
 			}
 		}
 	}
@@ -122,9 +122,9 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 };
 
 GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
-	this.vblankIRQ = value & 0x0080;
-	this.hblankIRQ = value & 0x0100;
-	this.vcounterIRQ = value & 0x0200;
+	this.vblankIRQ = value & 0x0008;
+	this.hblankIRQ = value & 0x0010;
+	this.vcounterIRQ = value & 0x0020;
 	this.vcountSetting = (value & 0xFF00) >> 8;
 };
 
