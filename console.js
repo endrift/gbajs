@@ -86,7 +86,17 @@ Console.prototype.flushLog = function() {
 	}
 	if (doScroll) {
 		var ul = this.ul;
-		setTimeout(function() { ul.scrollTop = ul.scrollHeight - ul.offsetHeight }, 0);
+		var last = ul.scrollTop;
+		var scrollUp = function() {
+			if (ul.scrollTop == last) {
+				ul.scrollTop = (ul.scrollHeight - ul.offsetHeight) * 0.2 + last * 0.8;
+				last = ul.scrollTop;
+				if (last != ul.scrollHeight - ul.offsetHeight) {
+					setTimeout(scrollUp, 25);
+				}
+			}
+		}
+		setTimeout(scrollUp, 25);
 	}
 
 }
