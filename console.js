@@ -147,7 +147,7 @@ Console.prototype.run = function() {
 			try {
 				if (self.breakpoints.length) {
 					var base = self.cpu.cycles;
-					while (self.cpu.cycles - base < 280896) {
+					while (self.cpu.cycles - base < 280896 * 8) {
 						++instructions;
 						self.cpu.step();
 						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
@@ -156,7 +156,8 @@ Console.prototype.run = function() {
 						}
 					}
 				} else {
-					for (var i = 0; i < 281590; ++i) {
+					var base = self.cpu.cycles;
+					while (self.cpu.cycles - base < 280896 * 8) {
 						++instructions;
 						self.cpu.step();
 					}
