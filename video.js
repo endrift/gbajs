@@ -112,16 +112,16 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 	this.bg2 = value & 0x0400;
 	this.bg3 = value & 0x0800;
 	this.obj = value & 0x1000;
-	this.win0 = 0x2000;
-	this.win1 = 0x4000;
-	this.objwin = 0x8000;
+	this.win0 = value & 0x2000;
+	this.win1 = value & 0x4000;
+	this.objwin = value & 0x8000;
 };
 
 GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
 	this.vblankIRQ = value & 0x0080;
 	this.hblankIRQ = value & 0x0100;
 	this.vcounterIRQ = value & 0x0200;
-	this.vcounterSetting = (value & 0xFF00) >> 8;
+	this.vcountSetting = (value & 0xFF00) >> 8;
 };
 
 GameBoyAdvanceVideo.prototype.readDisplayStat = function() {
