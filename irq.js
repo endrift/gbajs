@@ -184,6 +184,19 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 	currentDma.doIrq = control & 0x4000;
 	currentDma.enable = control & 0x8000;
 
+	if (currentDma.repeat) {
+		this.cpu.log('DMA repeat not implemented');
+	}
+	if (currentDma.drq) {
+		this.cpu.log('DRQ not implemented');
+	}
+	if (currentDma.timing) {
+		this.cpu.log('DMA start timing other than immediate not implemented');
+	}
+	if (currentDma.doIrq) {
+		this.cpu.log('DMA IRQ not implemented');
+	}
+
 	if (!currentDma.timing && currentDma.enable) {
 		this.cpu.mmu.serviceDma(dma, currentDma);
 	}
@@ -217,5 +230,12 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 	if (!wasEnabled && currentTimer.enable) {
 		currentTimer.lastEvent = this.cpu.cycles;
 		this.cpu.mmu.io.registers[this.cpu.mmu.io.TM0CNT_LO + (timer << 2)] = currentTimer.reload;
+	}
+
+	if (currentTimer.countUp) {
+		this.cpu.log('Timer count up not implemented');
+	}
+	if (currentTimer.doIrq) {
+		this.cpu.log('Timer IRQ not implemented');
 	}
 };
