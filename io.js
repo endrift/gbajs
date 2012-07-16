@@ -147,9 +147,13 @@ GameBoyAdvanceIO.prototype.load32 = function(offset) {
 };
 
 GameBoyAdvanceIO.prototype.forceLoadU8 = function(offset) {
-	var odd = offset & 0x0001;
-	var value = this.registers[offset >> 1];
-	return (value >>> (odd << 3)) & 0xFF;
+	try {
+		return this.loadU8(offset) 
+	} catch (exception) {
+		var odd = offset & 0x0001;
+		var value = this.registers[offset >> 1];
+		return (value >>> (odd << 3)) & 0xFF;
+	}
 }
 
 GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
