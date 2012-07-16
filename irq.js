@@ -116,6 +116,18 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 
 GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 	switch (opcode) {
+	case 0x02:
+		// Halt
+		if (!this.enable) {
+			throw "Requested HALT when interrupts were disabled!";
+		}
+		this.poll();
+		if (this.nextInterrupt >= this.cpu.cycles) {
+			this.cpu.cycles = this.nextInterrupt;
+		} else {
+			throw "Waiting on interrupt forever.";
+		}
+		break;
 	case 0x0B:
 		// CpuSet
 		var source = this.cpu.gprs[0];
