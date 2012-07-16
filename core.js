@@ -14,6 +14,13 @@ ARMCore = function() {
 	this.MODE_UNDEFINED = 0x1B;
 	this.MODE_SYSTEM = 0x1F;
 
+	this.BANK_NONE = 0
+	this.BANK_FIQ = 1;
+	this.BANK_IRQ = 2;
+	this.BANK_SUPERVISOR = 3;
+	this.BANK_ABORT = 4;
+	this.BANK_UNDEFINED = 5;
+
 	this.UNALLOC_MASK = 0x0FFFFF00;
 	this.USER_MASK = 0xF0000000;
 	this.PRIV_MASK = 0x0000000F; // TODO: this prevents MSR from setting status bits
@@ -70,7 +77,16 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.cpsrZ = false;
 	this.cpsrN = false;
 
-	this.spsr = 0;
+	this.currentBank = null;
+	this.bankedRegisters = [
+		new Int32Array(7),
+		new Int32Array(7),
+		new Int32Array(2),
+		new Int32Array(2),
+		new Int32Array(2),
+		new Int32Array(2)
+	];
+	this.spsr = new Int32Array(5);
 
 	this.cycles = 0;
 
@@ -182,8 +198,51 @@ ARMCore.prototype.step = function() {
 	this.irq.updateTimers();
 };
 
+ARMCore.prototype.selectBank = function(mode) {
+	switch (mode) {
+	case this.MODE_USER:
+	case this.MODE_SYSTEM:
+		// No banked registers
+		return this.BANK_NONE;
+	case this.MODE_FIQ:
+		return this.BANK_FIQ;
+	case this.MODE_IRQ:
+		return this.BANK_IRQ;
+	case this.MODE_SUPERVISOR:
+		return this.BANK_SUPERVISOR;
+	case this.MODE_ABORT:
+		return this.BANK_ABORT;
+	case this.MODE_UNDEFINED:
+		return this.BANK_UNDEFINED;
+	default:
+		throw "Invalid user mode passed to selectBank";
+	}
+};
+
 ARMCore.prototype.switchMode = function(newMode) {
-	this.STUB("switchMode");
+	if (newMode == this.mode) {
+		// Not switching modes after all
+		return;
+	}
+	if (newMode != this.MODE_USER || newMode != this.MODE_SYSTEM) {
+		// Switch banked registers
+		var newBank = this.selectBank(newMode);
+		var oldBank = this.selectBank(this.mode);
+		if (newBank != oldBank) {
+			// TODO: support FIQ
+			if (newMode == this.FIQ || this.mode == this.FIQ) {
+				this.log('FIQ mode switching is unimplemented');
+			}
+			oldBank[0] = this.gprs[this.SP];
+			oldBank[1] = this.gprs[this.LR];
+			this.gprs[this.SP] = newBank[0];
+			this.gprs[this.LR] = newBank[1];
+
+			// TODO: support SPSR
+			this.log('SPSR switching is unimplemented');
+		}
+	}
+	this.mode = newMode;
 };
 
 ARMCore.prototype.badOp = function(instruction) {
