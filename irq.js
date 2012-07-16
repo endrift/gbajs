@@ -189,6 +189,7 @@ GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 	this.enable = value;
 
 	if (this.enable) {
+		// FIXME: raise remaining IRQs
 		this.poll();
 	}
 };
@@ -217,6 +218,7 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 	}
 
 	if (this.enable) {
+		// FIXME: raise remaining IRQs
 		this.poll();
 	}
 };
@@ -244,16 +246,16 @@ GameBoyAdvanceInterruptHandler.prototype.poll = function() {
 
 GameBoyAdvanceInterruptHandler.prototype.raiseIRQ = function(irqType) {
 	this.interruptFlags |= 1 << irqType;
-	this.cpu.mmu.io.registers[this.cpu.mmu.io.IF] = this.interruptFlags;
+	this.cpu.mmu.io.registers[this.cpu.mmu.io.IF >> 1] = this.interruptFlags;
 
-	if (this.enabledIRQs & this.interruptFlags) {
+	if (this.enable && this.enabledIRQs & this.interruptFlags) {
 		this.cpu.raiseIRQ();
 	}
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dismissIRQs = function(irqMask) {
 	this.interruptFlags &= ~irqMask;
-	this.cpu.mmu.io.registers[this.cpu.mmu.io.IF] = this.interruptFlags;
+	this.cpu.mmu.io.registers[this.cpu.mmu.io.IF >> 1] = this.interruptFlags;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetSourceAddress = function(dma, address) {

@@ -373,7 +373,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.IE:
 		value &= 0x3FFF;
 		this.cpu.irq.setInterruptsEnabled(value);
-		return;
+		break;
 	case this.IF:
 		this.cpu.irq.dismissIRQs(value);
 		return;
