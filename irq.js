@@ -2,8 +2,22 @@ GameBoyAdvanceInterruptHandler = function() {
 	this.FREQUENCY = 16780000;
 
 	this.cpu = null;
-	this.irqProviders = new Array();
-	this.enable = true;
+	this.enable = false;
+
+	this.enableVblank = false;
+	this.enableHblank = false;
+	this.enableVcounter = false;
+	this.enableTimer0 = false;
+	this.enableTimer1 = false;
+	this.enableTimer2 = false;
+	this.enableTimer3 = false;
+	this.enableSio = false;
+	this.enableDma0 = false;
+	this.enableDma1 = false;
+	this.enableDma2 = false;
+	this.enableDma3 = false;
+	this.enableKeypad = false;
+	this.enableGamepak = false;
 
 	this.dma = new Array();
 	for (var i = 0; i < 4; ++i) {
@@ -155,10 +169,72 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 
 GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 	this.enable = value;
+
+	if (this.enable) {
+		this.poll();
+	}
 };
 
 GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) {
-	// TODO
+	this.enableVblank = value & 0x0001;
+	this.enableHblank = value & 0x0002;
+	this.enableVcounter = value & 0x0004;
+	this.enableTimer0 = value & 0x0008;
+	this.enableTimer1 = value & 0x0010;
+	this.enableTimer2 = value & 0x0020;
+	this.enableTimer3 = value & 0x0040;
+	this.enableSio = value & 0x0080;
+	this.enableDma0 = value & 0x0100;
+	this.enableDma1 = value & 0x0200;
+	this.enableDma2 = value & 0x0400;
+	this.enableDma3 = value & 0x0800;
+	this.enableKeypad = value & 0x1000;
+	this.enableGamepak = value & 0x2000;
+
+	if (this.enable) {
+		this.poll();
+	}
+};
+
+GameBoyAdvanceInterruptHandler.prototype.poll = function() {
+	if (this.enableHblank && this.video.hblankIRQ) {
+		var next = this.video.nextHblank();
+		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
+			this.nextInterrupt = next;
+		}
+	}
+	if (this.enableVblank && this.video.vblankIRQ) {
+		var next = this.video.nextVblank();
+		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
+			this.nextInterrupt = next;
+		}
+	}
+	if (this.enableVcounter && this.video.vcounterIRQ) {
+		var next = this.video.nextVcounter();
+		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
+			this.nextInterrupt = next;
+		}
+	}
+
+	if (this.enableTimer0 || this.enableTimer1 || this.enableTimer2 || this.enableTimer3) {
+		this.cpu.log('Timing interrupts not implemented');
+	}
+
+	if (this.enableSio) {
+		this.cpu.log('Serial I/O interrupts not implemented');
+	}
+
+	if (this.enableDma0 || this.enableDma1 || this.enableDma2 || this.enableDma3) {
+		this.cpu.log('DMA interrupts not implemented');
+	}
+
+	if (this.enableKeypad) {
+		this.cpu.log('Keypad interrupts not implemented');
+	}
+
+	if (this.enableGamepak) {
+		this.cpu.log('Gamepak interrupts not implemented');
+	}
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetSourceAddress = function(dma, address) {
