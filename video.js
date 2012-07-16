@@ -58,7 +58,9 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 		if (cycles - this.lastHInterval > this.HDRAW_LENGTH) {
 			this.lastHInterval += this.HDRAW_LENGTH;
 			this.inHblank = true;
-			// TODO: Hblank IRQ
+			if (this.hblankIRQ) {
+				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
+			}
 		}
 	}
 	if (this.inVblank) {
@@ -68,7 +70,9 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 	} else {
 		if (this.vcount == this.VERTICAL_PIXELS) {
 			this.inVblank = true;
-			// TODO: Vblank IRQ
+			if (this.vblankIRQ) {
+				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
+			}
 		}
 	}
 };

@@ -4,20 +4,38 @@ GameBoyAdvanceInterruptHandler = function() {
 	this.cpu = null;
 	this.enable = false;
 
-	this.enableVblank = false;
-	this.enableHblank = false;
-	this.enableVcounter = false;
-	this.enableTimer0 = false;
-	this.enableTimer1 = false;
-	this.enableTimer2 = false;
-	this.enableTimer3 = false;
-	this.enableSio = false;
-	this.enableDma0 = false;
-	this.enableDma1 = false;
-	this.enableDma2 = false;
-	this.enableDma3 = false;
-	this.enableKeypad = false;
-	this.enableGamepak = false;
+	this.IRQ_VBLANK = 0x0;
+	this.IRQ_HBLANK = 0x1;
+	this.IRQ_VCOUNTER = 0x2;
+	this.IRQ_TIMER0 = 0x3;
+	this.IRQ_TIMER1 = 0x4;
+	this.IRQ_TIMER2 = 0x5;
+	this.IRQ_TIMER3 = 0x6;
+	this.IRQ_SIO = 0x7;
+	this.IRQ_DMA0 = 0x8;
+	this.IRQ_DMA1 = 0x9;
+	this.IRQ_DMA2 = 0xA;
+	this.IRQ_DMA3 = 0xB;
+	this.IRQ_KEYPAD = 0xC;
+	this.IRQ_GAMEPAK = 0xD;
+
+	this.MASK_VBLANK = 0x0001;
+	this.MASK_HBLANK = 0x0002;
+	this.MASK_VCOUNTER = 0x0004;
+	this.MASK_TIMER0 = 0x0008;
+	this.MASK_TIMER1 = 0x0010;
+	this.MASK_TIMER2 = 0x0020;
+	this.MASK_TIMER3 = 0x0040;
+	this.MASK_SIO = 0x0080;
+	this.MASK_DMA0 = 0x0100;
+	this.MASK_DMA1 = 0x0200;
+	this.MASK_DMA2 = 0x0400;
+	this.MASK_DMA3 = 0x0800;
+	this.MASK_KEYPAD = 0x1000;
+	this.MASK_GAMEPAK = 0x2000;
+
+	this.enabledIRQs = new Array(14);
+	this.interruptFlags = 0;
 
 	this.dma = new Array();
 	for (var i = 0; i < 4; ++i) {
@@ -176,20 +194,27 @@ GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 };
 
 GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) {
-	this.enableVblank = value & 0x0001;
-	this.enableHblank = value & 0x0002;
-	this.enableVcounter = value & 0x0004;
-	this.enableTimer0 = value & 0x0008;
-	this.enableTimer1 = value & 0x0010;
-	this.enableTimer2 = value & 0x0020;
-	this.enableTimer3 = value & 0x0040;
-	this.enableSio = value & 0x0080;
-	this.enableDma0 = value & 0x0100;
-	this.enableDma1 = value & 0x0200;
-	this.enableDma2 = value & 0x0400;
-	this.enableDma3 = value & 0x0800;
-	this.enableKeypad = value & 0x1000;
-	this.enableGamepak = value & 0x2000;
+	this.enabledIRQs = value;
+
+	if (this.enabledIRQs & this.MASK_TIMER0 || this.enabledIRQs & this.MASK_TIMER1 || this.enabledIRQs & this.MASK_TIMER2 || this.enabledIRQs & this.MASK_TIMER3) {
+		this.cpu.log('Timing interrupts not implemented');
+	}
+
+	if (this.enabledIRQs & this.MASK_SIO) {
+		this.cpu.log('Serial I/O interrupts not implemented');
+	}
+
+	if (this.enabledIRQs & this.MASK_DMA0 || this.enabledIRQs & this.MASK_DMA1 || this.enabledIRQs & this.MASK_DMA2 || this.enabledIRQs & this.MASK_DMA3) {
+		this.cpu.log('DMA interrupts not implemented');
+	}
+
+	if (this.enabledIRQs & this.MASK_KEYPAD) {
+		this.cpu.log('Keypad interrupts not implemented');
+	}
+
+	if (this.enabledIRQs & this.MASK_GAMEPAK) {
+		this.cpu.log('Gamepak interrupts not implemented');
+	}
 
 	if (this.enable) {
 		this.poll();
@@ -197,43 +222,30 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 };
 
 GameBoyAdvanceInterruptHandler.prototype.poll = function() {
-	if (this.enableHblank && this.video.hblankIRQ) {
+	if (this.enabledIRQs & this.MASK_HBLANK && this.video.hblankIRQ) {
 		var next = this.video.nextHblank();
 		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
 			this.nextInterrupt = next;
 		}
 	}
-	if (this.enableVblank && this.video.vblankIRQ) {
+	if (this.enabledIRQs & this.MASK_VBLANK && this.video.vblankIRQ) {
 		var next = this.video.nextVblank();
 		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
 			this.nextInterrupt = next;
 		}
 	}
-	if (this.enableVcounter && this.video.vcounterIRQ) {
+	if (this.enabledIRQs & this.MASK_VCOUNTER && this.video.vcounterIRQ) {
 		var next = this.video.nextVcounter();
 		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
 			this.nextInterrupt = next;
 		}
 	}
+};
 
-	if (this.enableTimer0 || this.enableTimer1 || this.enableTimer2 || this.enableTimer3) {
-		this.cpu.log('Timing interrupts not implemented');
-	}
-
-	if (this.enableSio) {
-		this.cpu.log('Serial I/O interrupts not implemented');
-	}
-
-	if (this.enableDma0 || this.enableDma1 || this.enableDma2 || this.enableDma3) {
-		this.cpu.log('DMA interrupts not implemented');
-	}
-
-	if (this.enableKeypad) {
-		this.cpu.log('Keypad interrupts not implemented');
-	}
-
-	if (this.enableGamepak) {
-		this.cpu.log('Gamepak interrupts not implemented');
+GameBoyAdvanceInterruptHandler.prototype.raiseIRQ = function(irqType) {
+	this.interruptFlags |= 1 << irqType;
+	if (this.enabledIRQs & this.interruptFlags) {
+		this.cpu.irq();
 	}
 };
 

@@ -245,6 +245,10 @@ ARMCore.prototype.switchMode = function(newMode) {
 	this.mode = newMode;
 };
 
+ARMCore.prototype.irq = function() {
+	throw "Interrupts are not yet implemented";
+};
+
 ARMCore.prototype.badOp = function(instruction) {
 	var func = function() {
 		throw "Illegal instruction: 0x" + instruction.toString(16);
