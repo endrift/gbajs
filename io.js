@@ -335,18 +335,33 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 
 	// Timers
 	case this.TM0CNT_LO:
+		this.cpu.irq.timerSetReload(0, value);
+		return;
 	case this.TM1CNT_LO:
+		this.cpu.irq.timerSetReload(1, value);
+		return;
 	case this.TM2CNT_LO:
+		this.cpu.irq.timerSetReload(2, value);
+		return;
 	case this.TM3CNT_LO:
-		this.cpu.log('Unimplemented timer register write: 0x' + offset.toString(16));
+		this.cpu.irq.timerSetReload(3, value);
 		return;
 
 	case this.TM0CNT_HI:
+		value &= 0x00C7
+		this.cpu.irq.timerWriteControl(0, value);
+		break;
 	case this.TM1CNT_HI:
+		value &= 0x00C7
+		this.cpu.irq.timerWriteControl(1, value);
+		break;
 	case this.TM2CNT_HI:
+		value &= 0x00C7
+		this.cpu.irq.timerWriteControl(2, value);
+		break;
 	case this.TM3CNT_HI:
-		value &= 0x00C7;
-		this.cpu.log('Unimplemented timer register write: 0x' + offset.toString(16));
+		value &= 0x00C7
+		this.cpu.irq.timerWriteControl(3, value);
 		break;
 
 	// Misc

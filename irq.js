@@ -1,4 +1,6 @@
 GameBoyAdvanceInterruptHandler = function() {
+	this.FREQUENCY = 16780000;
+
 	this.cpu = null;
 	this.irqProviders = new Array();
 	this.enable = true;
@@ -19,6 +21,21 @@ GameBoyAdvanceInterruptHandler = function() {
 			enable: 0
 		});
 	}
+
+	this.timersEnabled = 0;
+	this.timers = new Array();
+	for (var i = 0; i < 4; ++i) {
+		this.timers.push({
+			reload: 0,
+			prescale: 0,
+			countUp: 0,
+			doIrq: 0,
+			enable: 0,
+			lastEvent: 0
+		});
+	}
+
+	this.nextInterrupt = 0;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.setCPU = function(cpu) {
@@ -31,6 +48,38 @@ GameBoyAdvanceInterruptHandler.prototype.setVideo = function(video) {
 
 GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	this.video.updateTimers(this.cpu);
+	if (this.timersEnabled) {
+		// TODO: add timer IRQs
+		// TODO: check for overflow
+		if (this.timersEnabled & 0x1) {
+			var timer = this.timers[0];
+			if (this.cpu.cycles - timer.lastEvent >= timer.prescale) {
+				timer.lastEvent += timer.prescale;
+				++this.cpu.mmu.io.registers[this.cpu.io.TM0CNT_LO];
+			}
+		}
+		if (this.timersEnabled & 0x2) {
+			var timer = this.timers[1];
+			if (this.cpu.cycles - timer.lastEvent >= timer.prescale) {
+				timer.lastEvent += timer.prescale;
+				++this.cpu.mmu.io.registers[this.cpu.io.TM1CNT_LO];
+			}
+		}
+		if (this.timersEnabled & 0x4) {
+			var timer = this.timers[2];
+			if (this.cpu.cycles - timer.lastEvent >= timer.prescale) {
+				timer.lastEvent += timer.prescale;
+				++this.cpu.mmu.io.registers[this.cpu.io.TM2CNT_LO];
+			}
+		}
+		if (this.timersEnabled & 0x8) {
+			var timer = this.timers[3];
+			if (this.cpu.cycles - timer.lastEvent >= timer.prescale) {
+				timer.lastEvent += timer.prescale;
+				++this.cpu.mmu.io.registers[this.cpu.io.TM3CNT_LO];
+			}
+		}
+	}
 }
 
 GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
@@ -137,5 +186,36 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 
 	if (!currentDma.timing && currentDma.enable) {
 		this.cpu.mmu.serviceDma(dma, currentDma);
+	}
+};
+
+GameBoyAdvanceInterruptHandler.prototype.timerSetReload = function(timer, reload) {
+	this.timers[timer].reload = reload;
+};
+
+GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, control) {
+	var currentTimer = this.timers[timer];
+	switch (control & 0x0003) {
+	case 0x0000:
+		currentTimer.prescale = this.FREQUENCY;
+		break;
+	case 0x0001:
+		currentTimer.prescale = this.FREQUENCY / 64;
+		break;
+	case 0x0002:
+		currentTimer.prescale = this.FREQUENCY / 256;
+		break;
+	case 0x0003:
+		currentTimer.prescale = this.FREQUENCY / 1024;
+		break;
+	}
+	currentTimer.countUp = control & 0x0004;
+	currentTimer.doIrq = control & 0x0040;
+	currentTimer.enable = ((control & 0x0080) >> 7) << timer;
+	var wasEnabled = currentTimer.enable;
+	this.timersEnabled = (this.timersEnabled & ~(1 << timer)) | currentTimer.enable;
+	if (!wasEnabled && currentTimer.enable) {
+		currentTimer.lastEvent = this.cpu.cycles;
+		this.cpu.mmu.io.registers[this.cpu.mmu.io.TM0CNT_LO + (timer << 2)] = currentTimer.reload;
 	}
 };
