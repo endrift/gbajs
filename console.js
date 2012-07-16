@@ -85,7 +85,8 @@ Console.prototype.flushLog = function() {
 		this.ul.appendChild(entry);
 	}
 	if (doScroll) {
-		this.ul.scrollTop = this.ul.scrollHeight - this.ul.offsetHeight;
+		var ul = this.ul;
+		setTimeout(function() { ul.scrollTop = ul.scrollHeight - ul.offsetHeight }, 0);
 	}
 
 }
@@ -125,7 +126,7 @@ Console.prototype.runVisible = function() {
 			}
 		}
 	}
-	run();
+	setTimeout(run, 0);
 }
 
 Console.prototype.run = function() {
@@ -169,7 +170,7 @@ Console.prototype.run = function() {
 			}
 		}
 	}
-	run();
+	setTimeout(run, 0);
 }
 
 Console.prototype.pause = function() {
