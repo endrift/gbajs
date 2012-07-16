@@ -161,6 +161,7 @@ GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
 	case this.DISPCNT:
+	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
 	case this.DMA0CNT_HI:
 	case this.DMA1CNT_HI:
@@ -188,37 +189,37 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	case this.SOUND2CNT_LO | 1:
 	case this.SOUND3CNT_HI:
 	case this.SOUND4CNT_LO | 1:
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND1CNT_X | 1:
 	case this.SOUND2CNT_HI | 1:
 		value &= 0xC7;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND1CNT_LO:
 		value &= 0x7F;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND3CNT_LO:
 	case this.SOUND3CNT_HI | 1:
 		value &= 0xE0;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND4CNT_HI | 1:
 		value &= 0xC0;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUNDCNT_LO:
 		value &= 0x77;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUNDCNT_X:
 		value &= 0x80;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUNDBIAS | 1:
 		value &= 0xC3;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	default:
 		throw 'Unimplemented 8-bit I/O register write: 0x' + offset.toString(16);
@@ -243,15 +244,15 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.BLDCNT:
 		value &= 0x4FFF;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented video register write: 0x' + offset.toString(16));
 		break;
 	case this.BLDALPHA:
 		value &= 0x1F1F;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented video register write: 0x' + offset.toString(16));
 		break;
 	case this.BLDY:
 		value &= 0x001F;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented video register write: 0x' + offset.toString(16));
 		break;
 
 	// Sound
@@ -260,44 +261,44 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		value &= 0x007F;
 	case this.SOUND1CNT_HI:
 	case this.SOUND2CNT_LO:
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND1CNT_X:
 	case this.SOUND2CNT_HI:
 		value &= 0xC7FF;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND3CNT_LO:
 		value &= 0x00E0;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND3CNT_HI:
 		value &= 0xE0FF;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND3CNT_X:
 		value &= 0xC7FF;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND4CNT_LO:
 		value &= 0xFF3F;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUND4CNT_HI:
 		value &= 0xE0FF;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUNDCNT_LO:
 		value &= 0xFF77;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUNDCNT_HI:
 		value &= 0xFF0F;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	case this.SOUNDCNT_X:
 		value &= 0x0080;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 
 	// DMA
@@ -337,7 +338,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.TM1CNT_LO:
 	case this.TM2CNT_LO:
 	case this.TM3CNT_LO:
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented timer register write: 0x' + offset.toString(16));
 		return;
 
 	case this.TM0CNT_HI:
@@ -345,7 +346,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.TM2CNT_HI:
 	case this.TM3CNT_HI:
 		value &= 0x00C7;
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.cpu.log('Unimplemented timer register write: 0x' + offset.toString(16));
 		break;
 
 	// Misc
