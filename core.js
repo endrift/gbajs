@@ -582,7 +582,7 @@ ARMCore.prototype.compile = function(instruction) {
 					cpu.gprs[rd] = cpu.gprs[rn] & cpu.shifterOperand;
 					if (s) {
 						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 						cpu.cpsrC = cpu.shifterCarryOut;
 					}
 				};
@@ -597,7 +597,7 @@ ARMCore.prototype.compile = function(instruction) {
 					cpu.gprs[rd] = cpu.gprs[rn] ^ cpu.shifterOperand;
 					if (s) {
 						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 						cpu.cpsrC = cpu.shifterCarryOut;
 					}
 				};
@@ -612,7 +612,7 @@ ARMCore.prototype.compile = function(instruction) {
 					var d = cpu.gprs[rn] - cpu.shifterOperand;
 					if (s) {
 						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !d;
+						cpu.cpsrZ = !(d & 0xFFFFFFFF);
 						cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
 						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.shifterOperand & 0x800000000 &&
 									cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
@@ -630,7 +630,7 @@ ARMCore.prototype.compile = function(instruction) {
 					var d = cpu.shifterOperand - cpu.gprs[rn];
 					if (s) {
 						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !d;
+						cpu.cpsrZ = !(d & 0xFFFFFFFF);
 						cpu.cpsrC = (cpu.shifterOperand >>> 0) >= (cpu.gprs[rn] >>> 0);
 						cpu.cpsrV = cpu.shifterOperand & 0x800000000 != cpu.gprs[rn] & 0x80000000 &&
 									cpu.shifterOperand & 0x800000000 != d & 0x80000000;
@@ -648,7 +648,7 @@ ARMCore.prototype.compile = function(instruction) {
 					var d = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
 					if (s) {
 						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !d;
+						cpu.cpsrZ = !(d & 0xFFFFFFFF);
 						cpu.cpsrC = d > 0xFFFFFFFF;
 						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == cpu.shifterOperand & 0x800000000 &&
 									cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
@@ -668,7 +668,7 @@ ARMCore.prototype.compile = function(instruction) {
 					var d = (cpu.gprs[rn] >>> 0) + shifterOperand;
 					if (s) {
 						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !d;
+						cpu.cpsrZ = !(d & 0xFFFFFFFF);
 						cpu.cpsrC = d > 0xFFFFFFFF;
 						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == shifterOperand & 0x800000000 &&
 									cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
@@ -688,7 +688,7 @@ ARMCore.prototype.compile = function(instruction) {
 					var d = (cpu.gprs[rn] >>> 0) - shifterOperand;
 					if (s) {
 						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !d;
+						cpu.cpsrZ = !(d & 0xFFFFFFFF);
 						cpu.cpsrC = d > 0xFFFFFFFF;
 						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != shifterOperand & 0x800000000 &&
 									cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
@@ -707,7 +707,7 @@ ARMCore.prototype.compile = function(instruction) {
 					var d = (cpu.shifterOperand >>> 0) - n;
 					if (s) {
 						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !d;
+						cpu.cpsrZ = !(d & 0xFFFFFFFF);
 						cpu.cpsrC = d > 0xFFFFFFFF;
 						cpu.cpsrV = cpu.shifterOperand & 0x80000000 != n & 0x80000000 &&
 									cpu.shifterOperand & 0x80000000 != d & 0x80000000;
@@ -724,7 +724,7 @@ ARMCore.prototype.compile = function(instruction) {
 					shiftOp();
 					var aluOut = cpu.gprs[rn] & cpu.shifterOperand;
 					cpu.cpsrN = aluOut & 0x80000000;
-					cpu.cpsrZ = !aluOut;
+					cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 					cpu.cpsrC = cpu.shifterCarryOut;
 				};
 				break;
@@ -737,7 +737,7 @@ ARMCore.prototype.compile = function(instruction) {
 					shiftOp();
 					var aluOut = cpu.gprs[rn] ^ cpu.shifterOperand;
 					cpu.cpsrN = aluOut & 0x80000000;
-					cpu.cpsrZ = !aluOut;
+					cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 					cpu.cpsrC = cpu.shifterCarryOut;
 				};
 				break;
@@ -750,7 +750,7 @@ ARMCore.prototype.compile = function(instruction) {
 					shiftOp();
 					var aluOut = cpu.gprs[rn] - cpu.shifterOperand;
 					cpu.cpsrN = aluOut & 0x80000000;
-					cpu.cpsrZ = !aluOut;
+					cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 					cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
 					cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.shifterOperand & 0x800000000 &&
 								cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000;
@@ -765,7 +765,7 @@ ARMCore.prototype.compile = function(instruction) {
 					shiftOp();
 					var aluOut = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
 					cpu.cpsrN = aluOut & 0x80000000;
-					cpu.cpsrZ = !aluOut;
+					cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 					cpu.cpsrC = aluOut > 0xFFFFFFFF;
 					cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == cpu.shifterOperand & 0x800000000 &&
 								cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000 &&
@@ -782,7 +782,7 @@ ARMCore.prototype.compile = function(instruction) {
 					cpu.gprs[rd] = cpu.gprs[rn] | cpu.shifterOperand;
 					if (s) {
 						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 					}
 				};
 				break;
@@ -796,7 +796,7 @@ ARMCore.prototype.compile = function(instruction) {
 					cpu.gprs[rd] = cpu.shifterOperand;
 					if (s) {
 						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 						cpu.cpsrC = cpu.shifterCarryOut;
 					}
 				};
@@ -811,7 +811,7 @@ ARMCore.prototype.compile = function(instruction) {
 					cpu.gprs[rd] = cpu.gprs[rn] & ~cpu.shifterOperand;
 					if (s) {
 						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 						cpu.cpsrC = cpu.shifterCarryOut;
 					}
 				};
@@ -826,7 +826,7 @@ ARMCore.prototype.compile = function(instruction) {
 					cpu.gprs[rd] = ~cpu.shifterOperand;
 					if (s) {
 						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !cpu.gprs[rd];
+						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 						cpu.cpsrC = aluOut > cpu.shifterCarryOut;
 					}
 				};
@@ -860,7 +860,7 @@ ARMCore.prototype.compile = function(instruction) {
 						}
 						if (s) {
 							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-							cpu.cpsrZ = !cpu.gprs[rd];
+							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 						}
 					};
 					break;
@@ -1261,7 +1261,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = cpu.gprs[rd] & cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0040:
@@ -1269,7 +1269,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = cpu.gprs[rd] ^ cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0080:
@@ -1290,7 +1290,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x00C0:
@@ -1311,7 +1311,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0100:
@@ -1332,7 +1332,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0140:
@@ -1345,7 +1345,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				var dn = d & 0x80000000;
 				var mn = m & 0x80000000;
 				cpu.cpsrN = dn;
-				cpu.cpsrZ = !d;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = d > 0xFFFFFFFF;
 				cpu.cpsrV = oldDn == mn && oldDn != dn && mn != dn;
 				cpu.gprs[rd] = d;
@@ -1357,7 +1357,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				var m = (cpu.gprs[rm] >>> 0) + !cpu.cpsrC;
 				var d = (cpu.gprs[rd] >>> 0) - m;
 				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !d;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = d > 0xFFFFFFFF;
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != m & 0x800000000 &&
 							cpu.gprs[rd] & 0x80000000 != d & 0x80000000;
@@ -1378,7 +1378,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					}
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0200:
@@ -1386,7 +1386,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var aluOut = cpu.gprs[rd] & cpu.gprs[rm];
 				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
+				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 			}
 			break;
 		case 0x0240:
@@ -1394,7 +1394,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = -cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 				cpu.cpsrC = 0 >= (cpu.gprs[rd] >>> 0);
 				cpu.cpsrV = cpu.gprs[rm] & 0x800000000 && cpu.gprs[rd] & 0x80000000;
 			};
@@ -1404,7 +1404,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
 				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
+				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 				cpu.cpsrC = (cpu.gprs[rd] >>> 0) >= (cpu.gprs[rm] >>> 0);
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
 					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000;
@@ -1415,7 +1415,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var aluOut = (cpu.gprs[rd] >>> 0) + (cpu.gprs[rm] >>> 0);
 				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
+				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 				cpu.cpsrC = aluOut > 0xFFFFFFFF;
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 == cpu.gprs[rm] & 0x800000000 &&
 					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000 &&
@@ -1427,7 +1427,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = cpu.gprs[rd] | cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0340:
@@ -1442,7 +1442,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[rd] *= cpu.gprs[rs];
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0380:
@@ -1450,7 +1450,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = cpu.gprs[rd] & ~cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x03C0:
@@ -1458,7 +1458,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rd] = ~cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		}
@@ -1482,7 +1482,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
 				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
+				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 				cpu.cpsrC = (cpu.gprs[rd] >>> 0) >= (cpu.gprs[rm] >>> 0);
 				cpu.cpsrV = cpu.gprs[rd] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
 					        cpu.gprs[rd] & 0x80000000 != aluOut & 0x80000000;
@@ -1516,7 +1516,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var d = (cpu.gprs[rn] >>> 0) + (cpu.gprs[rm] >>> 0);
 				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !d;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = d > 0xFFFFFFFF;
 				cpu.cpsrV = (cpu.gprs[rn] & 0x80000000) == (cpu.gprs[rm] & 0x800000000) &&
 				            (cpu.gprs[rn] & 0x80000000) != (d & 0x80000000) &&
@@ -1529,7 +1529,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var d = cpu.gprs[rn] - cpu.gprs[rm];
 				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !d;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.gprs[rm] >>> 0);
 				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.gprs[rm] & 0x800000000 &&
 							cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
@@ -1543,7 +1543,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					var d = (cpu.gprs[rn] >>> 0) + immediate;
 					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !d;
+					cpu.cpsrZ = !(d & 0xFFFFFFFF);
 					cpu.cpsrC = d > 0xFFFFFFFF;
 					cpu.cpsrV = (cpu.gprs[rn] & 0x80000000) == (immediate & 0x800000000) &&
 								(cpu.gprs[rn] & 0x80000000) != (d & 0x80000000) &&
@@ -1555,7 +1555,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				op = function() {
 					var d = (cpu.gprs[rn] >>> 0);
 					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !d;
+					cpu.cpsrZ = !(d & 0xFFFFFFFF);
 					cpu.cpsrC = 0;
 					cpu.cpsrV = 0;
 					cpu.gprs[rd] = d;
@@ -1568,7 +1568,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var d = cpu.gprs[rn] - immediate;
 				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !d;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= immediate;
 				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != immediate & 0x800000000 &&
 				            cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
@@ -1593,7 +1593,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[rd] = cpu.gprs[rm] << immediate;
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0800:
@@ -1607,7 +1607,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[rd] = cpu.gprs[rm] >>> immediate;
 				}
 				cpu.cpsrN = 0;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x1000:
@@ -1625,7 +1625,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.gprs[rd] = cpu.gprs[rm] >> immediate;
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !cpu.gprs[rd];
+				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 			};
 			break;
 		case 0x1800:
@@ -1642,7 +1642,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				cpu.gprs[rn] = immediate;
 				cpu.cpsrN = immediate & 0x80000000;
-				cpu.cpsrZ = !immediate;
+				cpu.cpsrZ = !(immediate & 0xFFFFFFFF);
 			};
 			break;
 		case 0x0800:
@@ -1650,7 +1650,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var aluOut = cpu.gprs[rn] - immediate;
 				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !aluOut;
+				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 				cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= immediate;
 				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != immediate & 0x800000000 &&
 				            cpu.gprs[rn] & 0x80000000 != aluOut & 0x80000000;
@@ -1661,7 +1661,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var d = (cpu.gprs[rn] >>> 0) + immediate;
 				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !d;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = d > 0xFFFFFFFF;
 				cpu.cpsrV = (cpu.gprs[rn] & 0x80000000) == (immediate & 0x800000000) &&
 							(cpu.gprs[rn] & 0x80000000) != (d & 0x80000000) &&
@@ -1674,7 +1674,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = function() {
 				var d = cpu.gprs[rn] - immediate;
 				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !d;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= immediate;
 				cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != immediate &&
 							cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
