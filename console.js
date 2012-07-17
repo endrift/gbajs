@@ -281,7 +281,7 @@ Memory.prototype.refresh = function(row) {
 	row.firstChild.textContent = hex(row.offset);
 	for (var i = 0; i < 16; ++i) {
 		try {
-			row.children[i + 1].textContent = hex(this.mmu.freeLoadU8(row.offset + i), 2, false);
+			row.children[i + 1].textContent = hex(this.mmu.loadU8(row.offset + i), 2, false);
 		} catch (exception) {
 			row.children[i + 1].textContent = '??';
 		}

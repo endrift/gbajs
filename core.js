@@ -120,7 +120,7 @@ ARMCore.prototype.prefetch = function(address) {
 		}
 		this.prefetch0 = compiled;
 		if (!next || next.execMode != this.MODE_ARM) {
-			var instruction = this.mmu.sload32(address + this.WORD_SIZE_ARM) >>> 0;
+			var instruction = this.mmu.load32(address + this.WORD_SIZE_ARM) >>> 0;
 			next = this.compile(instruction);
 			block[offset + 2] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -139,7 +139,7 @@ ARMCore.prototype.prefetch = function(address) {
 		}
 		this.prefetch0 = compiled;
 		if (!next || next.execMode != this.MODE_THUMB) {
-			var instruction = this.mmu.sload16(address + this.WORD_SIZE_THUMB);
+			var instruction = this.mmu.load16(address + this.WORD_SIZE_THUMB);
 			next = this.compileThumb(instruction);
 			block[offset + 1] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -156,7 +156,7 @@ ARMCore.prototype.prefetchNext = function(address) {
 		var offset = (address & this.mmu.OFFSET_MASK) >> 1;
 		next = block[offset];
 		if (!next) {
-			var instruction = this.mmu.sload32(address) >>> 0;
+			var instruction = this.mmu.load32(address) >>> 0;
 			next = this.compile(instruction);
 			block[offset] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -167,7 +167,7 @@ ARMCore.prototype.prefetchNext = function(address) {
 		var offset = (address & this.mmu.OFFSET_MASK) >> 1;
 		next = block[offset];
 		if (!next) {
-			var instruction = this.mmu.sload16(address);
+			var instruction = this.mmu.load16(address);
 			next = this.compileThumb(instruction);
 			block[offset] = next;
 			++mmu.memoryView[memoryRegion].cachedInstructions;
@@ -184,17 +184,21 @@ ARMCore.prototype.step = function() {
 	this.conditionPassed = true;
 	instruction();
 
-	if (instruction.writesPC && this.conditionPassed) {
+	if (instruction.writesPC && this.conditionPassed) {;
 		this.gprs[this.PC] &= 0xFFFFFFFE;
-		this.prefetch(this.gprs[this.PC]);
+		var pc = this.gprs[this.PC];
+		this.prefetch(pc);
 		if (this.execMode == this.MODE_ARM) {
 			this.instructionWidth = this.WORD_SIZE_ARM;
+			this.mmu.wait32(pc);
+			this.mmu.waitSeq32(pc);
 		} else {
 			this.instructionWidth = this.WORD_SIZE_THUMB;
+			this.mmu.wait(pc);
+			this.mmu.waitSeq(pc);
 		}
 		this.gprs[this.PC] += this.instructionWidth;
 	}
-	this.cycles += 1;
 	this.irq.updateTimers();
 };
 
@@ -349,10 +353,13 @@ ARMCore.prototype.compile = function(instruction) {
 		var rm = instruction & 0xF;
 		op = function() {
 			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 				return;
 			}
 			cpu.execMode = cpu.gprs[rm] & 0x00000001;
 			cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
+			cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+			cpu.mmu.wait32(cpu.gprs[cpu.PC]);
 		};
 		op.writesPC = true;
 	} else if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
@@ -373,6 +380,7 @@ ARMCore.prototype.compile = function(instruction) {
 				immediate = (immediate >> rotateImm) | (immediate << (32 - rotateImm));
 
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -435,6 +443,7 @@ ARMCore.prototype.compile = function(instruction) {
 				case 0:
 					// LSL
 					shiftOp = function() {
+						++cpu.cycles;
 						var shift = cpu.gprs[rs] & 0xFF;
 						if (shift == 0) {
 							cpu.shifterOperand = cpu.gprs[rm];
@@ -454,6 +463,7 @@ ARMCore.prototype.compile = function(instruction) {
 				case 1:
 					// LSR
 					shiftOp = function() {
+						++cpu.cycles;
 						var shift = cpu.gprs[rs] & 0xFF;
 						if (shift == 0) {
 							cpu.shifterOperand = cpu.gprs[rm];
@@ -473,6 +483,7 @@ ARMCore.prototype.compile = function(instruction) {
 				case 2:
 					// ASR
 					shiftOp = function() {
+						++cpu.cycles;
 						var shift = cpu.gprs[rs] & 0xFF;
 						if (shift == 0) {
 							cpu.shifterOperand = cpu.gprs[rm];
@@ -492,6 +503,7 @@ ARMCore.prototype.compile = function(instruction) {
 				case 3:
 					// ROR
 					shiftOp = function() {
+						++cpu.cycles;
 						var shift = cpu.gprs[rs] & 0xFF;
 						var rotate = shift & 0x1F;
 						if (shift == 0) {
@@ -579,6 +591,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x00000000:
 				// AND
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -594,6 +607,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x00200000:
 				// EOR
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -609,6 +623,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x00400000:
 				// SUB
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -627,6 +642,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x00600000:
 				// RSB
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -645,6 +661,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x00800000:
 				// ADD
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -664,6 +681,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x00A00000:
 				// ADC
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -684,6 +702,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x00C00000:
 				// SBC
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -703,6 +722,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x00E00000:
 				// RSC
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -722,6 +742,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x01000000:
 				// TST
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -735,6 +756,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x01200000:
 				// TEQ
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -748,6 +770,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x01400000:
 				// CMP
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -763,6 +786,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x01600000:
 				// CMN
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -779,6 +803,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x01800000:
 				// ORR
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -793,6 +818,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x01A00000:
 				// MOV
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -808,6 +834,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x01C00000:
 				// BIC
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -823,6 +850,7 @@ ARMCore.prototype.compile = function(instruction) {
 			case 0x01E00000:
 				// MVN
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					if (condOp && !condOp()) {
 						return;
 					}
@@ -854,6 +882,7 @@ ARMCore.prototype.compile = function(instruction) {
 				case 0x00000000:
 					// MUL
 					op = function() {
+						// TODO: timings
 						if ((cpu.gprs[rm] & 0xFFFF0000) && (cpu.gprs[rs] & 0xFFFF0000)) {
 							// Our data type is a double--we'll lose bits if we do it all at once!
 							var hi = ((cpu.gprs[rm] & 0xFFFF0000) * cpu.gprs[rs]) & 0xFFFFFFFF;
@@ -972,19 +1001,37 @@ ARMCore.prototype.compile = function(instruction) {
 						if (h) {
 							if (s) {
 								op = function() {
+									cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+									if (condOp && !condOp()) {
+										return;
+									}
 									var addr = address();
+									cpu.mmu.wait32(addr);
+									++cpu.cycles;
 									cpu.gprs[rd] = cpu.mmu.load16(addr);
 								};
 							} else {
 								op = function() {
+									cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+									if (condOp && !condOp()) {
+										return;
+									}
 									var addr = address();
+									cpu.mmu.wait32(addr);
+									++cpu.cycles;
 									cpu.gprs[rd] = cpu.mmu.loadU16(addr);
 								};
 							}
 						} else {
 							if (s) {
 								op = function() {
+									cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+									if (condOp && !condOp()) {
+										return;
+									}
 									var addr = address();
+									cpu.mmu.wait32(addr);
+									++cpu.cycles;
 									cpu.gprs[rd] = cpu.mmu.load8(addr);
 								};
 							}
@@ -992,7 +1039,13 @@ ARMCore.prototype.compile = function(instruction) {
 					} else if (!s && h) {
 						// Store halfword
 						op = function() {
+							if (condOp && !condOp()) {
+								cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+								return;
+							}
 							var addr = address();
+							cpu.mmu.wait32(addr);
+							cpu.mmu.wait32(cpu.gprs[cpu.PC]);
 							cpu.gprs[rd] = cpu.mmu.store16(addr, cpu.gprs[rd]);
 						};
 					}
@@ -1112,20 +1165,26 @@ ARMCore.prototype.compile = function(instruction) {
 				if (b) {
 					// LDRB
 					op = function() {
+						cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 						if (condOp && !condOp()) {
 							return;
 						}
-						var a = address();
-						cpu.gprs[rd] = cpu.mmu.loadU8(a);
+						var addr = address();
+						cpu.mmu.wait32(addr);
+						++cpu.cycles;
+						cpu.gprs[rd] = cpu.mmu.loadU8(addr);
 					};
 				} else {
 					// LDR
 					op = function() {
 						if (condOp && !condOp()) {
+							cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 							return;
 						}
-						var a = address();
-						cpu.gprs[rd] = cpu.mmu.load32(a);
+						var addr = address();
+						cpu.mmu.wait32(addr);
+						cpu.mmu.wait32(cpu.gprs[cpu.PC]);
+						cpu.gprs[rd] = cpu.mmu.load32(addr);
 					};
 				}
 			} else {
@@ -1133,19 +1192,25 @@ ARMCore.prototype.compile = function(instruction) {
 					// STRB
 					op = function() {
 						if (condOp && !condOp()) {
+							cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 							return;
 						}
-						var a = address();
-						cpu.mmu.store8(a, cpu.gprs[rd]);
+						var addr = address();
+						cpu.mmu.wait32(addr);
+						cpu.mmu.wait32(cpu.gprs[cpu.PC]);
+						cpu.mmu.store8(addr, cpu.gprs[rd]);
 					};
 				} else {
 					// STR
 					op = function() {
 						if (condOp && !condOp()) {
+							cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 							return;
 						}
-						var a = address();
-						cpu.mmu.store32(a, cpu.gprs[rd]);
+						var addr = address();
+						cpu.mmu.wait32(addr);
+						cpu.mmu.wait32(cpu.gprs[cpu.PC]);
+						cpu.mmu.store32(addr, cpu.gprs[rd]);
 					};
 				}
 			}
@@ -1189,32 +1254,52 @@ ARMCore.prototype.compile = function(instruction) {
 			if (load) {
 				// LDM
 				op = function() {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+					if (condOp && !condOp()) {
+						return;
+					}
 					var addr = address();
 					var m, i;
 					for (m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 						if (rs & m) {
-							cpu.gprs[i] = cpu.mmu.sload32(addr);
+							cpu.mmu.waitSeq32(addr);
+							cpu.gprs[i] = cpu.mmu.load32(addr);
 							addr += 4;
 						}
 					}
 					if (w) {
 						cpu.gprs[rn] = addr;
 					}
+					++cpu.cycles;
 				};
 			} else {
 				// STM
 				op = function() {
+					if (condOp && !condOp()) {
+						cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+						return;
+					}
 					var addr = address();
 					var m, i;
 					for (m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 						if (rs & m) {
-							cpu.mmu.sstore32(addr, cpu.gprs[i]);
+							cpu.mmu.wait32(addr);
+							cpu.mmu.store32(addr, cpu.gprs[i]);
+							addr += 4;
+							break;
+						}
+					}
+					for (m <<= 1, ++i; i < 16; m <<= 1, ++i) {
+						if (rs & m) {
+							cpu.mmu.waitSeq32(addr);
+							cpu.mmu.store32(addr, cpu.gprs[i]);
 							addr += 4;
 						}
 					}
 					if (w) {
 						cpu.gprs[rn] = addr;
 					}
+					cpu.mmu.wait32(cpu.gprs[cpu.PC]);
 				}
 			}
 			break;
@@ -1228,12 +1313,15 @@ ARMCore.prototype.compile = function(instruction) {
 			var link = instruction & 0x01000000;
 			op = function() {
 				if (condOp && !condOp()) {
+					cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
 					return;
 				}
 				if (link) {
 					cpu.gprs[cpu.LR] = cpu.gprs[cpu.PC] - 4;
 				}
 				cpu.gprs[cpu.PC] += immediate;
+				cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait32(cpu.gprs[cpu.PC]);
 			};
 			op.writesPC = true;
 			break;
@@ -1263,6 +1351,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0000:
 			// AND
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rd] = cpu.gprs[rd] & cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
@@ -1271,6 +1360,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0040:
 			// EOR
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rd] = cpu.gprs[rd] ^ cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
@@ -1279,6 +1369,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0080:
 			// LSL(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var rs = cpu.gprs[rm] & 0xFF;
 				if (rs) {
 					if (rs < 32) {
@@ -1300,6 +1391,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x00C0:
 			// LSR(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var rs = cpu.gprs[rm] & 0xFF;
 				if (rs) {
 					if (rs < 32) {
@@ -1321,6 +1413,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0100:
 			// ASR(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var rs = cpu.gprs[rm] & 0xFF;
 				if (rs) {
 					if (rs < 32) {
@@ -1342,6 +1435,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0140:
 			// ADC
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var m = (cpu.gprs[rm] >>> 0) + !!cpu.cpsrC;
 				var oldD = cpu.gprs[rd];
 				var d = (oldD >>> 0) + m;
@@ -1358,6 +1452,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0180:
 			// SBC
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var m = (cpu.gprs[rm] >>> 0) + !cpu.cpsrC;
 				var d = (cpu.gprs[rd] >>> 0) - m;
 				cpu.cpsrN = d & 0x80000000;
@@ -1371,6 +1466,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x01C0:
 			// ROR
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var rs = cpu.gprs[rm] & 0xFF;
 				if (rs) {
 					var r4 = rs & 0x0F;
@@ -1388,6 +1484,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0200:
 			// TST
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var aluOut = cpu.gprs[rd] & cpu.gprs[rm];
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
@@ -1396,6 +1493,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0240:
 			// NEG
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rd] = -cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
@@ -1406,6 +1504,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0280:
 			// CMP(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
@@ -1417,6 +1516,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x02C0:
 			// CMN
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var aluOut = (cpu.gprs[rd] >>> 0) + (cpu.gprs[rm] >>> 0);
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
@@ -1429,6 +1529,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0300:
 			// ORR
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rd] = cpu.gprs[rd] | cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
@@ -1437,6 +1538,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0340:
 			// MUL
 			op = function() {
+				// TODO: implement timings
 				if ((cpu.gprs[rs] & 0xFFFF0000) && (cpu.gprs[rd] & 0xFFFF0000)) {
 					// Our data type is a double--we'll lose bits if we do it all at once!
 					var hi = ((cpu.gprs[rd] & 0xFFFF0000) * cpu.gprs[rs]) & 0xFFFFFFFF;
@@ -1452,6 +1554,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0380:
 			// BIC
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rd] = cpu.gprs[rd] & ~cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
@@ -1460,6 +1563,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x03C0:
 			// MVN
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rd] = ~cpu.gprs[rm];
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
@@ -1477,6 +1581,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0000:
 			// ADD(4)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rd] += cpu.gprs[rm];
 			};
 			op.writesPC = rd == this.PC;
@@ -1484,6 +1589,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0100:
 			// CMP(3)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
@@ -1496,6 +1602,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0200:
 			// MOV(3)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rd] = cpu.gprs[rm];
 			};
 			op.writesPC = rd == this.PC;
@@ -1503,6 +1610,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0300:
 			// BX
 			op = function() {
+				// TODO: implement timings
 				cpu.execMode = cpu.gprs[rm] & 0x00000001;
 				cpu.gprs[cpu.PC] = cpu.gprs[rm] & 0xFFFFFFFE;
 			};
@@ -1518,6 +1626,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0000:
 			// ADD(3)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var d = (cpu.gprs[rn] >>> 0) + (cpu.gprs[rm] >>> 0);
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
@@ -1531,6 +1640,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0200:
 			// SUB(3)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var d = cpu.gprs[rn] - cpu.gprs[rm];
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
@@ -1545,6 +1655,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (immediate) {
 				// ADD(1)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					var d = (cpu.gprs[rn] >>> 0) + immediate;
 					cpu.cpsrN = d & 0x80000000;
 					cpu.cpsrZ = !(d & 0xFFFFFFFF);
@@ -1557,6 +1668,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			} else {
 				// MOV(2)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					var d = (cpu.gprs[rn] >>> 0);
 					cpu.cpsrN = d & 0x80000000;
 					cpu.cpsrZ = !(d & 0xFFFFFFFF);
@@ -1570,6 +1682,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// SUB(1)
 			var immediate = (instruction & 0x01C0) >> 6;
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var d = cpu.gprs[rn] - immediate;
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
@@ -1590,6 +1703,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0000:
 			// LSL(1)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				if (immediate == 0) {
 					cpu.gprs[rd] = cpu.gprs[rm];
 				} else {
@@ -1603,6 +1717,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0800:
 			// LSR(1)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				if (immediate == 0) {
 					cpu.cpsrC = cpu.gprs[rm] & 0x80000000;
 					cpu.gprs[rd] = 0;
@@ -1617,6 +1732,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x1000:
 			// ASR(1)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				if (immediate == 0) {
 					cpu.cpsrC = cpu.gprs[rm] & 0x80000000;
 					if (cpu.cpsrC) {
@@ -1644,6 +1760,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0000:
 			// MOV(1)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				cpu.gprs[rn] = immediate;
 				cpu.cpsrN = immediate & 0x80000000;
 				cpu.cpsrZ = !(immediate & 0xFFFFFFFF);
@@ -1652,6 +1769,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0800:
 			// CMP(1)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var aluOut = cpu.gprs[rn] - immediate;
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
@@ -1663,6 +1781,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x1000:
 			// ADD(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var d = (cpu.gprs[rn] >>> 0) + immediate;
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
@@ -1676,6 +1795,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x1800:
 			// SUB(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var d = cpu.gprs[rn] - immediate;
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
@@ -1692,6 +1812,8 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		var rd = (instruction & 0x0700) >> 8;
 		var immediate = (instruction & 0x00FF) << 2;
 		op = function() {
+			cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+			cpu.mmu.wait32(cpu.gprs[cpu.PC]);
 			cpu.gprs[rd] = cpu.mmu.load32((cpu.gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
 		};
 		op.writesPC = false;
@@ -1705,48 +1827,69 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0000:
 			// STR(2)
 			op = function() {
+				cpu.mmu.wait(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait32(cpu.gprs[rn] + cpu.gprs[rm]);
 				cpu.mmu.store32(cpu.gprs[rn] + cpu.gprs[rm], cpu.gprs[rd]);
 			}
 			break;
 		case 0x0200:
 			// STRH(2)
 			op = function() {
+				cpu.mmu.wait(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait(cpu.gprs[rn] + cpu.gprs[rm]);
 				cpu.mmu.store16(cpu.gprs[rn] + cpu.gprs[rm], cpu.gprs[rd]);
 			}
 			break;
 		case 0x0400:
 			// STRB(2)
 			op = function() {
+				cpu.mmu.wait(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait(cpu.gprs[rn] + cpu.gprs[rm]);
 				cpu.mmu.store8(cpu.gprs[rn] + cpu.gprs[rm], cpu.gprs[rd]);
 			}
 			break;
 		case 0x0600:
 			// LDRSB
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait(cpu.gprs[rn] + cpu.gprs[rm]);
+				++cpu.cycles;
 				cpu.gprs[rd] = cpu.mmu.load8(cpu.gprs[rn] + cpu.gprs[rm]);
 			}
 			break;
 		case 0x0800:
 			// LDR(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait32(cpu.gprs[rn] + cpu.gprs[rm]);
+				++cpu.cycles;
 				cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[rn] + cpu.gprs[rm]);
 			}
 			break;
 		case 0x0A00:
 			// LDRH(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait(cpu.gprs[rn] + cpu.gprs[rm]);
+				++cpu.cycles;
 				cpu.gprs[rd] = cpu.mmu.loadU16(cpu.gprs[rn] + cpu.gprs[rm]);
 			}
 			break;
 		case 0x0C00:
 			// LDRB(2)
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait(cpu.gprs[rn] + cpu.gprs[rm]);
+				++cpu.cycles;
 				cpu.gprs[rd] = cpu.mmu.loadU8(cpu.gprs[rn] + cpu.gprs[rm]);
 			}
 			break;
 		case 0x0E00:
 			// LDRSH
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+				cpu.mmu.wait(cpu.gprs[rn] + cpu.gprs[rm]);
+				++cpu.cycles;
 				cpu.gprs[rd] = cpu.mmu.load16(cpu.gprs[rn] + cpu.gprs[rm]);
 			}
 			break;
@@ -1762,11 +1905,17 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (b) {
 				// LDRB(1)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+					cpu.mmu.wait(cpu.gprs[rn] + immediate);
+					++cpu.cycles;
 					cpu.gprs[rd] = cpu.mmu.loadU8(cpu.gprs[rn] + immediate);
 				}
 			} else {
 				// LDR(1)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+					cpu.mmu.wait32(cpu.gprs[rn] + immediate);
+					++cpu.cycles;
 					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[rn] + immediate);
 				}
 			}
@@ -1774,11 +1923,15 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (b) {
 				// STRB(1)
 				op = function() {
+					cpu.mmu.wait(cpu.gprs[cpu.PC]);
+					cpu.mmu.wait(cpu.gprs[rn] + immediate);
 					cpu.mmu.store8(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				};
 			} else {
 				// STR(1)
 				op = function() {
+					cpu.mmu.wait(cpu.gprs[cpu.PC]);
+					cpu.mmu.wait32(cpu.gprs[rn] + immediate);
 					cpu.mmu.store32(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				}
 			}
@@ -1791,36 +1944,47 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		if (instruction & 0x0800) {
 			// POP
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var address = cpu.gprs[cpu.SP];
 				var m, i;
 				for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 					if (rs & m) {
+						cpu.mmu.waitSeq32(address);
 						cpu.gprs[i] = cpu.mmu.load32(address);
 						address += 4;
 					}
 				}
 				if (r) {
+					cpu.mmu.waitSeq32(address);
 					cpu.gprs[cpu.PC] = cpu.mmu.load32(address) & 0xFFFFFFFE;
 					address += 4;
 				}
 				cpu.gprs[cpu.SP] = address;
+				++cpu.cycles;
 			};
 			op.writesPC = r;
-			for (var x = rs; x; x >>= 1) {
-				if (x & 1) {
-				}
-			}
 		} else {
 			// PUSH
 			op = function() {
+				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 				var address = cpu.gprs[cpu.SP] - 4;
 				if (r) {
+					cpu.mmu.waitSeq32(address);
 					cpu.mmu.store32(address, cpu.gprs[cpu.LR]);
 					address -= 4;
 				}
 				var m, i;
 				for (m = 0x80, i = 7; m; m >>= 1, --i) {
 					if (rs & m) {
+						cpu.mmu.wait32(address);
+						cpu.mmu.store32(address, cpu.gprs[i]);
+						address -= 4;
+						break;
+					}
+				}
+				for (m >>= 1, --i; m; m >>= 1, --i) {
+					if (rs & m) {
+						cpu.mmu.waitSeq32(address);
 						cpu.mmu.store32(address, cpu.gprs[i]);
 						address -= 4;
 					}
@@ -1828,10 +1992,6 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.gprs[cpu.SP] = address + 4;
 			};
 			op.writesPC = false;
-			for (var x = rs; x; x >>= 1) {
-				if (x & 1) {
-				}
-			}
 		}
 	} else if (instruction & 0x8000) {
 		switch (instruction & 0x7000) {
@@ -1843,11 +2003,16 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (instruction & 0x0800) {
 				// LDRH(1)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+					cpu.mmu.wait32(cpu.gprs[rn] + immediate);
 					cpu.gprs[rd] = cpu.mmu.loadU16(cpu.gprs[rn] + immediate);
+					++cpu.cycles;
 				};
 			} else {
 				// STRH(1)
 				op = function() {
+					cpu.mmu.wait(cpu.gprs[cpu.PC]);
+					cpu.mmu.wait32(cpu.gprs[rn] + immediate);
 					cpu.mmu.store16(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				};
 			}
@@ -1861,11 +2026,16 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (load) {
 				// LDR(4)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+					cpu.mmu.wait32(cpu.gprs[cpu.SP] + immediate);
 					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[cpu.SP] + immediate);
+					++cpu.cycles;
 				}
 			} else {
 				// STR(3)
 				op = function() {
+					cpu.mmu.wait(cpu.gprs[cpu.PC]);
+					cpu.mmu.wait32(cpu.gprs[cpu.SP] + immediate);
 					cpu.mmu.store32(cpu.gprs[cpu.SP] + immediate, cpu.gprs[rd]);
 				}
 			}
@@ -1878,11 +2048,13 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (instruction & 0x0800) {
 				// ADD(6)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					cpu.gprs[rd] = cpu.gprs[cpu.SP] + immediate;
 				};
 			} else {
 				// ADD(5)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					cpu.gprs[rd] = cpu.gprs[cpu.PC] + immediate;
 				};
 			}
@@ -1899,6 +2071,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					immediate = -immediate;
 				}
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					cpu.gprs[cpu.SP] += immediate;
 				};
 				op.writesPC = false;
@@ -1911,11 +2084,14 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (instruction & 0x0800) {
 				// LDMIA
 				op = function() {
+					
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					var address = cpu.gprs[rn];
 					var m, i;
 					for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 						if (rs & m) {
-							cpu.gprs[i] = cpu.mmu.sload32(address);
+							cpu.mmu.waitSeq32(address);
+							cpu.gprs[i] = cpu.mmu.load32(address);
 							address += 4;
 						}
 					}
@@ -1924,12 +2100,21 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			} else {
 				// STMIA
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					var address = cpu.gprs[rn];
 					var m, i;
 					for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 						if (rs & m) {
-							cpu.mmu.sstore32(address, cpu.gprs[i]);
+							cpu.mmu.wait32(address);
+							cpu.mmu.store32(address, cpu.gprs[i]);
 							address += 4;
+						}
+					}
+					for (m <<= 1, ++i; i < 8; m <<= 1, ++i) {
+						if (rs & m) {
+							cpu.mmu.waitSeq32(address);
+							cpu.mmu.store32(address, cpu.gprs[i]);
+							address -= 4;
 						}
 					}
 					cpu.gprs[rn] = address;
@@ -1944,6 +2129,8 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (cond == 0xF) {
 				// SWI
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
+					// Additional +1S+1N handled in BIOS
 					cpu.irq.swi(immediate);
 				}
 				op.writesPC = false;
@@ -1955,6 +2142,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				immediate <<= 1;
 				var condOp = this.generateCond(cond);
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					if (condOp()) {
 						cpu.gprs[cpu.PC] += immediate;
 					}
@@ -1975,6 +2163,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				}
 				immediate <<= 1;
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					cpu.gprs[cpu.PC] += immediate;
 				};
 				op.writesPC = true;
@@ -1995,6 +2184,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				}
 				immediate <<= 12;
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					cpu.gprs[cpu.LR] = cpu.gprs[cpu.PC] + immediate;
 				}
 				op.writesPC = false;
@@ -2002,6 +2192,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			case 0x1800:
 				// BL(2)
 				op = function() {
+					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
 					var pc = cpu.gprs[cpu.PC];
 					cpu.gprs[cpu.PC] = cpu.gprs[cpu.LR] + (immediate << 1);
 					cpu.gprs[cpu.LR] = pc - 1;

@@ -205,52 +205,47 @@ GameBoyAdvanceMMU.prototype.maskOffset = function(offset) {
 };
 
 // Internal loads/stores
-GameBoyAdvanceMMU.prototype.internalLoad8 = function(offset, timings) {
+GameBoyAdvanceMMU.prototype.load8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += timings[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.load8(offset & 0x00FFFFFF);
 	}
 	return this.memoryView[memoryRegion].getInt8(this.maskOffset(offset));
 };
 
-GameBoyAdvanceMMU.prototype.internalLoad16 = function(offset, timings) {
+GameBoyAdvanceMMU.prototype.load16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += timings[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.load16(offset & 0x00FFFFFE);
 	}
 	return this.memoryView[memoryRegion].getInt16(this.maskOffset(offset), true);
 };
 
-GameBoyAdvanceMMU.prototype.internalLoad32 = function(offset, timings) {
+GameBoyAdvanceMMU.prototype.load32 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += timings[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.load32(offset & 0x00FFFFFC);
 	}
 	return this.memoryView[memoryRegion].getInt32(this.maskOffset(offset), true);
 };
 
-GameBoyAdvanceMMU.prototype.internalLoadU8 = function(offset, timings) {
+GameBoyAdvanceMMU.prototype.loadU8 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += timings[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.loadU8(offset & 0x00FFFFFF);
 	}
 	return this.memoryView[memoryRegion].getUint8(this.maskOffset(offset));
 };
 
-GameBoyAdvanceMMU.prototype.internalLoadU16 = function(offset, timings) {
+GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
 	var memoryRegion = this.getMemoryRegion(offset);
-	this.cpu.cycles += timings[memoryRegion];
 	if (memoryRegion == this.REGION_IO) {
 		return this.io.loadU16(offset & 0x00FFFFFE);
 	}
 	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
 };
 
-GameBoyAdvanceMMU.prototype.internalStore8 = function(offset, timings, value) {
+GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
 		throw "Bad access";
@@ -261,14 +256,13 @@ GameBoyAdvanceMMU.prototype.internalStore8 = function(offset, timings, value) {
 		return;
 	}
 	var memory = this.memoryView[memoryRegion];
-	this.cpu.cycles += timings[memoryRegion];
 	memory.setInt8(maskedOffset, value);
 	if (memory.cachedInstructions) {
 		delete this.icache[memoryRegion][maskedOffset >> 1];
 	}
 };
 
-GameBoyAdvanceMMU.prototype.internalStore16 = function(offset, timings, value) {
+GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
 		throw "Bad access";
@@ -279,14 +273,13 @@ GameBoyAdvanceMMU.prototype.internalStore16 = function(offset, timings, value) {
 		return;
 	}
 	var memory = this.memoryView[memoryRegion];
-	this.cpu.cycles += timings[memoryRegion];
 	memory.setInt16(maskedOffset, value, true);
 	if (memory.cachedInstructions) {
 		delete this.icache[memoryRegion][maskedOffset >> 1];
 	}
 };
 
-GameBoyAdvanceMMU.prototype.internalStore32 = function(offset, timings, value) {
+GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	var memoryRegion = this.getMemoryRegion(offset);
 	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
 		throw "Bad access";
@@ -297,7 +290,6 @@ GameBoyAdvanceMMU.prototype.internalStore32 = function(offset, timings, value) {
 		return;
 	}
 	var memory = this.memoryView[memoryRegion];
-	this.cpu.cycles += timings[memoryRegion];
 	memory.setInt32(maskedOffset, value, true);
 	if (memory.cachedInstructions) {
 		delete this.icache[memoryRegion][maskedOffset >> 1];
@@ -305,101 +297,20 @@ GameBoyAdvanceMMU.prototype.internalStore32 = function(offset, timings, value) {
 	}
 };
 
-// Regular loads/stores
-GameBoyAdvanceMMU.prototype.load8 = function(offset) {
-	return this.internalLoad8(offset, this.waitstates);
+GameBoyAdvanceMMU.prototype.wait = function(memory) {
+	this.cpu.cycles += 1 + this.waitstates[memory >> this.BASE_OFFSET];
 };
 
-GameBoyAdvanceMMU.prototype.load16 = function(offset) {
-	return this.internalLoad16(offset, this.waitstates);
-};
-GameBoyAdvanceMMU.prototype.loadU8 = function(offset) {
-	return this.internalLoadU8(offset, this.waitstates);
+GameBoyAdvanceMMU.prototype.wait32 = function(memory) {
+	this.cpu.cycles += 1 + this.waitstates32[memory >> this.BASE_OFFSET];
 };
 
-GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
-	return this.internalLoadU16(offset, this.waitstates);
+GameBoyAdvanceMMU.prototype.waitSeq = function(memory) {
+	this.cpu.cycles += 1 + this.waitstatesSeq[memory >> this.BASE_OFFSET];
 };
 
-GameBoyAdvanceMMU.prototype.load32 = function(offset) {
-	return this.internalLoad32(offset, this.waitstates32);
-};
-
-GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
-	this.internalStore8(offset, this.waitstates, value);
-};
-
-GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
-	this.internalStore16(offset, this.waitstates, value);
-};
-
-GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
-	this.internalStore32(offset, this.waitstates32, value);
-};
-
-// Sequential loads/stores
-GameBoyAdvanceMMU.prototype.sload8 = function(offset) {
-	return this.internalLoad8(offset, this.waitstatesSeq);
-};
-
-GameBoyAdvanceMMU.prototype.sload16 = function(offset) {
-	return this.internalLoad16(offset, this.waitstatesSeq);
-};
-
-GameBoyAdvanceMMU.prototype.sloadU8 = function(offset) {
-	return this.internalLoadU8(offset, this.waitstatesSeq);
-};
-
-GameBoyAdvanceMMU.prototype.sloadU16 = function(offset) {
-	return this.internalLoadU16(offset, this.waitstatesSeq);
-};
-
-GameBoyAdvanceMMU.prototype.sload32 = function(offset) {
-	return this.internalLoad32(offset, this.waitstatesSeq32);
-};
-
-GameBoyAdvanceMMU.prototype.sstore8 = function(offset, value) {
-	this.internalStore8(offset, this.waitstatesSeq, value);
-};
-
-GameBoyAdvanceMMU.prototype.sstore16 = function(offset, value) {
-	this.internalStore16(offset, this.waitstatesSeq, value);
-};
-
-GameBoyAdvanceMMU.prototype.sstore32 = function(offset, value) {
-	this.internalStore32(offset, this.waitstatesSeq32, value);
-};
-
-// Free loads/stores -- no timings
-GameBoyAdvanceMMU.prototype.freeLoad8 = function(offset) {
-	return this.internalLoad8(offset, this.NULLWAIT);
-};
-
-GameBoyAdvanceMMU.prototype.freeLoad16 = function(offset) {
-	return this.internalLoad16(offset, this.NULLWAIT);
-};
-GameBoyAdvanceMMU.prototype.freeLoadU8 = function(offset) {
-	return this.internalLoadU8(offset, this.NULLWAIT);
-};
-
-GameBoyAdvanceMMU.prototype.freeLoadU16 = function(offset) {
-	return this.internalLoadU16(offset, this.NULLWAIT);
-};
-
-GameBoyAdvanceMMU.prototype.freeLoad32 = function(offset) {
-	return this.internalLoad32(offset, this.NULLWAIT);
-};
-
-GameBoyAdvanceMMU.prototype.freeStore8 = function(offset, value) {
-	this.internalStore8(offset, this.NULLWAIT, value);
-};
-
-GameBoyAdvanceMMU.prototype.freeStore16 = function(offset, value) {
-	this.internalStore16(offset, this.NULLWAIT, value);
-};
-
-GameBoyAdvanceMMU.prototype.freeStore32 = function(offset, value) {
-	this.internalStore32(offset, this.NULLWAIT, value);
+GameBoyAdvanceMMU.prototype.waitSeq32 = function(memory) {
+	this.cpu.cycles += 1 + this.waitstatesSeq32[memory >> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
