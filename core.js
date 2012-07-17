@@ -2003,7 +2003,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// BL(2)
 				op = function() {
 					var pc = cpu.gprs[cpu.PC];
-					cpu.gprs[cpu.PC] = (cpu.gprs[cpu.LR] + (immediate << 1)) & 0xFFFFFFFC;
+					cpu.gprs[cpu.PC] = cpu.gprs[cpu.LR] + (immediate << 1);
 					cpu.gprs[cpu.LR] = pc - 1;
 				}
 				op.writesPC = true;
