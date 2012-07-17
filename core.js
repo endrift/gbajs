@@ -1833,17 +1833,6 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				}
 			}
 		}
-	} else if ((instruction & 0xF800) == 0xE000) {
-		// B(2)
-		var immediate = instruction & 0x07FF;
-		if (immediate & 0x0400) {
-			immediate |= 0xFFFFF800;
-		}
-		immediate <<= 1;
-		op = function() {
-			cpu.gprs[cpu.PC] += immediate;
-		};
-		op.writesPC = true;
 	} else if (instruction & 0x8000) {
 		switch (instruction & 0x7000) {
 		case 0x0000:
@@ -1979,6 +1968,17 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			var immediate = instruction & 0x07FF;
 			var h = instruction & 0x1800;
 			switch (h) {
+			case 0x0000:
+				// B(2)
+				if (immediate & 0x0400) {
+					immediate |= 0xFFFFF800;
+				}
+				immediate <<= 1;
+				op = function() {
+					cpu.gprs[cpu.PC] += immediate;
+				};
+				op.writesPC = true;
+				break;
 			case 0x0800:
 				// BLX (ARMv5T)
 				/*op = function() {
