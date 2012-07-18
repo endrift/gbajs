@@ -53,6 +53,9 @@ var GameBoyAdvanceMMU = function() {
 		[ 4, 1 ],
 		[ 8, 1 ]
 	];
+
+	this.ICACHE_PAGE_BITS = 9;
+	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
 };
 
 GameBoyAdvanceMMU.prototype.setCPU = function(cpu) {
@@ -108,22 +111,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.memoryView[6].cachedInstructions = 0;
 	this.memoryView[7].cachedInstructions = 0;
 
-	this.icache = [
-		null,
-		null, // Unused
-		new Array(this.SIZE_WORKING_RAM >> 1),
-		new Array(this.SIZE_WORKING_IRAM >> 1),
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
-		null
-	];
+	this.icache = [];
 
 	this.waitstates = this.WAITSTATES.slice(0);
 	this.waitstatesSeq = this.WAITSTATES_SEQ.slice(0);
@@ -161,12 +149,6 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 		this.memoryView[this.REGION_CART1 + 1] = viewOffset;
 		this.memoryView[this.REGION_CART2 + 1] = viewOffset;
 	}
-
-	// TODO: icache for extended ROMs
-	var icache = new Array(rom.byteLength >> 1);
-	this.icache[this.REGION_CART0] = icache;
-	this.icache[this.REGION_CART1] = icache;
-	this.icache[this.REGION_CART2] = icache;
 
 	this.memory[this.REGION_CART_SRAM] = new ArrayBuffer(this.SIZE_CART_SRAM);
 	this.memoryView[this.REGION_CART_SRAM] = new DataView(this.memory[this.REGION_CART_SRAM]);
@@ -265,9 +247,7 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	}
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt8(maskedOffset, value);
-	if (memory.cachedInstructions) {
-		delete this.icache[memoryRegion][maskedOffset >> 1];
-	}
+	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
 };
 
 GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
@@ -282,9 +262,7 @@ GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	}
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt16(maskedOffset, value, true);
-	if (memory.cachedInstructions) {
-		delete this.icache[memoryRegion][maskedOffset >> 1];
-	}
+	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
 };
 
 GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
@@ -299,10 +277,8 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	}
 	var memory = this.memoryView[memoryRegion];
 	memory.setInt32(maskedOffset, value, true);
-	if (memory.cachedInstructions) {
-		delete this.icache[memoryRegion][maskedOffset >> 1];
-		delete this.icache[memoryRegion][(maskedOffset >> 1) + 1];
-	}
+	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
+	delete this.icache[(offset >> this.ICACHE_PAGE_BITS) + 1];
 };
 
 GameBoyAdvanceMMU.prototype.wait = function(memory) {
