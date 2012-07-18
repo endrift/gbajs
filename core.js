@@ -1900,6 +1900,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		var rn = (instruction & 0x0038) >> 3;
 		var immediate = (instruction & 0x07C0) >> 4;
 		var b = instruction & 0x1000;
+		if (b) {
+			immediate >>= 2;
+		}
 		var load = instruction & 0x0800;
 		if (load) {
 			if (b) {
