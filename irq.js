@@ -87,30 +87,34 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 		// TODO: check for overflow
 		if (this.timersEnabled & 0x1) {
 			var timer = this.timers[0];
-			if (this.cpu.cycles - timer.lastEvent >= timer.prescale) {
-				timer.lastEvent += timer.prescale;
-				++this.cpu.mmu.io.registers[this.cpu.io.TM0CNT_LO];
+			if (this.cpu.cycles >= timer.nextEvent) {
+				timer.lastEvent = timer.nextEvent;
+				timer.nextEvent += timer.prescale;
+				++this.cpu.mmu.io.registers[this.cpu.mmu.io.TM0CNT_LO];
 			}
 		}
 		if (this.timersEnabled & 0x2) {
 			var timer = this.timers[1];
-			if (this.cpu.cycles - timer.lastEvent >= timer.prescale) {
-				timer.lastEvent += timer.prescale;
-				++this.cpu.mmu.io.registers[this.cpu.io.TM1CNT_LO];
+			if (this.cpu.cycles >= timer.nextEvent) {
+				timer.lastEvent = timer.nextEvent;
+				timer.nextEvent += timer.prescale;
+				++this.cpu.mmu.io.registers[this.cpu.mmu.io.TM1CNT_LO];
 			}
 		}
 		if (this.timersEnabled & 0x4) {
 			var timer = this.timers[2];
-			if (this.cpu.cycles - timer.lastEvent >= timer.prescale) {
-				timer.lastEvent += timer.prescale;
-				++this.cpu.mmu.io.registers[this.cpu.io.TM2CNT_LO];
+			if (this.cpu.cycles >= timer.nextEvent) {
+				timer.lastEvent = timer.nextEvent;
+				timer.nextEvent += timer.prescale;
+				++this.cpu.mmu.io.registers[this.cpu.mmu.io.TM2CNT_LO];
 			}
 		}
 		if (this.timersEnabled & 0x8) {
 			var timer = this.timers[3];
-			if (this.cpu.cycles - timer.lastEvent >= timer.prescale) {
-				timer.lastEvent += timer.prescale;
-				++this.cpu.mmu.io.registers[this.cpu.io.TM3CNT_LO];
+			if (this.cpu.cycles >= timer.nextEvent) {
+				timer.lastEvent = timer.nextEvent;
+				timer.nextEvent += timer.prescale;
+				++this.cpu.mmu.io.registers[this.cpu.mmu.io.TM3CNT_LO];
 			}
 		}
 	}
@@ -335,11 +339,12 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 	}
 	currentTimer.countUp = control & 0x0004;
 	currentTimer.doIrq = control & 0x0040;
-	currentTimer.enable = ((control & 0x0080) >> 7) << timer;
 	var wasEnabled = currentTimer.enable;
+	currentTimer.enable = ((control & 0x0080) >> 7) << timer;
 	this.timersEnabled = (this.timersEnabled & ~(1 << timer)) | currentTimer.enable;
 	if (!wasEnabled && currentTimer.enable) {
 		currentTimer.lastEvent = this.cpu.cycles;
+		currentTimer.nextEvent = this.cpu.cycles + currentTimer.prescale;
 		this.cpu.mmu.io.registers[this.cpu.mmu.io.TM0CNT_LO + (timer << 2)] = currentTimer.reload;
 	}
 
