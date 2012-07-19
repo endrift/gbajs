@@ -52,19 +52,16 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 		return;
 	}
 	var cycling = false;
+	this.lastHInterval = this.nextHInterval;
 	if (this.inHblank) {
-		if (cycles - this.lastHInterval > this.HBLANK_LENGTH) {
-			this.lastHInterval += this.HBLANK_LENGTH;
-			this.nextHInterval = this.lastHInterval + this.HDRAW_LENGTH;
-			this.inHblank = false;
-			++this.vcount;
-			if (this.vcount === this.VERTICAL_PIXELS + this.VBLANK_PIXELS) {
-				this.vcount = 0;
-			}
-			cycling = true;
+		this.nextHInterval = this.lastHInterval + this.HDRAW_LENGTH;
+		this.inHblank = false;
+		++this.vcount;
+		if (this.vcount === this.VERTICAL_PIXELS + this.VBLANK_PIXELS) {
+			this.vcount = 0;
 		}
-	} else if (cycles - this.lastHInterval > this.HDRAW_LENGTH) {
-		this.lastHInterval += this.HDRAW_LENGTH;
+		cycling = true;
+	} else {
 		this.nextHInterval = this.lastHInterval + this.HBLANK_LENGTH;
 		this.inHblank = true;
 		if (this.hblankIRQ) {
