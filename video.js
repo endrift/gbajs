@@ -39,6 +39,7 @@ var GameBoyAdvanceVideo = function() {
 	this.vcount = 0;
 
 	this.lastHInterval = 0;
+	this.nextHInterval = 0;
 };
 
 GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
@@ -47,35 +48,42 @@ GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
 
 GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 	var cycles = cpu.cycles;
+	if (cycles < this.nextHInterval) {
+		return;
+	}
+	var cycling = false;
 	if (this.inHblank) {
 		if (cycles - this.lastHInterval > this.HBLANK_LENGTH) {
 			this.lastHInterval += this.HBLANK_LENGTH;
+			this.nextHInterval = this.lastHInterval + this.HDRAW_LENGTH;
 			this.inHblank = false;
 			++this.vcount;
-			if (this.vcount == this.VERTICAL_PIXELS + this.VBLANK_PIXELS) {
+			if (this.vcount === this.VERTICAL_PIXELS + this.VBLANK_PIXELS) {
 				this.vcount = 0;
 			}
+			cycling = true;
 		}
-	} else {
-		if (cycles - this.lastHInterval > this.HDRAW_LENGTH) {
-			this.lastHInterval += this.HDRAW_LENGTH;
-			this.inHblank = true;
-			if (this.hblankIRQ) {
-				cpu.irq.raiseIRQ(cpu.irq.IRQ_HBLANK);
-			}
+	} else if (cycles - this.lastHInterval > this.HDRAW_LENGTH) {
+		this.lastHInterval += this.HDRAW_LENGTH;
+		this.nextHInterval = this.lastHInterval + this.HBLANK_LENGTH;
+		this.inHblank = true;
+		if (this.hblankIRQ) {
+			cpu.irq.raiseIRQ(cpu.irq.IRQ_HBLANK);
 		}
+		cycling = true;
 	}
 	if (this.inVblank) {
-		if (this.vcount == this.VERTICAL_PIXELS + this.VBLANK_PIXELS - 1) {
+		if (this.vcount === this.VERTICAL_PIXELS + this.VBLANK_PIXELS - 1) {
 			this.inVblank = false;
 		}
-	} else {
-		if (this.vcount == this.VERTICAL_PIXELS) {
-			this.inVblank = true;
-			if (this.vblankIRQ) {
-				cpu.irq.raiseIRQ(cpu.irq.IRQ_VBLANK);
-			}
+	} else if (this.vcount === this.VERTICAL_PIXELS) {
+		this.inVblank = true;
+		if (this.vblankIRQ) {
+			cpu.irq.raiseIRQ(cpu.irq.IRQ_VBLANK);
 		}
+	}
+	if (cycling) {
+		this.updateTimers(cpu);
 	}
 };
 
