@@ -185,8 +185,6 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 		cart.maker = maker;
 	}
 
-	this.cpu.prefetch(this.BASE_CART0);
-
 	return cart;
 };
 

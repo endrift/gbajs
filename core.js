@@ -74,7 +74,7 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	mmu.setCPU(this);
 	irq.setCPU(this);
 
-	this.prefetchNext = this.prefetchNextArm;
+	this.loadInstruction = this.loadInstructionArm;
 	this.execMode = this.MODE_ARM;
 	this.instructionWidth = this.WORD_SIZE_ARM;
 
@@ -106,9 +106,6 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 	this.shifterCarryOut = 0;
 
 	this.mmu.clear();
-
-	this.prefetch0 = null;
-	this.prefetch1 = null;
 
 	this.page = null;
 	this.pageId = 0;
@@ -148,7 +145,6 @@ ARMCore.prototype.prefetch = function(address) {
 			next = this.compileArm(instruction);
 			this.page[offset + 2] = next;
 		}
-		this.prefetch1 = next;
 	} else {
 		compiled = this.page[offset];
 		next = this.page[offset + 1];
@@ -163,11 +159,10 @@ ARMCore.prototype.prefetch = function(address) {
 			next = this.compileThumb(instruction);
 			this.page[offset + 1] = next;
 		}
-		this.prefetch1 = next;
 	}
 };
 
-ARMCore.prototype.prefetchNextArm = function(address) {
+ARMCore.prototype.loadInstructionArm = function(address) {
 	var next = null;
 	this.fetchPage(address);
 	var offset = (address & this.mmu.PAGE_MASK) >> 1;
@@ -178,10 +173,10 @@ ARMCore.prototype.prefetchNextArm = function(address) {
 		this.page[offset] = next;
 		//++mmu.memoryView[memoryRegion].cachedInstructions;
 	}
-	this.prefetch1 = next;
+	return next;
 };
 
-ARMCore.prototype.prefetchNextThumb = function(address) {
+ARMCore.prototype.loadInstructionThumb = function(address) {
 	var next = null;
 	this.fetchPage(address);
 	var offset = (address & this.mmu.PAGE_MASK) >> 1;
@@ -192,30 +187,26 @@ ARMCore.prototype.prefetchNextThumb = function(address) {
 		this.page[offset] = next;
 		//++mmu.memoryView[memoryRegion].cachedInstructions;
 	}
-	this.prefetch1 = next;
+	return next;
 }; 
 
 ARMCore.prototype.step = function() {
-	var instruction = this.prefetch0;
-	this.prefetch0 = this.prefetch1;
+	var instruction = this.loadInstruction(this.gprs[this.PC] - this.instructionWidth);
 	this.gprs[this.PC] += this.instructionWidth;
-	this.prefetchNext(this.gprs[this.PC]);
 	this.conditionPassed = true;
 	instruction();
 
-	if (instruction.writesPC && this.conditionPassed) {;
-		this.gprs[this.PC] &= 0xFFFFFFFE;
-		var pc = this.gprs[this.PC];
-		this.prefetch(pc);
+	if (instruction.writesPC && this.conditionPassed) {
+		var pc = this.gprs[this.PC] &= 0xFFFFFFFE;
 		// TODO: move execution mode switching to a function
 		if (this.execMode == this.MODE_ARM) {
 			this.instructionWidth = this.WORD_SIZE_ARM;
-			this.prefetchNext = this.prefetchNextArm;
+			this.loadInstruction = this.loadInstructionArm;
 			this.mmu.wait32(pc);
 			this.mmu.waitSeq32(pc);
 		} else {
 			this.instructionWidth = this.WORD_SIZE_THUMB;
-			this.prefetchNext = this.prefetchNextThumb;
+			this.loadInstruction = this.loadInstructionThumb;
 			this.mmu.wait(pc);
 			this.mmu.waitSeq(pc);
 		}
