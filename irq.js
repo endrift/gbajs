@@ -1,4 +1,6 @@
-GameBoyAdvanceInterruptHandler = function() {
+"use strict";
+
+var GameBoyAdvanceInterruptHandler = function() {
 	this.FREQUENCY = 16780000;
 
 	this.cpu = null;

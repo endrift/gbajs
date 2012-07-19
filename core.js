@@ -1,4 +1,6 @@
-ARMCore = function() {
+"use strict";
+
+var ARMCore = function() {
 	this.SP = 13;
 	this.LR = 14;
 	this.PC = 15;
@@ -230,8 +232,8 @@ ARMCore.prototype.switchMode = function(newMode) {
 	}
 	if (newMode != this.MODE_USER || newMode != this.MODE_SYSTEM) {
 		// Switch banked registers
-		var newBank = this.selectBank(newMode);
-		var oldBank = this.selectBank(this.mode);
+		var newBank = this.bankedRegisters[this.selectBank(newMode)];
+		var oldBank = this.bankedRegisters[this.selectBank(this.mode)];
 		if (newBank != oldBank) {
 			// TODO: support FIQ
 			if (newMode == this.FIQ || this.mode == this.FIQ) {

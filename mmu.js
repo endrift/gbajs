@@ -1,4 +1,6 @@
-GameBoyAdvanceMMU = function() {
+"use strict";
+
+var GameBoyAdvanceMMU = function() {
 	this.REGION_BIOS = 0x0;
 	this.REGION_WORKING_RAM = 0x2;
 	this.REGION_WORKING_IRAM = 0x3;
@@ -132,7 +134,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 };
 
 GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
-	cart = {
+	var cart = {
 		title: null,
 		code: null,
 		maker: null,

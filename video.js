@@ -1,4 +1,6 @@
-GameBoyAdvanceVideo = function() {
+"use strict";
+
+var GameBoyAdvanceVideo = function() {
 	this.CYCLES_PER_PIXEL = 4;
 
 	this.HORIZONTAL_PIXELS = 240;

@@ -1,4 +1,6 @@
-GameBoyAdvanceIO = function() {
+"use strict";
+
+var GameBoyAdvanceIO = function() {
 	// Video
 	this.DISPCNT = 0x000;
 	this.GREENSWP = 0x002;
