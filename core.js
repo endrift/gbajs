@@ -280,6 +280,7 @@ ARMCore.prototype.raiseIRQ = function() {
 	this.gprs[this.PC] = this.BASE_IRQ + this.WORD_SIZE_ARM;
 
 	this.execMode = this.MODE_ARM;
+	this.loadInstruction = this.loadInstructionArm;
 	this.instructionWidth = this.WORD_SIZE_ARM;
 
 	this.cpsrI = true;
