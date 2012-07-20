@@ -133,6 +133,12 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.io.clear();
 };
 
+GameBoyAdvanceMMU.prototype.loadBios = function(bios) {
+	this.memory[this.REGION_BIOS] = bios;
+	var view = new DataView(bios);
+	this.memoryView[this.REGION_BIOS] = view;
+};
+
 GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 	var cart = {
 		title: null,

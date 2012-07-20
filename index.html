@@ -35,7 +35,12 @@ window.onload = function() {
 
 	gbaCon = new Console(core);
 	gbaCon.log("Logging begun!");
-	loadRom('test.rom', runTest);
+	gbaCon.log("Loading BIOS...");
+	loadRom('bios.bin', function(bios) {
+		mmu.loadBios(bios);
+		gbaCon.log("BIOS loaded! Loading ROM...");
+		loadRom('test.rom', runTest);
+	});
 };
 </script>
 </head>
