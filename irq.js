@@ -242,6 +242,7 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 };
 
 GameBoyAdvanceInterruptHandler.prototype.poll = function() {
+	this.nextInterrupt = 0; // Clear pending interrupt timer--it'll be reset anyway.
 	if (this.enabledIRQs & this.MASK_HBLANK && this.video.hblankIRQ) {
 		var next = this.video.nextHblank();
 		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
