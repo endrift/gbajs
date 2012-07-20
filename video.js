@@ -39,7 +39,7 @@ var GameBoyAdvanceVideo = function() {
 	this.vcount = 0;
 
 	this.lastHInterval = 0;
-	this.nextHInterval = 0;
+	this.nextHInterval = this.HDRAW_LENGTH;
 };
 
 GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
