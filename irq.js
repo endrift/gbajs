@@ -36,7 +36,7 @@ var GameBoyAdvanceInterruptHandler = function() {
 	this.MASK_KEYPAD = 0x1000;
 	this.MASK_GAMEPAK = 0x2000;
 
-	this.enabledIRQs = new Array(14);
+	this.enabledIRQs = 0;
 	this.interruptFlags = 0;
 
 	this.dma = new Array();
@@ -207,8 +207,11 @@ GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 	this.enable = value;
 
 	if (this.enable) {
-		// FIXME: raise remaining IRQs
 		this.poll();
+
+		if (this.enabledIRQs && this.interruptFlags) {
+			this.cpu.raiseIRQ();
+		}
 	}
 };
 
@@ -236,8 +239,11 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 	}
 
 	if (this.enable) {
-		// FIXME: raise remaining IRQs
 		this.poll();
+
+		if (this.enabledIRQs && this.interruptFlags) {
+			this.cpu.raiseIRQ();
+		}
 	}
 };
 
