@@ -31,6 +31,14 @@ var ARMCore = function() {
 	this.WORD_SIZE_ARM = 4;
 	this.WORD_SIZE_THUMB = 2;
 
+	this.BASE_RESET = 0x00000000;
+	this.BASE_UNDEF = 0x00000004;
+	this.BASE_SWI = 0x00000008;
+	this.BASE_PABT = 0x0000000C;
+	this.BASE_DABT = 0x00000010;
+	this.BASE_IRQ = 0x00000018;
+	this.BASE_FIQ = 0x0000001C;
+
 	this.log = function () {}
 };
 
@@ -88,7 +96,8 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 		new Int32Array(2),
 		new Int32Array(2)
 	];
-	this.spsr = new Int32Array(5);
+	this.spsr = 0;
+	this.bankedSPSRs = new Int32Array(6);
 
 	this.cycles = 0;
 
@@ -190,6 +199,7 @@ ARMCore.prototype.step = function() {
 		this.gprs[this.PC] &= 0xFFFFFFFE;
 		var pc = this.gprs[this.PC];
 		this.prefetch(pc);
+		// TODO: move execution mode switching to a function
 		if (this.execMode == this.MODE_ARM) {
 			this.instructionWidth = this.WORD_SIZE_ARM;
 			this.mmu.wait32(pc);
@@ -232,27 +242,46 @@ ARMCore.prototype.switchMode = function(newMode) {
 	}
 	if (newMode != this.MODE_USER || newMode != this.MODE_SYSTEM) {
 		// Switch banked registers
-		var newBank = this.bankedRegisters[this.selectBank(newMode)];
-		var oldBank = this.bankedRegisters[this.selectBank(this.mode)];
+		var newBank = this.selectBank(newMode);
+		var oldBank = this.selectBank(this.mode);
 		if (newBank != oldBank) {
 			// TODO: support FIQ
 			if (newMode == this.FIQ || this.mode == this.FIQ) {
 				this.log('FIQ mode switching is unimplemented');
 			}
-			oldBank[0] = this.gprs[this.SP];
-			oldBank[1] = this.gprs[this.LR];
-			this.gprs[this.SP] = newBank[0];
-			this.gprs[this.LR] = newBank[1];
+			this.bankedRegisters[oldBank][0] = this.gprs[this.SP];
+			this.bankedRegisters[oldBank][1] = this.gprs[this.LR];
+			this.gprs[this.SP] = this.bankedRegisters[newBank][0];
+			this.gprs[this.LR] = this.bankedRegisters[newBank][1];
 
-			// TODO: support SPSR
-			this.log('SPSR switching is unimplemented');
+			this.bankedSPSRs[oldBank] = this.spsr;
+			this.spsr = this.bankedSPSRs[newBank];
 		}
 	}
 	this.mode = newMode;
 };
 
+ARMCore.prototype.packCPSR = function() {
+	return this.mode | (!!this.execMode << 5) | (!!this.cpsrI << 6) | (!!this.cpsrF << 7) |
+	       (!!this.cpsrN << 31) | (!!this.cpsrZ << 30) | (!!this.cpsrC << 29) | (!!this.cpsrV << 28);
+};
+
+ARMCore.prototype.unpackCPSR = function(spsr) {
+	// TODO
+	throw "Unimplemented: unpack CPSR";
+};
+
 ARMCore.prototype.raiseIRQ = function() {
-	throw "Interrupts are not yet implemented";
+	// TODO: support cpsrI
+	this.switchMode(this.MODE_IRQ);
+	this.spsr = this.packCPSR();
+	this.gprs[this.LR] = this.gprs[this.PC];
+	this.gprs[this.PC] = this.BASE_IRQ + this.WORD_SIZE_ARM;
+
+	this.execMode = this.MODE_ARM;
+	this.instructionWidth = this.WORD_SIZE_ARM;
+
+	this.cpsrI = true;
 };
 
 ARMCore.prototype.badOp = function(instruction) {
