@@ -400,9 +400,9 @@ ARMCore.prototype.compileArm = function(instruction) {
 		var s = instruction & 0x00100000;
 		var shiftsRs = false;
 		if ((opcode & 0x01800000) == 0x01000000 && !s) {
+			var r = instruction & 0x00400000;
 			if ((instruction & 0x00B0F000) == 0x0020F000) {
 				// MSR
-				var r = instruction & 0x00400000;
 				var c = instruction & 0x00010000;
 				var x = instruction & 0x00020000;
 				var s = instruction & 0x00040000;
@@ -447,6 +447,17 @@ ARMCore.prototype.compileArm = function(instruction) {
 					}
 				};
 				op.writesPC = false;
+			} else if ((instruction & 0x00BF0000) == 0x000F0000) {
+				// MRS
+				var rd = (instruction & 0x0000F000) >> 12;
+				op = function() {
+					if (r) {
+						cpu.gprs[rd] = cpu.spsr;
+					} else {
+						cpu.gprs[rd] = cpu.packCPSR();
+					}
+				};
+				op.writesPC = rd == this.PC;
 			}
 		} else {
 			// Data processing/FSR transfer
