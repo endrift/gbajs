@@ -169,13 +169,9 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DISPCNT:
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
-	case this.TM0CNT_LO:
 	case this.TM0CNT_HI:
-	case this.TM1CNT_LO:
 	case this.TM1CNT_HI:
-	case this.TM2CNT_LO:
 	case this.TM2CNT_HI:
-	case this.TM3CNT_LO:
 	case this.TM3CNT_HI:
 	case this.DMA0CNT_HI:
 	case this.DMA1CNT_HI:

@@ -59,11 +59,12 @@ var GameBoyAdvanceInterruptHandler = function() {
 	for (var i = 0; i < 4; ++i) {
 		this.timers.push({
 			reload: 0,
-			prescale: 0,
+			prescaleBits: 0,
 			countUp: 0,
 			doIrq: 0,
 			enable: 0,
-			lastEvent: 0
+			lastEvent: 0,
+			overflowDuration: 1
 		});
 	}
 
@@ -74,37 +75,38 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	this.video.updateTimers(this.cpu);
 	if (this.timersEnabled) {
 		// TODO: add timer IRQs
-		// TODO: check for overflow
+		// TODO: ensure incrementing only on read and overflow
+		// TODO: eliminate the while loops
 		if (this.timersEnabled & 0x1) {
 			var timer = this.timers[0];
-			if (this.cpu.cycles >= timer.nextEvent) {
+			while (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
-				timer.nextEvent += timer.prescale;
-				++this.io.registers[this.io.TM0CNT_LO];
+				timer.nextEvent += timer.overflowInterval;
+				this.io.registers[this.io.TM0CNT_LO >> 1] = timer.reload;
 			}
 		}
 		if (this.timersEnabled & 0x2) {
 			var timer = this.timers[1];
-			if (this.cpu.cycles >= timer.nextEvent) {
+			while (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
-				timer.nextEvent += timer.prescale;
-				++this.io.registers[this.io.TM1CNT_LO];
+				timer.nextEvent += timer.overflowInterval;
+				this.io.registers[this.io.TM1CNT_LO >> 1] = timer.reload;
 			}
 		}
 		if (this.timersEnabled & 0x4) {
 			var timer = this.timers[2];
-			if (this.cpu.cycles >= timer.nextEvent) {
+			while (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
-				timer.nextEvent += timer.prescale;
-				++this.io.registers[this.io.TM2CNT_LO];
+				timer.nextEvent += timer.overflowInterval;
+				this.io.registers[this.io.TM2CNT_LO >> 1] = timer.reload;
 			}
 		}
 		if (this.timersEnabled & 0x8) {
 			var timer = this.timers[3];
-			if (this.cpu.cycles >= timer.nextEvent) {
+			while (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
-				timer.nextEvent += timer.prescale;
-				++this.io.registers[this.io.TM3CNT_LO];
+				timer.nextEvent += timer.overflowInterval;
+				this.io.registers[this.io.TM3CNT_LO >> 1] = timer.reload;
 			}
 		}
 	}
@@ -289,34 +291,35 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 };
 
 GameBoyAdvanceInterruptHandler.prototype.timerSetReload = function(timer, reload) {
-	this.timers[timer].reload = reload;
+	this.timers[timer].reload = reload & 0xFFFF;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, control) {
 	var currentTimer = this.timers[timer];
 	switch (control & 0x0003) {
 	case 0x0000:
-		currentTimer.prescale = this.FREQUENCY;
+		currentTimer.prescaleBits = 0;
 		break;
 	case 0x0001:
-		currentTimer.prescale = this.FREQUENCY / 64;
+		currentTimer.prescaleBits = 6;
 		break;
 	case 0x0002:
-		currentTimer.prescale = this.FREQUENCY / 256;
+		currentTimer.prescaleBits = 8;
 		break;
 	case 0x0003:
-		currentTimer.prescale = this.FREQUENCY / 1024;
+		currentTimer.prescaleBits = 10;
 		break;
 	}
 	currentTimer.countUp = control & 0x0004;
 	currentTimer.doIrq = control & 0x0040;
+	currentTimer.overflowInterval = (0x10000 - currentTimer.reload) * (1 << currentTimer.prescaleBits);
 	var wasEnabled = currentTimer.enable;
 	currentTimer.enable = ((control & 0x0080) >> 7) << timer;
 	this.timersEnabled = (this.timersEnabled & ~(1 << timer)) | currentTimer.enable;
 	if (!wasEnabled && currentTimer.enable) {
 		currentTimer.lastEvent = this.cpu.cycles;
-		currentTimer.nextEvent = this.cpu.cycles + currentTimer.prescale;
-		this.io.registers[this.io.TM0CNT_LO + (timer << 2)] = currentTimer.reload;
+		currentTimer.nextEvent = this.cpu.cycles + currentTimer.overflowInterval;
+		this.io.registers[(this.io.TM0CNT_LO + (timer << 2)) >> 1] = currentTimer.reload;
 	}
 
 	if (currentTimer.countUp) {
