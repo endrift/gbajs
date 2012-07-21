@@ -117,10 +117,11 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		if (!this.enable) {
 			throw "Requested HALT when interrupts were disabled!";
 		}
+		// Polling can cause an IRQ immediately!
 		this.poll();
 		if (this.nextInterrupt >= this.cpu.cycles) {
 			this.cpu.cycles = this.nextInterrupt;
-		} else {
+		} else if (!this.interruptFlags) {
 			throw "Waiting on interrupt forever.";
 		}
 		break;
@@ -235,23 +236,9 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 
 GameBoyAdvanceInterruptHandler.prototype.poll = function() {
 	this.nextInterrupt = 0; // Clear pending interrupt timer--it'll be reset anyway.
-	if (this.enabledIRQs & this.MASK_HBLANK && this.video.hblankIRQ) {
-		var next = this.video.nextHblank();
-		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
-			this.nextInterrupt = next;
-		}
-	}
-	if (this.enabledIRQs & this.MASK_VBLANK && this.video.vblankIRQ) {
-		var next = this.video.nextVblank();
-		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
-			this.nextInterrupt = next;
-		}
-	}
-	if (this.enabledIRQs & this.MASK_VCOUNTER && this.video.vcounterIRQ) {
-		var next = this.video.nextVcounter();
-		if (next && (next < this.nextInterrupt || !this.nextInterrupt)) {
-			this.nextInterrupt = next;
-		}
+	var next = this.video.pollIRQ(this.enabledIRQs);
+	if (next < this.nextInterrupt || !this.nextInterrupt) {
+		this.nextInterrupt = next;
 	}
 };
 

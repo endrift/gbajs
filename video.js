@@ -11,6 +11,8 @@ var GameBoyAdvanceVideo = function() {
 	this.VBLANK_PIXELS = 68;
 	this.VERTICAL_TOTAL_PIXELS = 228;
 
+	this.TOTAL_LENGTH = 280896;
+
 	// DISPCNT
 	this.backgroundMode = 0;
 	this.displayFrameSelect = 0;
@@ -42,6 +44,10 @@ var GameBoyAdvanceVideo = function() {
 	this.lastHblank = 0;
 	this.nextHblank = this.HDRAW_LENGTH;
 	this.nextEvent = this.nextHblank;
+
+	this.nextHblankIRQ = 0;
+	this.nextVblankIRQ = 0;
+	this.nextVcounterIRQ = 0;
 };
 
 GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
@@ -51,8 +57,7 @@ GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
 GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 	var cycles = cpu.cycles;
 
-	while (this.nextEvent <= cycles) {
-		this.lastHblank = this.nextHblank;
+	while (this.nextEvent < cycles) {
 		if (this.inHblank) {
 			this.inHblank = false;
 			this.nextEvent = this.nextHblank;
@@ -62,11 +67,14 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 				this.inVblank = true;
 				if (this.vblankIRQ) {
 					cpu.irq.raiseIRQ(cpu.irq.IRQ_VBLANK);
-					return;
+					this.nextVblankIRQ = this.lastHblank + this.TOTAL_LENGTH;
+				} else {
+					this.nextVblankIRQ = this.lastHblank;
 				}
 				break;
 			case this.VERTICAL_TOTAL_PIXELS - 1:
 				this.inVblank = false;
+				this.nextVblankIRQ += this.TOTAL_LENGTH;
 				break;
 			case this.VERTICAL_TOTAL_PIXELS:
 				this.vcount = 0;
@@ -74,42 +82,44 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			}
 		} else {
 			this.inHblank = true;
-			this.nextEvent = this.nextHblank + this.HBLANK_LENGTH;
+			this.lastHblank = this.nextHblank;
+			this.nextEvent = this.lastHblank + this.HBLANK_LENGTH;
 			this.nextHblank = this.nextEvent + this.HDRAW_LENGTH;
 			if (this.hblankIRQ) {
 				cpu.irq.raiseIRQ(cpu.irq.IRQ_HBLANK);
-				return;
+				this.nextHblankIRQ = this.nextHblank;
+			} else {
+				this.nextHblankIRQ = this.lastHblank;
 			}
 		}
 	}
 };
 
-GameBoyAdvanceVideo.prototype.nextHblank = function() {
-	if (this.inHblank) {
-		return this.lastHblank + this.HORIZONTAL_LENGTH;
-	} else {
-		return this.lastHblank + this.HDRAW_LENGTH;
-	}
-};
+GameBoyAdvanceVideo.prototype.pollIRQ = function(enabledIRQs) {
+	// If our IRQs are enabled, and our next IRQs are less than the current cycles, it means the
+	// IRQs were just enabled. Trigger them immediately.
 
-GameBoyAdvanceVideo.prototype.nextVblank = function() {
-	var remainingLines;
-	if (this.inVblank) {
-		remainingLines = this.VERTICAL_PIXELS * 2 + this.VBLANK_PIXELS - this.vcount;
-	} else {
-		remainingLines = this.VERTICAL_PIXELS - this.vcount;
-	}
-	return this.lastHblank + remainingLines * (this.HDRAW_LENGTH + this.HBLANK_LENGTH);
-};
+	var next = 0;
 
-GameBoyAdvanceVideo.prototype.nextVcounter = function() {
-	var remainingLines;
-	if (this.vcount > this.vcountSetting) {
-		remainingLines = this.vcountSetting + this.VERTICAL_PIXELS + this.VBLANK_PIXELS - this.vcount;
-	} else {
-		remainingLines = this.vcountSetting - this.vcount;
+	if (this.hblankIRQ && (enabledIRQs & this.cpu.irq.IRQ_HBLANK)) {
+		next = this.nextHblankIRQ;
+		if (this.inHblank && this.nextHblankIRQ <= this.cpu.cycles) {
+			this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
+			this.nextHblankIRQ += this.HORIZONTAL_LENGTH;
+		}
 	}
-	return this.lastHInterval + remainingLines * (this.HDRAW_LENGTH + this.HBLANK_LENGTH);
+
+	if (this.vblankIRQ && (enabledIRQs & this.cpu.irq.IRQ_VBLANK)) {
+		next = this.nextVblankIRQ;
+		if (this.inVblank && this.nextVblankIRQ <= this.cpu.cycles) {
+			this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
+			this.nextVblankIRQ += this.TOTAL_LENGTH;
+		}
+	}
+
+	// TODO: vcounter
+
+	return next;
 };
 
 GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
@@ -133,6 +143,8 @@ GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
 	this.hblankIRQ = value & 0x0010;
 	this.vcounterIRQ = value & 0x0020;
 	this.vcountSetting = (value & 0xFF00) >> 8;
+
+	this.pollIRQ();
 };
 
 GameBoyAdvanceVideo.prototype.readDisplayStat = function() {
