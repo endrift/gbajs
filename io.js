@@ -169,6 +169,14 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DISPCNT:
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
+	case this.TM0CNT_LO:
+	case this.TM0CNT_HI:
+	case this.TM1CNT_LO:
+	case this.TM1CNT_HI:
+	case this.TM2CNT_LO:
+	case this.TM2CNT_HI:
+	case this.TM3CNT_LO:
+	case this.TM3CNT_HI:
 	case this.DMA0CNT_HI:
 	case this.DMA1CNT_HI:
 	case this.DMA2CNT_HI:
@@ -306,6 +314,13 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.SOUNDCNT_X:
 		value &= 0x0080;
 		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		break;
+
+	case this.FIFO_A_LO:
+	case this.FIFO_A_HI:
+	case this.FIFO_B_LO:
+	case this.FIFO_B_HI:
+		this.cpu.log('Unsupported direct write to sound FIFOs');
 		break;
 
 	// DMA
