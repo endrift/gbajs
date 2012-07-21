@@ -82,7 +82,7 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.prescale;
-				++this.cpu.mmu.io.registers[this.cpu.mmu.io.TM0CNT_LO];
+				++this.io.registers[this.io.TM0CNT_LO];
 			}
 		}
 		if (this.timersEnabled & 0x2) {
@@ -90,7 +90,7 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.prescale;
-				++this.cpu.mmu.io.registers[this.cpu.mmu.io.TM1CNT_LO];
+				++this.io.registers[this.io.TM1CNT_LO];
 			}
 		}
 		if (this.timersEnabled & 0x4) {
@@ -98,7 +98,7 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.prescale;
-				++this.cpu.mmu.io.registers[this.cpu.mmu.io.TM2CNT_LO];
+				++this.io.registers[this.io.TM2CNT_LO];
 			}
 		}
 		if (this.timersEnabled & 0x8) {
@@ -106,7 +106,7 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.prescale;
-				++this.cpu.mmu.io.registers[this.cpu.mmu.io.TM3CNT_LO];
+				++this.io.registers[this.io.TM3CNT_LO];
 			}
 		}
 	}
@@ -263,7 +263,7 @@ GameBoyAdvanceInterruptHandler.prototype.poll = function() {
 
 GameBoyAdvanceInterruptHandler.prototype.raiseIRQ = function(irqType) {
 	this.interruptFlags |= 1 << irqType;
-	this.cpu.mmu.io.registers[this.cpu.mmu.io.IF >> 1] = this.interruptFlags;
+	this.io.registers[this.io.IF >> 1] = this.interruptFlags;
 
 	if (this.enable && this.enabledIRQs & this.interruptFlags) {
 		this.cpu.raiseIRQ();
@@ -272,7 +272,7 @@ GameBoyAdvanceInterruptHandler.prototype.raiseIRQ = function(irqType) {
 
 GameBoyAdvanceInterruptHandler.prototype.dismissIRQs = function(irqMask) {
 	this.interruptFlags &= ~irqMask;
-	this.cpu.mmu.io.registers[this.cpu.mmu.io.IF >> 1] = this.interruptFlags;
+	this.io.registers[this.io.IF >> 1] = this.interruptFlags;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.dmaSetSourceAddress = function(dma, address) {
@@ -344,7 +344,7 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 	if (!wasEnabled && currentTimer.enable) {
 		currentTimer.lastEvent = this.cpu.cycles;
 		currentTimer.nextEvent = this.cpu.cycles + currentTimer.prescale;
-		this.cpu.mmu.io.registers[this.cpu.mmu.io.TM0CNT_LO + (timer << 2)] = currentTimer.reload;
+		this.io.registers[this.io.TM0CNT_LO + (timer << 2)] = currentTimer.reload;
 	}
 
 	if (currentTimer.countUp) {

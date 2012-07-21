@@ -1,4 +1,61 @@
-"use strict";
+var MemoryView = function(memory, offset) {
+	this.buffer = memory;
+	this.view = new DataView(this.buffer, !!offset);
+};
+
+MemoryView.prototype.load8 = function(offset) {
+	return this.view.getInt8(offset);
+};
+
+MemoryView.prototype.load16 = function(offset) {
+	return this.view.getInt16(offset, true);
+};
+
+MemoryView.prototype.loadU8 = function(offset) {
+	return this.view.getUint8(offset);
+};
+
+MemoryView.prototype.loadU16 = function(offset) {
+	return this.view.getUint16(offset, true);
+};
+
+MemoryView.prototype.load32 = function(offset) {
+	return this.view.getInt32(offset, true);
+};
+
+MemoryView.prototype.store8 = function(offset, value) {
+	this.view.setInt8(offset, value);
+};
+
+MemoryView.prototype.store16 = function(offset, value) {
+	this.view.setInt16(offset, value, true);
+};
+
+MemoryView.prototype.store32 = function(offset, value) {
+	this.view.setInt32(offset, value, true);
+};
+
+var MemoryBlock = function(size) {
+	MemoryView.call(this, new ArrayBuffer(size));
+};
+
+MemoryBlock.prototype = Object.create(MemoryView.prototype);
+
+var ROMView = function(rom, offset) {
+	MemoryView.call(this, rom, offset);
+};
+
+ROMView.prototype = Object.create(MemoryView.prototype);
+
+ROMView.prototype.store8 = function(offset, value) {};
+
+ROMView.prototype.store16 = function(offset, value) {};
+
+ROMView.prototype.storeU8 = function(offset, value) {};
+
+ROMView.prototype.storeU16 = function(offset, value) {};
+
+ROMView.prototype.store32 = function(offset, value) {};
 
 var GameBoyAdvanceMMU = function() {
 	this.REGION_BIOS = 0x0;
@@ -59,19 +116,19 @@ var GameBoyAdvanceMMU = function() {
 };
 
 GameBoyAdvanceMMU.prototype.mmap = function(region, object) {
-	this.memoryView[region] = object;
+	this.memory[region] = object;
 }
 
 GameBoyAdvanceMMU.prototype.clear = function() {
 	this.memory = [
 		null,
 		null, // Unused
-		new ArrayBuffer(this.SIZE_WORKING_RAM),
-		new ArrayBuffer(this.SIZE_WORKING_IRAM),
+		new MemoryBlock(this.SIZE_WORKING_RAM),
+		new MemoryBlock(this.SIZE_WORKING_IRAM),
 		null, // This is owned by GameBoyAdvanceIO
-		new ArrayBuffer(this.SIZE_PALETTE_RAM),
-		new ArrayBuffer(this.SIZE_VRAM),
-		new ArrayBuffer(this.SIZE_OAM),
+		new MemoryBlock(this.SIZE_PALETTE_RAM),
+		new MemoryBlock(this.SIZE_VRAM),
+		new MemoryBlock(this.SIZE_OAM),
 		null,
 		null,
 		null,
@@ -82,30 +139,11 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null // Unused
 	];
 
-	this.memoryView = [
-		null,
-		null, // Unused
-		new DataView(this.memory[2]),
-		new DataView(this.memory[3]),
-		null,
-		new DataView(this.memory[5]),
-		new DataView(this.memory[6]),
-		new DataView(this.memory[7]),
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
-		null // Unused
-	];
-
-	this.memoryView[2].cachedInstructions = 0;
-	this.memoryView[3].cachedInstructions = 0;
-	this.memoryView[5].cachedInstructions = 0;
-	this.memoryView[6].cachedInstructions = 0;
-	this.memoryView[7].cachedInstructions = 0;
+	this.memory[2].cachedInstructions = 0;
+	this.memory[3].cachedInstructions = 0;
+	this.memory[5].cachedInstructions = 0;
+	this.memory[6].cachedInstructions = 0;
+	this.memory[7].cachedInstructions = 0;
 
 	this.icache = [];
 
@@ -116,9 +154,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 };
 
 GameBoyAdvanceMMU.prototype.loadBios = function(bios) {
-	this.memory[this.REGION_BIOS] = bios;
-	var view = new DataView(bios);
-	this.memoryView[this.REGION_BIOS] = view;
+	this.memory[this.REGION_BIOS] = new ROMView(bios);
 };
 
 GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
@@ -129,28 +165,24 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 		memory: rom,
 	};
 
-	this.memory[this.REGION_CART0] = rom;
-	this.memory[this.REGION_CART1] = rom;
-	this.memory[this.REGION_CART2] = rom;
-	var view = new DataView(rom);
-	this.memoryView[this.REGION_CART0] = view;
-	this.memoryView[this.REGION_CART1] = view;
-	this.memoryView[this.REGION_CART2] = view;
+	var lo = new ROMView(rom);
+	this.memory[this.REGION_CART0] = lo;
+	this.memory[this.REGION_CART1] = lo;
+	this.memory[this.REGION_CART2] = lo;
 
 	if (rom.byteLength > 0x01000000) {
-		var viewOffset = new DataView(rom, 0x01000000);
-		this.memoryView[this.REGION_CART0 + 1] = viewOffset;
-		this.memoryView[this.REGION_CART1 + 1] = viewOffset;
-		this.memoryView[this.REGION_CART2 + 1] = viewOffset;
+		var hi = new ROMView(rom, 0x01000000);
+		this.memory[this.REGION_CART0 + 1] = hi;
+		this.memory[this.REGION_CART1 + 1] = hi;
+		this.memory[this.REGION_CART2 + 1] = hi;
 	}
 
-	this.memory[this.REGION_CART_SRAM] = new ArrayBuffer(this.SIZE_CART_SRAM);
-	this.memoryView[this.REGION_CART_SRAM] = new DataView(this.memory[this.REGION_CART_SRAM]);
+	this.memory[this.REGION_CART_SRAM] = new MemoryBlock(this.SIZE_CART_SRAM);
 
 	if (process) {
 		var name = '';
 		for (var i = 0; i < 12; ++i) {
-			var c = view.getUint8(i + 0xA0);
+			var c = lo.loadU8(i + 0xA0);
 			if (!c) {
 				break;
 			}
@@ -160,7 +192,7 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 
 		var code = '';
 		for (var i = 0; i < 4; ++i) {
-			var c = view.getUint8(i + 0xAC);
+			var c = lo.loadU8(i + 0xAC);
 			if (!c) {
 				break;
 			}
@@ -170,7 +202,7 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 
 		var maker = '';
 		for (var i = 0; i < 2; ++i) {
-			var c = view.getUint8(i + 0xB0);
+			var c = lo.loadU8(i + 0xB0);
 			if (!c) {
 				break;
 			}
@@ -182,93 +214,44 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 	return cart;
 };
 
-GameBoyAdvanceMMU.prototype.maskOffset = function(offset) {
-	return offset & 0x00FFFFFF;
-};
-
-// Internal loads/stores
 GameBoyAdvanceMMU.prototype.load8 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion == this.REGION_IO) {
-		return this.io.load8(offset & 0x00FFFFFF);
-	}
-	return this.memoryView[memoryRegion].getInt8(this.maskOffset(offset));
+	return this.memory[offset >> this.BASE_OFFSET].load8(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.load16 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion == this.REGION_IO) {
-		return this.io.load16(offset & 0x00FFFFFE);
-	}
-	return this.memoryView[memoryRegion].getInt16(this.maskOffset(offset), true);
+	return this.memory[offset >> this.BASE_OFFSET].load16(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.load32 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion == this.REGION_IO) {
-		return this.io.load32(offset & 0x00FFFFFC);
-	}
-	return this.memoryView[memoryRegion].getInt32(this.maskOffset(offset), true);
+	return this.memory[offset >> this.BASE_OFFSET].load32(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.loadU8 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion == this.REGION_IO) {
-		return this.io.loadU8(offset & 0x00FFFFFF);
-	}
-	return this.memoryView[memoryRegion].getUint8(this.maskOffset(offset));
+	return this.memory[offset >> this.BASE_OFFSET].loadU8(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion == this.REGION_IO) {
-		return this.io.loadU16(offset & 0x00FFFFFE);
-	}
-	return this.memoryView[memoryRegion].getUint16(this.maskOffset(offset), true);
+	return this.memory[offset >> this.BASE_OFFSET].loadU16(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
-		throw "Bad access";
-	}
 	var maskedOffset = offset & 0x00FFFFFF;
-	if (memoryRegion == this.REGION_IO) {
-		this.io.store8(maskedOffset, value);
-		return;
-	}
-	var memory = this.memoryView[memoryRegion];
-	memory.setInt8(maskedOffset, value);
+	var memory = this.memory[offset >> this.BASE_OFFSET];
+	memory.store8(maskedOffset, value);
 	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
 };
 
 GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
-		throw "Bad access";
-	}
 	var maskedOffset = offset & 0x00FFFFFE;
-	if (memoryRegion == this.REGION_IO) {
-		this.io.store16(maskedOffset, value);
-		return;
-	}
-	var memory = this.memoryView[memoryRegion];
-	memory.setInt16(maskedOffset, value, true);
+	var memory = this.memory[offset >> this.BASE_OFFSET];
+	memory.store16(maskedOffset, value);
 	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
 };
 
 GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
-	var memoryRegion = this.getMemoryRegion(offset);
-	if (memoryRegion >= this.REGION_CART0 && memoryRegion < this.REGION_CART_SRAM) {
-		throw "Bad access";
-	}
 	var maskedOffset = offset & 0x00FFFFFC;
-	if (memoryRegion == this.REGION_IO) {
-		this.io.store32(maskedOffset, value);
-		return;
-	}
-	var memory = this.memoryView[memoryRegion];
-	memory.setInt32(maskedOffset, value, true);
+	var memory = this.memory[offset >> this.BASE_OFFSET];
+	memory.store32(maskedOffset, value);
 	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
 	delete this.icache[(offset >> this.ICACHE_PAGE_BITS) + 1];
 };
@@ -324,17 +307,17 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	}
 
 	var wordsRemaining = info.count;
-	var source = this.maskOffset(info.source);
-	var dest = this.maskOffset(info.dest);
-	var sourceRegion = this.getMemoryRegion(info.source);
-	var destRegion = this.getMemoryRegion(info.dest);
-	var sourceBlock = this.memoryView[sourceRegion];
-	var destBlock = this.memoryView[destRegion];
+	var source = info.source & this.OFFSET_MASK;
+	var dest = info.dest & this.OFFSET_MASK;
+	var sourceRegion = info.source >> this.BASE_OFFSET;
+	var destRegion = info.dest >> this.BASE_OFFSET;
+	var sourceBlock = this.memory[sourceRegion];
+	var destBlock = this.memory[destRegion];
 	if (sourceBlock && destBlock) {
 		if (width == 4) {
 			for (var i = 0; i < wordsRemaining; ++i) {
-				var word = sourceBlock.getInt32(source);
-				destBlock.setInt32(dest, word);
+				var word = sourceBlock.load32(source);
+				destBlock.store32(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
 			}
@@ -345,24 +328,24 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 			this.cpu.cycles += 2; // Extra 2I cycles
 		} else {
 			if (source & 0x2) {
-				var word = sourceBlock.getInt16(source);
-				destBlock.setInt16(dest, word);
+				var word = sourceBlock.load16(source);
+				destBlock.store16(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
 				--wordsRemaining;
 			}
 
 			while (wordsRemaining > 1) {
-				var word = sourceBlock.getInt32(source);
-				destBlock.setInt32(dest, word);
+				var word = sourceBlock.load32(source);
+				destBlock.store32(dest, word);
 				source += sourceOffset << 1;
 				dest += destOffset << 1;
 				wordsRemaining -= 2;
 			}
 
 			if (wordsRemaining) {
-				var word = sourceBlock.getInt16(source);
-				destBlock.setInt16(dest, word);
+				var word = sourceBlock.load16(source);
+				destBlock.store16(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
 			}
@@ -380,28 +363,24 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		info.enable = false;
 
 		// Clear the enable bit in memory
-		var io = this.io.registers;
+		var io = this.memory[this.REGION_IO];
 		var dmaRegister;
 		switch (number) {
 		case 0:
-			dmaRegister = this.io.DMA0CNT_HI >> 1;
+			dmaRegister = io.DMA0CNT_HI >> 1;
 			break;
 		case 1:
-			dmaRegister = this.io.DMA1CNT_HI >> 1;
+			dmaRegister = io.DMA1CNT_HI >> 1;
 			break;
 		case 2:
-			dmaRegister = this.io.DMA2CNT_HI >> 1;
+			dmaRegister = io.DMA2CNT_HI >> 1;
 			break;
 		case 3:
-			dmaRegister = this.io.DMA3CNT_HI >> 1;
+			dmaRegister = io.DMA3CNT_HI >> 1;
 			break;
 		}
-		io[dmaRegister] &= 0x7FE0;
+		io.registers[dmaRegister] &= 0x7FE0;
 	}
-};
-
-GameBoyAdvanceMMU.prototype.getMemoryRegion = function(offset) {
-	return offset >> this.BASE_OFFSET;
 };
 
 GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
