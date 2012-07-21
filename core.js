@@ -1261,29 +1261,34 @@ ARMCore.prototype.compileArm = function(instruction) {
 			var rn = (instruction & 0x000F0000) >> 16;
 
 			var address;
+			var immediate = 0;
+			var offset = 0;
 			if (u) {
 				if (p) {
-					address = function() {
-						return cpu.gprs[rn] - 4;
-					}
-				} else {
-					address = function() {
-						return cpu.gprs[rn];
+					immediate = -4;
+				}
+				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
+					if (rs & m) {
+						offset += 4;
 					}
 				}
 			} else {
-				var immediate = 4;
-				if (p) {
-					immediate = 0;
+				if (!p) {
+					immediate = 4;
 				}
-				for (var m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
+				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 					if (rs & m) {
 						immediate -= 4;
+						offset -= 4;
 					}
 				}
-				address = function() {
-					return cpu.gprs[rn] + immediate;
+			}
+			address = function() {
+				var addr = cpu.gprs[rn] + immediate;
+				if (w) {
+					cpu.gprs[rn] += offset;
 				}
+				return addr;
 			}
 			if (load) {
 				// LDM
@@ -1300,9 +1305,6 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.gprs[i] = cpu.mmu.load32(addr);
 							addr += 4;
 						}
-					}
-					if (w) {
-						cpu.gprs[rn] = addr;
 					}
 					++cpu.cycles;
 				};
@@ -1329,9 +1331,6 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.mmu.store32(addr, cpu.gprs[i]);
 							addr += 4;
 						}
-					}
-					if (w) {
-						cpu.gprs[rn] = addr;
 					}
 					cpu.mmu.wait32(cpu.gprs[cpu.PC]);
 				}
