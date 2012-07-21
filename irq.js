@@ -86,6 +86,16 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				if (timer.doIrq) {
 					this.raiseIRQ(this.IRQ_TIMER0);
 				}
+
+				if (this.audio.enabled) {
+					if (this.audio.enableChannelA && !this.audio.soundTimerA) {
+						// TODO
+					}
+	
+					if (this.audio.enableChannelB && !this.audio.soundTimerB) {
+						// TODO
+					}
+				}
 			}
 		}
 		if (this.timersEnabled & 0x2) {
@@ -97,6 +107,16 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 
 				if (timer.doIrq) {
 					this.raiseIRQ(this.IRQ_TIMER1);
+				}
+
+				if (this.audio.enabled) {
+					if (this.audio.enableChannelA && this.audio.soundTimerA) {
+						// TODO
+					}
+	
+					if (this.audio.enableChannelB && this.audio.soundTimerB) {
+						// TODO
+					}
 				}
 			}
 		}
