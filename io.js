@@ -312,13 +312,6 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 
-	case this.FIFO_A_LO:
-	case this.FIFO_A_HI:
-	case this.FIFO_B_LO:
-	case this.FIFO_B_HI:
-		this.cpu.log('Unsupported direct write to sound FIFOs');
-		break;
-
 	// DMA
 	case this.DMA0CNT_LO:
 		this.cpu.irq.dmaSetWordCount(0, value);
@@ -430,6 +423,12 @@ GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
 	case this.DMA3DAD_LO:
 		this.cpu.irq.dmaSetDestAddress(3, value);
 		break;
+	case this.FIFO_A_LO:
+		this.audio.appendToFifoA(value);
+		return;
+	case this.FIFO_B_LO:
+		this.audio.appendToFifoB(value);
+		return;
 	default:
 		this.store16(offset, value & 0xFFFF);
 		this.store16(offset | 2, value >>> 16);

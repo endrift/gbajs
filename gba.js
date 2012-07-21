@@ -18,7 +18,7 @@ var GameBoyAdvance = function() {
 	this.irq.video = this.video;
 
 	this.io.cpu = this.cpu;
-	this.io,audio = this.audio;
+	this.io.audio = this.audio;
 	this.io.video = this.video;
 
 	this.audio.cpu = this.cpu;
