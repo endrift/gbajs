@@ -2103,7 +2103,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// LDRH(1)
 				op = function() {
 					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
-					cpu.mmu.wait32(cpu.gprs[rn] + immediate);
+					cpu.mmu.wait(cpu.gprs[rn] + immediate);
 					cpu.gprs[rd] = cpu.mmu.loadU16(cpu.gprs[rn] + immediate);
 					++cpu.cycles;
 				};
@@ -2111,7 +2111,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// STRH(1)
 				op = function() {
 					cpu.mmu.wait(cpu.gprs[cpu.PC]);
-					cpu.mmu.wait32(cpu.gprs[rn] + immediate);
+					cpu.mmu.wait(cpu.gprs[rn] + immediate);
 					cpu.mmu.store16(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
 				};
 			}
