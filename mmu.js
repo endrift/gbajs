@@ -349,6 +349,27 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		this.cpu.log('Invalid DMA');
 	}
 
+	if (info.doIrq) {
+		throw "IRQ";
+		var irq;
+		switch (number) {
+		case 0:
+			irq = this.cpu.irq.IRQ_DMA0;
+			break;
+		case 1:
+			i1q = this.cpu.irq.IRQ_DMA1;
+			break;
+		case 2:
+			irq = this.cpu.irq.IRQ_DMA2;
+			break;
+		case 3:
+			irq = this.cpu.irq.IRQ_DMA3;
+			break;
+		}
+
+		this.cpu.irq.raiseIRQ(irq);
+	}
+
 	if (!info.repeat) {
 		info.enable = false;
 

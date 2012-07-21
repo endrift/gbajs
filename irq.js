@@ -216,10 +216,6 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 		this.cpu.log('Serial I/O interrupts not implemented');
 	}
 
-	if (this.enabledIRQs & this.MASK_DMA0 || this.enabledIRQs & this.MASK_DMA1 || this.enabledIRQs & this.MASK_DMA2 || this.enabledIRQs & this.MASK_DMA3) {
-		this.cpu.log('DMA interrupts not implemented');
-	}
-
 	if (this.enabledIRQs & this.MASK_KEYPAD) {
 		this.cpu.log('Keypad interrupts not implemented');
 	}
@@ -304,9 +300,6 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 	}
 	if (currentDma.timing) {
 		this.cpu.log('DMA start timing other than immediate not implemented');
-	}
-	if (currentDma.doIrq) {
-		this.cpu.log('DMA IRQ not implemented');
 	}
 
 	if (!currentDma.timing && currentDma.enable) {
