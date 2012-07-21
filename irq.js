@@ -74,7 +74,6 @@ var GameBoyAdvanceInterruptHandler = function() {
 GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	this.video.updateTimers(this.cpu);
 	if (this.timersEnabled) {
-		// TODO: add timer IRQs
 		// TODO: ensure incrementing only on read and overflow
 		// TODO: eliminate the while loops
 		if (this.timersEnabled & 0x1) {
@@ -83,6 +82,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM0CNT_LO >> 1] = timer.reload;
+
+				if (timer.doIrq) {
+					this.raiseIRQ(this.IRQ_TIMER0);
+				}
 			}
 		}
 		if (this.timersEnabled & 0x2) {
@@ -91,6 +94,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM1CNT_LO >> 1] = timer.reload;
+
+				if (timer.doIrq) {
+					this.raiseIRQ(this.IRQ_TIMER1);
+				}
 			}
 		}
 		if (this.timersEnabled & 0x4) {
@@ -99,6 +106,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM2CNT_LO >> 1] = timer.reload;
+
+				if (timer.doIrq) {
+					this.raiseIRQ(this.IRQ_TIMER2);
+				}
 			}
 		}
 		if (this.timersEnabled & 0x8) {
@@ -107,6 +118,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM3CNT_LO >> 1] = timer.reload;
+
+				if (timer.doIrq) {
+					this.raiseIRQ(this.IRQ_TIMER3);
+				}
 			}
 		}
 	}
@@ -210,10 +225,6 @@ GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 
 GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) {
 	this.enabledIRQs = value;
-
-	if (this.enabledIRQs & this.MASK_TIMER0 || this.enabledIRQs & this.MASK_TIMER1 || this.enabledIRQs & this.MASK_TIMER2 || this.enabledIRQs & this.MASK_TIMER3) {
-		this.cpu.log('Timing interrupts not implemented');
-	}
 
 	if (this.enabledIRQs & this.MASK_SIO) {
 		this.cpu.log('Serial I/O interrupts not implemented');
@@ -324,8 +335,5 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 
 	if (currentTimer.countUp) {
 		this.cpu.log('Timer count up not implemented');
-	}
-	if (currentTimer.doIrq) {
-		this.cpu.log('Timer IRQ not implemented');
 	}
 };
