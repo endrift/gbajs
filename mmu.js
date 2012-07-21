@@ -295,8 +295,7 @@ GameBoyAdvanceMMU.prototype.scheduleDma = function(number, info) {
 			break;
 		case 1:
 		case 2:
-			this.cpu.log('FIFO DMA not implemented');
-			//this.cpu.irq.audio.scheduleFIFODma(number, info);
+			this.cpu.irq.audio.scheduleFIFODma(number, info);
 			break;
 		case 3:
 			this.cpu.irq.video.scheduleVCaptureDma(dma, info);
@@ -391,7 +390,6 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	}
 
 	if (info.doIrq) {
-		throw "IRQ";
 		var irq;
 		switch (number) {
 		case 0:

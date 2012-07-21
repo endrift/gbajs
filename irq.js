@@ -89,11 +89,11 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 
 				if (this.audio.enabled) {
 					if (this.audio.enableChannelA && !this.audio.soundTimerA) {
-						// TODO
+						this.cpu.mmu.serviceDma(this.audio.dmaA, this.dma[this.audio.dmaA]);
 					}
 	
 					if (this.audio.enableChannelB && !this.audio.soundTimerB) {
-						// TODO
+						this.cpu.mmu.serviceDma(this.audio.dmaB, this.dma[this.audio.dmaB]);
 					}
 				}
 			}
@@ -111,11 +111,11 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 
 				if (this.audio.enabled) {
 					if (this.audio.enableChannelA && this.audio.soundTimerA) {
-						// TODO
+						this.cpu.mmu.serviceDma(this.audio.dmaA, this.dma[this.audio.dmaA]);
 					}
 	
 					if (this.audio.enableChannelB && this.audio.soundTimerB) {
-						// TODO
+						this.cpu.mmu.serviceDma(this.audio.dmaB, this.dma[this.audio.dmaB]);
 					}
 				}
 			}
