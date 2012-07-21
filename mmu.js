@@ -98,6 +98,11 @@ var GameBoyAdvanceMMU = function() {
 	this.SIZE_CART2 = 0x02000000;
 	this.SIZE_CART_SRAM = 0x00010000;
 
+	this.DMA_TIMING_NOW = 0;
+	this.DMA_TIMING_VBLANK = 1;
+	this.DMA_TIMING_HBLANK = 2;
+	this.DMA_TIMING_CUSTOM = 3;
+
 	this.WAITSTATES = [ 0, 0, 2, 0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4 ];
 	this.WAITSTATES_32 = [ 0, 0, 5, 0, 0, 1, 0, 1, 7, 0, 9, 0, 13, 0, 8 ];
 	this.WAITSTATES_SEQ = [ 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 4, 0, 8, 0, 4 ];
@@ -270,6 +275,42 @@ GameBoyAdvanceMMU.prototype.waitSeq = function(memory) {
 
 GameBoyAdvanceMMU.prototype.waitSeq32 = function(memory) {
 	this.cpu.cycles += 1 + this.waitstatesSeq32[memory >> this.BASE_OFFSET];
+};
+
+GameBoyAdvanceMMU.prototype.scheduleDma = function(number, info) {
+	switch (info.timing) {
+	case this.DMA_TIMING_NOW:
+		this.serviceDma(number, info);
+		break;
+	case this.DMA_TIMING_HBLANK:
+		this.scheduleHblankDma(number, info);
+		break;
+	case this.DMA_TIMING_VBLANK:
+		this.scheduleVblankDma(number, info);
+		break;
+	case this.DMA_TIMING_CUSTOM:
+		switch (number) {
+		case 0:
+			this.cpu.log('Discarding invalid DMA0 scheduling');
+			break;
+		case 1:
+		case 2:
+			this.cpu.log('FIFO DMA not implemented');
+			//this.cpu.irq.audio.scheduleFIFODma(number, info);
+			break;
+		case 3:
+			this.cpu.irq.video.scheduleVCaptureDma(dma, info);
+			break;
+		}
+	}
+};
+
+GameBoyAdvanceMMU.prototype.runHblankDmas = function() {
+	// TODO
+};
+
+GameBoyAdvanceMMU.prototype.runVblankDmas = function() {
+	// TODO
 };
 
 GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {

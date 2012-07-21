@@ -66,6 +66,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			case this.VERTICAL_PIXELS:
 				this.inVblank = true;
 				this.nextVblankIRQ = this.lastHblank + this.TOTAL_LENGTH;
+				this.cpu.mmu.runVblankDmas();
 				break;
 			case this.VERTICAL_TOTAL_PIXELS - 1:
 				this.inVblank = false;
@@ -81,6 +82,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			this.nextEvent = this.lastHblank + this.HBLANK_LENGTH;
 			this.nextHblank = this.nextEvent + this.HDRAW_LENGTH;
 			this.nextHblankIRQ = this.nextHblank;
+			this.cpu.mmu.runHblankDmas();
 		}
 	}
 };
