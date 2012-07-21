@@ -58,12 +58,8 @@ var GameBoyAdvanceMMU = function() {
 	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
 };
 
-GameBoyAdvanceMMU.prototype.setCPU = function(cpu) {
-	this.cpu = cpu;
-}
-
-GameBoyAdvanceMMU.prototype.setIO = function(io) {
-	this.io = io;
+GameBoyAdvanceMMU.prototype.mmap = function(region, object) {
+	this.memoryView[region] = object;
 }
 
 GameBoyAdvanceMMU.prototype.clear = function() {
@@ -117,8 +113,6 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.waitstatesSeq = this.WAITSTATES_SEQ.slice(0);
 	this.waitstates32 = this.WAITSTATES_32.slice(0);
 	this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
-
-	this.io.clear();
 };
 
 GameBoyAdvanceMMU.prototype.loadBios = function(bios) {

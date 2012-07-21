@@ -10,18 +10,18 @@ function hex(number, leading, usePrefix) {
 	return (usePrefix ? '0x' : '')  + new Array(leading + 1).join('0') + string;
 }
 
-Console = function(cpu) {
-	this.cpu = cpu;
+Console = function(gba) {
+	this.cpu = gba.cpu;
 	this.ul = document.getElementById('console');
 	this.gprs = document.getElementById('gprs');
-	this.memory = new Memory(cpu.mmu);
+	this.memory = new Memory(gba.mmu);
 	this.updateGPRs();
 	this.updateCPSR();
 	this.breakpoints = [];
 	this.memory.refreshAll();
 	this.logQueue = [];
 	var self = this;
-	cpu.setLogger(function (message) { self.log(message) });
+	gba.cpu.setLogger(function (message) { self.log(message) });
 }
 
 Console.prototype.updateGPRs = function() {

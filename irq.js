@@ -72,14 +72,6 @@ var GameBoyAdvanceInterruptHandler = function() {
 	this.nextInterrupt = 0;
 };
 
-GameBoyAdvanceInterruptHandler.prototype.setCPU = function(cpu) {
-	this.cpu = cpu;
-}
-
-GameBoyAdvanceInterruptHandler.prototype.setVideo = function(video) {
-	this.video = video;
-}
-
 GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	this.video.updateTimers(this.cpu);
 	if (this.timersEnabled) {

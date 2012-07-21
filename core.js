@@ -64,15 +64,9 @@ ARMCore.prototype.ASSERT = function(test, err) {
 	}
 };
 
-ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
+ARMCore.prototype.resetCPU = function(startOffset) {
 	this.gprs = new Int32Array(16);
 	this.gprs[this.PC] = startOffset + this.WORD_SIZE_ARM;
-
-	this.mmu = mmu;
-	this.irq = irq;
-
-	mmu.setCPU(this);
-	irq.setCPU(this);
 
 	this.loadInstruction = this.loadInstructionArm;
 	this.execMode = this.MODE_ARM;
@@ -104,8 +98,6 @@ ARMCore.prototype.resetCPU = function(startOffset, mmu, irq) {
 
 	this.shifterOperand = 0;
 	this.shifterCarryOut = 0;
-
-	this.mmu.clear();
 
 	this.page = null;
 	this.pageId = 0;

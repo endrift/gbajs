@@ -5,39 +5,32 @@
 <script src="io.js"></script>
 <script src="video.js"></script>
 <script src="irq.js"></script>
+<script src="gba.js"></script>
 
 <script src="xhr.js"></script>
 <script src="console.js"></script>
 <link href="console.css" rel="stylesheet">
 <script>
 function runTest(r) {
-	rom = mmu.loadRom(r, true);
+	rom = core.mmu.loadRom(r, true);
 	gbaCon.log("ROM loaded: " + rom.title + " [" + rom.code + "] (" + r.byteLength + " bytes)");
 	gbaCon.memory.refreshAll();
 }
 
-var core = new ARMCore();
-var mmu = new GameBoyAdvanceMMU();
-var irq = new GameBoyAdvanceInterruptHandler();
-var io = new GameBoyAdvanceIO();
-var video = new GameBoyAdvanceVideo();
+var core = new GameBoyAdvance();
 var rom = null;
 
 var gbaCon;
-mmu.setIO(io);
-io.setVideo(video);
-io.setCPU(core);
-irq.setVideo(video);
-core.resetCPU(0x08000000, mmu, irq, io);
+core.cpu.resetCPU(0x08000000);
 window.onload = function() {
 	var canvas = document.getElementById('screen');
-	video.setCanvas(canvas);
+	core.setCanvas(canvas);
 
 	gbaCon = new Console(core);
 	gbaCon.log("Logging begun!");
 	gbaCon.log("Loading BIOS...");
 	loadRom('bios.bin', function(bios) {
-		mmu.loadBios(bios);
+		core.mmu.loadBios(bios);
 		gbaCon.log("BIOS loaded! Loading ROM...");
 		loadRom('test.rom', runTest);
 	});
