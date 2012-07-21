@@ -1,5 +1,3 @@
-"use strict";
-
 var GameBoyAdvanceInterruptHandler = function() {
 	this.FREQUENCY = 16780000;
 

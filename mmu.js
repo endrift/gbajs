@@ -321,11 +321,6 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 				source += sourceOffset;
 				dest += destOffset;
 			}
-
-			// Approximate taken cycles
-			this.cpu.cycles += this.waitstates32[sourceRegion] + this.waitstates32[destRegion];
-			this.cpu.cycles += (info.count - 1) * (this.waitstatesSeq32[sourceRegion] + this.waitstatesSeq32[destRegion]);
-			this.cpu.cycles += 2; // Extra 2I cycles
 		} else {
 			if (source & 0x2) {
 				var word = sourceBlock.load16(source);
@@ -349,11 +344,6 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 				source += sourceOffset;
 				dest += destOffset;
 			}
-
-			// Approximate taken cycles
-			this.cpu.cycles += this.waitstates[sourceRegion] + this.waitstates[destRegion];
-			this.cpu.cycles += (info.count - 1) * (this.waitstatesSeq[sourceRegion] + this.waitstatesSeq[destRegion]);
-			this.cpu.cycles += 2; // Extra 2I cycles
 		}
 	} else {
 		this.cpu.log('Invalid DMA');

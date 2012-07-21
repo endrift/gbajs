@@ -1,5 +1,3 @@
-"use strict";
-
 var ARMCore = function() {
 	this.SP = 13;
 	this.LR = 14;

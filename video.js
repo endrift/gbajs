@@ -1,5 +1,3 @@
-"use strict";
-
 var GameBoyAdvanceVideo = function() {
 	this.CYCLES_PER_PIXEL = 4;
 
