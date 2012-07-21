@@ -21,4 +21,4 @@ orr    r0, #0x8000
 add    lr, pc, #0 
 ldr    pc, [r0, #-4]
 ldmfd  sp!, {r0-r3, r12, lr}
-subs   pc, lr, #-4
+subs   pc, lr, #4
