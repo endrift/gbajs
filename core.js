@@ -1080,7 +1080,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 							var addr = address();
 							cpu.mmu.wait32(addr);
 							cpu.mmu.wait32(cpu.gprs[cpu.PC]);
-							cpu.gprs[rd] = cpu.mmu.store16(addr, cpu.gprs[rd]);
+							cpu.mmu.store16(addr, cpu.gprs[rd]);
 						};
 					}
 				}

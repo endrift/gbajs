@@ -5,8 +5,11 @@ var GameBoyAdvanceVideo = function() {
 	this.HBLANK_PIXELS = 68;
 	this.HDRAW_LENGTH = 1006;
 	this.HBLANK_LENGTH = 226;
+	this.HORIZONTAL_LENGTH = 1232;
+
 	this.VERTICAL_PIXELS = 160;
 	this.VBLANK_PIXELS = 68;
+	this.VERTICAL_TOTAL_PIXELS = 228;
 
 	// DISPCNT
 	this.backgroundMode = 0;
@@ -36,8 +39,9 @@ var GameBoyAdvanceVideo = function() {
 	// VCOUNT
 	this.vcount = 0;
 
-	this.lastHInterval = 0;
-	this.nextHInterval = this.HDRAW_LENGTH;
+	this.lastHblank = 0;
+	this.nextHblank = this.HDRAW_LENGTH;
+	this.nextEvent = this.nextHblank;
 };
 
 GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
@@ -46,47 +50,45 @@ GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
 
 GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 	var cycles = cpu.cycles;
-	if (cycles < this.nextHInterval) {
-		return;
-	}
-	var cycling = false;
-	this.lastHInterval = this.nextHInterval;
-	if (this.inHblank) {
-		this.nextHInterval = this.lastHInterval + this.HDRAW_LENGTH;
-		this.inHblank = false;
-		++this.vcount;
-		if (this.vcount === this.VERTICAL_PIXELS + this.VBLANK_PIXELS) {
-			this.vcount = 0;
+
+	while (this.nextEvent <= cycles) {
+		this.lastHblank = this.nextHblank;
+		if (this.inHblank) {
+			this.inHblank = false;
+			this.nextEvent = this.nextHblank;
+			++this.vcount;
+			switch (this.vcount) {
+			case this.VERTICAL_PIXELS:
+				this.inVblank = true;
+				if (this.vblankIRQ) {
+					cpu.irq.raiseIRQ(cpu.irq.IRQ_VBLANK);
+					return;
+				}
+				break;
+			case this.VERTICAL_TOTAL_PIXELS - 1:
+				this.inVblank = false;
+				break;
+			case this.VERTICAL_TOTAL_PIXELS:
+				this.vcount = 0;
+				break;
+			}
+		} else {
+			this.inHblank = true;
+			this.nextEvent = this.nextHblank + this.HBLANK_LENGTH;
+			this.nextHblank = this.nextEvent + this.HDRAW_LENGTH;
+			if (this.hblankIRQ) {
+				cpu.irq.raiseIRQ(cpu.irq.IRQ_HBLANK);
+				return;
+			}
 		}
-		cycling = true;
-	} else {
-		this.nextHInterval = this.lastHInterval + this.HBLANK_LENGTH;
-		this.inHblank = true;
-		if (this.hblankIRQ) {
-			cpu.irq.raiseIRQ(cpu.irq.IRQ_HBLANK);
-		}
-		cycling = true;
-	}
-	if (this.inVblank) {
-		if (this.vcount === this.VERTICAL_PIXELS + this.VBLANK_PIXELS - 1) {
-			this.inVblank = false;
-		}
-	} else if (this.vcount === this.VERTICAL_PIXELS) {
-		this.inVblank = true;
-		if (this.vblankIRQ) {
-			cpu.irq.raiseIRQ(cpu.irq.IRQ_VBLANK);
-		}
-	}
-	if (cycling) {
-		this.updateTimers(cpu);
 	}
 };
 
 GameBoyAdvanceVideo.prototype.nextHblank = function() {
 	if (this.inHblank) {
-		return this.lastHInterval + this.HBLANK_LENGTH + this.HDRAW_LENGTH;
+		return this.lastHblank + this.HORIZONTAL_LENGTH;
 	} else {
-		return this.lastHInterval + this.HDRAW_LENGTH;
+		return this.lastHblank + this.HDRAW_LENGTH;
 	}
 };
 
@@ -97,7 +99,7 @@ GameBoyAdvanceVideo.prototype.nextVblank = function() {
 	} else {
 		remainingLines = this.VERTICAL_PIXELS - this.vcount;
 	}
-	return this.lastHInterval + remainingLines * (this.HDRAW_LENGTH + this.HBLANK_LENGTH);
+	return this.lastHblank + remainingLines * (this.HDRAW_LENGTH + this.HBLANK_LENGTH);
 };
 
 GameBoyAdvanceVideo.prototype.nextVcounter = function() {
