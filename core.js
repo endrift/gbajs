@@ -258,12 +258,26 @@ ARMCore.prototype.packCPSR = function() {
 };
 
 ARMCore.prototype.unpackCPSR = function(spsr) {
-	// TODO
-	throw "Unimplemented: unpack CPSR";
+	this.switchMode(spsr & 0x0000001F);
+	this.execMode = !!(spsr & 0x00000020);
+	this.cpsrI = spsr & 0x00000040;
+	this.cpsrF = spsr & 0x00000080;
+	this.cpsrN = spsr & 0x80000000;
+	this.cpsrZ = spsr & 0x40000000;
+	this.cpsrC = spsr & 0x20000000;
+	this.cpsrV = spsr & 0x10000000;
+};
+
+ARMCore.prototype.hasSPSR = function() {
+	return this.mode != this.MODE_SYSTEM && this.mode != this.MODE_USER;
 };
 
 ARMCore.prototype.raiseIRQ = function() {
-	// TODO: support cpsrI
+	if (this.cpsrI) {
+		// TODO: do I queue IRQs?
+		return;
+	}
+
 	this.switchMode(this.MODE_IRQ);
 	this.spsr = this.packCPSR();
 	this.gprs[this.LR] = this.gprs[this.PC];
@@ -632,9 +646,13 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					cpu.gprs[rd] = cpu.gprs[rn] & cpu.shifterOperand;
 					if (s) {
-						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
-						cpu.cpsrC = cpu.shifterCarryOut;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
+							cpu.cpsrC = cpu.shifterCarryOut;
+						}
 					}
 				};
 				break;
@@ -648,9 +666,13 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					cpu.gprs[rd] = cpu.gprs[rn] ^ cpu.shifterOperand;
 					if (s) {
-						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
-						cpu.cpsrC = cpu.shifterCarryOut;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
+							cpu.cpsrC = cpu.shifterCarryOut;
+						}
 					}
 				};
 				break;
@@ -664,11 +686,15 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					var d = cpu.gprs[rn] - cpu.shifterOperand;
 					if (s) {
-						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !(d & 0xFFFFFFFF);
-						cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
-						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.shifterOperand & 0x800000000 &&
-									cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = d & 0x80000000;
+							cpu.cpsrZ = !(d & 0xFFFFFFFF);
+							cpu.cpsrC = (cpu.gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
+							cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != cpu.shifterOperand & 0x800000000 &&
+										cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
+						}
 					}
 					cpu.gprs[rd] = d;
 				};
@@ -683,11 +709,15 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					var d = cpu.shifterOperand - cpu.gprs[rn];
 					if (s) {
-						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !(d & 0xFFFFFFFF);
-						cpu.cpsrC = (cpu.shifterOperand >>> 0) >= (cpu.gprs[rn] >>> 0);
-						cpu.cpsrV = cpu.shifterOperand & 0x800000000 != cpu.gprs[rn] & 0x80000000 &&
-									cpu.shifterOperand & 0x800000000 != d & 0x80000000;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = d & 0x80000000;
+							cpu.cpsrZ = !(d & 0xFFFFFFFF);
+							cpu.cpsrC = (cpu.shifterOperand >>> 0) >= (cpu.gprs[rn] >>> 0);
+							cpu.cpsrV = cpu.shifterOperand & 0x800000000 != cpu.gprs[rn] & 0x80000000 &&
+										cpu.shifterOperand & 0x800000000 != d & 0x80000000;
+						}
 					}
 					cpu.gprs[rd] = d;
 				};
@@ -702,12 +732,16 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					var d = (cpu.gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
 					if (s) {
-						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !(d & 0xFFFFFFFF);
-						cpu.cpsrC = d > 0xFFFFFFFF;
-						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == cpu.shifterOperand & 0x800000000 &&
-									cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
-									cpu.shifterOperand & 0x80000000 != d & 0x80000000;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = d & 0x80000000;
+							cpu.cpsrZ = !(d & 0xFFFFFFFF);
+							cpu.cpsrC = d > 0xFFFFFFFF;
+							cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == cpu.shifterOperand & 0x800000000 &&
+										cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
+										cpu.shifterOperand & 0x80000000 != d & 0x80000000;
+						}
 					}
 					cpu.gprs[rd] = d;
 				};
@@ -723,12 +757,16 @@ ARMCore.prototype.compileArm = function(instruction) {
 					var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
 					var d = (cpu.gprs[rn] >>> 0) + shifterOperand;
 					if (s) {
-						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !(d & 0xFFFFFFFF);
-						cpu.cpsrC = d > 0xFFFFFFFF;
-						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == shifterOperand & 0x800000000 &&
-									cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
-									shifterOperand & 0x80000000 != d & 0x80000000;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = d & 0x80000000;
+							cpu.cpsrZ = !(d & 0xFFFFFFFF);
+							cpu.cpsrC = d > 0xFFFFFFFF;
+							cpu.cpsrV = cpu.gprs[rn] & 0x80000000 == shifterOperand & 0x800000000 &&
+										cpu.gprs[rn] & 0x80000000 != d & 0x80000000 &&
+										shifterOperand & 0x80000000 != d & 0x80000000;
+						}
 					}
 					cpu.gprs[rd] = d;
 				};
@@ -744,11 +782,15 @@ ARMCore.prototype.compileArm = function(instruction) {
 					var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
 					var d = (cpu.gprs[rn] >>> 0) - shifterOperand;
 					if (s) {
-						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !(d & 0xFFFFFFFF);
-						cpu.cpsrC = d > 0xFFFFFFFF;
-						cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != shifterOperand & 0x800000000 &&
-									cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = d & 0x80000000;
+							cpu.cpsrZ = !(d & 0xFFFFFFFF);
+							cpu.cpsrC = d > 0xFFFFFFFF;
+							cpu.cpsrV = cpu.gprs[rn] & 0x80000000 != shifterOperand & 0x800000000 &&
+										cpu.gprs[rn] & 0x80000000 != d & 0x80000000;
+						}
 					}
 					cpu.gprs[rd] = d;
 				};
@@ -764,11 +806,15 @@ ARMCore.prototype.compileArm = function(instruction) {
 					var n = (cpu.gprs[rn] >>> 0) + !cpu.cpsrC;
 					var d = (cpu.shifterOperand >>> 0) - n;
 					if (s) {
-						cpu.cpsrN = d & 0x80000000;
-						cpu.cpsrZ = !(d & 0xFFFFFFFF);
-						cpu.cpsrC = d > 0xFFFFFFFF;
-						cpu.cpsrV = cpu.shifterOperand & 0x80000000 != n & 0x80000000 &&
-									cpu.shifterOperand & 0x80000000 != d & 0x80000000;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = d & 0x80000000;
+							cpu.cpsrZ = !(d & 0xFFFFFFFF);
+							cpu.cpsrC = d > 0xFFFFFFFF;
+							cpu.cpsrV = cpu.shifterOperand & 0x80000000 != n & 0x80000000 &&
+										cpu.shifterOperand & 0x80000000 != d & 0x80000000;
+						}
 					}
 					cpu.gprs[rd] = d;
 				};
@@ -844,8 +890,12 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					cpu.gprs[rd] = cpu.gprs[rn] | cpu.shifterOperand;
 					if (s) {
-						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
+						}
 					}
 				};
 				break;
@@ -859,9 +909,13 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					cpu.gprs[rd] = cpu.shifterOperand;
 					if (s) {
-						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
-						cpu.cpsrC = cpu.shifterCarryOut;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
+							cpu.cpsrC = cpu.shifterCarryOut;
+						}
 					}
 				};
 				break;
@@ -875,9 +929,13 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					cpu.gprs[rd] = cpu.gprs[rn] & ~cpu.shifterOperand;
 					if (s) {
-						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
-						cpu.cpsrC = cpu.shifterCarryOut;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
+							cpu.cpsrC = cpu.shifterCarryOut;
+						}
 					}
 				};
 				break;
@@ -891,9 +949,13 @@ ARMCore.prototype.compileArm = function(instruction) {
 					shiftOp();
 					cpu.gprs[rd] = ~cpu.shifterOperand;
 					if (s) {
-						cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
-						cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
-						cpu.cpsrC = aluOut > cpu.shifterCarryOut;
+						if (rd == cpu.PC && cpu.hasSPSR()) {
+							cpu.unpackCPSR(cpu.spsr);
+						} else {
+							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
+							cpu.cpsrC = aluOut > cpu.shifterCarryOut;
+						}
 					}
 				};
 				break;
