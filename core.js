@@ -278,9 +278,10 @@ ARMCore.prototype.raiseIRQ = function() {
 		return;
 	}
 
+	var cpsr = this.packCPSR();
 	this.switchMode(this.MODE_IRQ);
-	this.spsr = this.packCPSR();
-	this.gprs[this.LR] = this.gprs[this.PC];
+	this.spsr = cpsr;
+	this.gprs[this.LR] = this.gprs[this.PC] + this.instructionWidth;
 	this.gprs[this.PC] = this.BASE_IRQ + this.WORD_SIZE_ARM;
 
 	this.execMode = this.MODE_ARM;
