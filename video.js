@@ -65,12 +65,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			switch (this.vcount) {
 			case this.VERTICAL_PIXELS:
 				this.inVblank = true;
-				if (this.vblankIRQ) {
-					cpu.irq.raiseIRQ(cpu.irq.IRQ_VBLANK);
-					this.nextVblankIRQ = this.lastHblank + this.TOTAL_LENGTH;
-				} else {
-					this.nextVblankIRQ = this.lastHblank;
-				}
+				this.nextVblankIRQ = this.lastHblank + this.TOTAL_LENGTH;
 				break;
 			case this.VERTICAL_TOTAL_PIXELS - 1:
 				this.inVblank = false;
@@ -85,12 +80,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			this.lastHblank = this.nextHblank;
 			this.nextEvent = this.lastHblank + this.HBLANK_LENGTH;
 			this.nextHblank = this.nextEvent + this.HDRAW_LENGTH;
-			if (this.hblankIRQ) {
-				cpu.irq.raiseIRQ(cpu.irq.IRQ_HBLANK);
-				this.nextHblankIRQ = this.nextHblank;
-			} else {
-				this.nextHblankIRQ = this.lastHblank;
-			}
+			this.nextHblankIRQ = this.nextHblank;
 		}
 	}
 };
@@ -101,7 +91,7 @@ GameBoyAdvanceVideo.prototype.pollIRQ = function(enabledIRQs) {
 
 	var next = 0;
 
-	if (this.hblankIRQ && (enabledIRQs & this.cpu.irq.IRQ_HBLANK)) {
+	if (this.hblankIRQ && (enabledIRQs & (1 << this.cpu.irq.IRQ_HBLANK))) {
 		next = this.nextHblankIRQ;
 		if (this.inHblank && this.nextHblankIRQ <= this.cpu.cycles) {
 			this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
@@ -109,7 +99,7 @@ GameBoyAdvanceVideo.prototype.pollIRQ = function(enabledIRQs) {
 		}
 	}
 
-	if (this.vblankIRQ && (enabledIRQs & this.cpu.irq.IRQ_VBLANK)) {
+	if (this.vblankIRQ && (enabledIRQs & (1 << this.cpu.irq.IRQ_VBLANK))) {
 		next = this.nextVblankIRQ;
 		if (this.inVblank && this.nextVblankIRQ <= this.cpu.cycles) {
 			this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
@@ -144,7 +134,7 @@ GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
 	this.vcounterIRQ = value & 0x0020;
 	this.vcountSetting = (value & 0xFF00) >> 8;
 
-	this.pollIRQ();
+	this.pollIRQ(this.cpu.irq.enabledIRQs);
 };
 
 GameBoyAdvanceVideo.prototype.readDisplayStat = function() {
