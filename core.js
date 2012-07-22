@@ -434,7 +434,9 @@ ARMCore.prototype.compileArm = function(instruction) {
 			// Parse shifter operand
 			var shiftType = instruction & 0x00000060;
 			var rm = instruction & 0x0000000F;
-			var shiftOp = function() { return cpu.gprs[rm] };
+			var shiftOp = function() {
+				this.ASSERT_UNREACHED("BUG: invalid barrel shifter");
+			};
 			if (instruction & 0x02000000) {
 				var immediate = instruction & 0x000000FF;
 				var rotate = (instruction & 0x00000F00) >> 7;
@@ -451,7 +453,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				var rs = (instruction & 0x00000F00) >> 8;
 				shiftsRs = true;
 				switch (shiftType) {
-				case 0:
+				case 0x00000000:
 					// LSL
 					shiftOp = function() {
 						++cpu.cycles;
@@ -471,7 +473,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						}
 					};
 					break;
-				case 1:
+				case 0x00000020:
 					// LSR
 					shiftOp = function() {
 						++cpu.cycles;
@@ -491,7 +493,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						}
 					};
 					break;
-				case 2:
+				case 0x00000040:
 					// ASR
 					shiftOp = function() {
 						++cpu.cycles;
@@ -511,7 +513,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						}
 					};
 					break;
-				case 3:
+				case 0x00000060:
 					// ROR
 					shiftOp = function() {
 						++cpu.cycles;
@@ -531,9 +533,9 @@ ARMCore.prototype.compileArm = function(instruction) {
 					break;
 				}
 			} else {
-				var immediate = (instruction & 0x00000F80) >> 8;
+				var immediate = (instruction & 0x00000F00) >> 7;
 				switch (shiftType) {
-				case 0:
+				case 0x00000000:
 					// LSL
 					if (immediate) {
 						shiftOp = function() {
@@ -548,7 +550,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						};
 					}
 					break;
-				case 1:
+				case 0x00000020:
 					// LSR
 					if (immediate) {
 						shiftOp = function() {
@@ -562,7 +564,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						};
 					}
 					break;
-				case 2:
+				case 0x00000040:
 					// ASR
 					if (immediate) {
 						shiftOp = function() {
@@ -580,7 +582,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						};
 					}
 					break;
-				case 3:
+				case 0x00000060:
 					// ROR
 					if (immediate) {
 						shiftOp = function() {
