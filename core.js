@@ -1600,13 +1600,13 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// MUL
 			op = function() {
 				// TODO: implement timings
-				if ((cpu.gprs[rs] & 0xFFFF0000) && (cpu.gprs[rd] & 0xFFFF0000)) {
+				if ((cpu.gprs[rm] & 0xFFFF0000) && (cpu.gprs[rd] & 0xFFFF0000)) {
 					// Our data type is a double--we'll lose bits if we do it all at once!
-					var hi = ((cpu.gprs[rd] & 0xFFFF0000) * cpu.gprs[rs]) & 0xFFFFFFFF;
-					var lo = ((cpu.gprs[rd] & 0x0000FFFF) * cpu.gprs[rs]) & 0xFFFFFFFF;
+					var hi = ((cpu.gprs[rd] & 0xFFFF0000) * cpu.gprs[rm]) & 0xFFFFFFFF;
+					var lo = ((cpu.gprs[rd] & 0x0000FFFF) * cpu.gprs[rm]) & 0xFFFFFFFF;
 					cpu.gprs[rd] = (hi + lo) & 0xFFFFFFFF;
 				} else {
-					cpu.gprs[rd] *= cpu.gprs[rs];
+					cpu.gprs[rd] *= cpu.gprs[rm];
 				}
 				cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
