@@ -226,7 +226,7 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 		break;
 	case this.SOUNDCNT_X:
 		value &= 0x80;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.audio.writeEnable(value);
 		break;
 	case this.SOUNDBIAS | 1:
 		value &= 0xC3;
@@ -305,11 +305,11 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.SOUNDCNT_HI:
 		value &= 0xFF0F;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.audio.writeSoundControlHi(value);
 		break;
 	case this.SOUNDCNT_X:
 		value &= 0x0080;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.audio.writeEnable(value);
 		break;
 
 	// DMA

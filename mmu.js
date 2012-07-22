@@ -313,6 +313,11 @@ GameBoyAdvanceMMU.prototype.runVblankDmas = function() {
 };
 
 GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
+	if (!info.enable) {
+		// There was a DMA scheduled that got canceled
+		return;
+	}
+
 	var INCREMENT = 0;
 	var DECREMENT = 1;
 	var FIXED = 2;
@@ -396,7 +401,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 			irq = this.cpu.irq.IRQ_DMA0;
 			break;
 		case 1:
-			i1q = this.cpu.irq.IRQ_DMA1;
+			irq = this.cpu.irq.IRQ_DMA1;
 			break;
 		case 2:
 			irq = this.cpu.irq.IRQ_DMA2;
