@@ -150,12 +150,6 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null // Unused
 	];
 
-	this.memory[2].cachedInstructions = 0;
-	this.memory[3].cachedInstructions = 0;
-	this.memory[5].cachedInstructions = 0;
-	this.memory[6].cachedInstructions = 0;
-	this.memory[7].cachedInstructions = 0;
-
 	this.icache = [];
 
 	this.waitstates = this.WAITSTATES.slice(0);
@@ -279,7 +273,7 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	var memory = this.memory[offset >> this.BASE_OFFSET];
 	memory.store32(maskedOffset, value);
 	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
-	delete this.icache[(offset >> this.ICACHE_PAGE_BITS) + 1];
+	delete this.icache[(offset + 2) >> this.ICACHE_PAGE_BITS];
 };
 
 GameBoyAdvanceMMU.prototype.wait = function(memory) {

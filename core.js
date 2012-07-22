@@ -114,42 +114,6 @@ ARMCore.prototype.fetchPage = function(address) {
 			this.mmu.icache[pageId] = this.page = new Array(1 << this.mmu.ICACHE_PAGE_BITS);
 		}
 	}
-}
-
-ARMCore.prototype.prefetch = function(address) {
-	var compiled = null;
-	var next = null;
-	this.fetchPage(address);
-	var offset = (address & this.mmu.PAGE_MASK) >> 1;
-	if (this.execMode == this.MODE_ARM) {
-		compiled = this.page[offset];
-		next = this.page[offset + 2];
-		if (!compiled || compiled.execMode != this.MODE_ARM) {
-			var instruction = this.mmu.load32(address) >>> 0;
-			compiled = this.compileArm(instruction);
-			this.page[offset] = compiled;
-		}
-		this.prefetch0 = compiled;
-		if (!next || next.execMode != this.MODE_ARM) {
-			var instruction = this.mmu.load32(address + this.WORD_SIZE_ARM) >>> 0;
-			next = this.compileArm(instruction);
-			this.page[offset + 2] = next;
-		}
-	} else {
-		compiled = this.page[offset];
-		next = this.page[offset + 1];
-		if (!compiled || compiled.execMode != this.MODE_THUMB) {
-			var instruction = this.mmu.load16(address);
-			compiled = this.compileThumb(instruction);
-			this.page[offset] = compiled;
-		}
-		this.prefetch0 = compiled;
-		if (!next || next.execMode != this.MODE_THUMB) {
-			var instruction = this.mmu.load16(address + this.WORD_SIZE_THUMB);
-			next = this.compileThumb(instruction);
-			this.page[offset + 1] = next;
-		}
-	}
 };
 
 ARMCore.prototype.loadInstructionArm = function(address) {
@@ -157,11 +121,10 @@ ARMCore.prototype.loadInstructionArm = function(address) {
 	this.fetchPage(address);
 	var offset = (address & this.mmu.PAGE_MASK) >> 1;
 	next = this.page[offset];
-	if (!next) {
+	if (!next || next.execMode != this.MODE_ARM) {
 		var instruction = this.mmu.load32(address) >>> 0;
 		next = this.compileArm(instruction);
 		this.page[offset] = next;
-		//++mmu.memoryView[memoryRegion].cachedInstructions;
 	}
 	return next;
 };
@@ -171,11 +134,10 @@ ARMCore.prototype.loadInstructionThumb = function(address) {
 	this.fetchPage(address);
 	var offset = (address & this.mmu.PAGE_MASK) >> 1;
 	next = this.page[offset];
-	if (!next) {
+	if (!next || next.execMode != this.MODE_THUMB) {
 		var instruction = this.mmu.load16(address);
 		next = this.compileThumb(instruction);
 		this.page[offset] = next;
-		//++mmu.memoryView[memoryRegion].cachedInstructions;
 	}
 	return next;
 }; 
