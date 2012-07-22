@@ -1966,34 +1966,38 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (b) {
 				// LDRB(1)
 				op = function() {
+					var n = cpu.gprs[rn] + immediate;
 					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
-					cpu.mmu.wait(cpu.gprs[rn] + immediate);
+					cpu.mmu.wait(n);
 					++cpu.cycles;
-					cpu.gprs[rd] = cpu.mmu.loadU8(cpu.gprs[rn] + immediate);
+					cpu.gprs[rd] = cpu.mmu.loadU8(n);
 				}
 			} else {
 				// LDR(1)
 				op = function() {
+					var n = cpu.gprs[rn] + immediate;
 					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
-					cpu.mmu.wait32(cpu.gprs[rn] + immediate);
+					cpu.mmu.wait32(n);
 					++cpu.cycles;
-					cpu.gprs[rd] = cpu.mmu.load32(cpu.gprs[rn] + immediate);
+					cpu.gprs[rd] = cpu.mmu.load32(n);
 				}
 			}
 		} else {
 			if (b) {
 				// STRB(1)
 				op = function() {
+					var n = cpu.gprs[rn] + immediate;
 					cpu.mmu.wait(cpu.gprs[cpu.PC]);
-					cpu.mmu.wait(cpu.gprs[rn] + immediate);
-					cpu.mmu.store8(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
+					cpu.mmu.wait(n);
+					cpu.mmu.store8(n, cpu.gprs[rd]);
 				};
 			} else {
 				// STR(1)
 				op = function() {
+					var n = cpu.gprs[rn] + immediate;
 					cpu.mmu.wait(cpu.gprs[cpu.PC]);
-					cpu.mmu.wait32(cpu.gprs[rn] + immediate);
-					cpu.mmu.store32(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
+					cpu.mmu.wait32(n);
+					cpu.mmu.store32(n, cpu.gprs[rd]);
 				}
 			}
 		}
@@ -2064,17 +2068,19 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (instruction & 0x0800) {
 				// LDRH(1)
 				op = function() {
+					var n = cpu.gprs[rn] + immediate;
 					cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
-					cpu.mmu.wait(cpu.gprs[rn] + immediate);
-					cpu.gprs[rd] = cpu.mmu.loadU16(cpu.gprs[rn] + immediate);
+					cpu.mmu.wait(n);
+					cpu.gprs[rd] = cpu.mmu.loadU16(n);
 					++cpu.cycles;
 				};
 			} else {
 				// STRH(1)
 				op = function() {
+					var n = cpu.gprs[rn] + immediate;
 					cpu.mmu.wait(cpu.gprs[cpu.PC]);
-					cpu.mmu.wait(cpu.gprs[rn] + immediate);
-					cpu.mmu.store16(cpu.gprs[rn] + immediate, cpu.gprs[rd]);
+					cpu.mmu.wait(n);
+					cpu.mmu.store16(n, cpu.gprs[rd]);
 				};
 			}
 			op.writesPC = false;
