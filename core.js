@@ -215,15 +215,15 @@ ARMCore.prototype.switchMode = function(newMode) {
 };
 
 ARMCore.prototype.packCPSR = function() {
-	return this.mode | (!!this.execMode << 5) | (!!this.cpsrI << 6) | (!!this.cpsrF << 7) |
+	return this.mode | (!!this.execMode << 5) | (!!this.cpsrF << 6) | (!!this.cpsrI << 7) |
 	       (!!this.cpsrN << 31) | (!!this.cpsrZ << 30) | (!!this.cpsrC << 29) | (!!this.cpsrV << 28);
 };
 
 ARMCore.prototype.unpackCPSR = function(spsr) {
 	this.switchMode(spsr & 0x0000001F);
 	this.execMode = !!(spsr & 0x00000020);
-	this.cpsrI = spsr & 0x00000040;
-	this.cpsrF = spsr & 0x00000080;
+	this.cpsrF = spsr & 0x00000040;
+	this.cpsrI = spsr & 0x00000080;
 	this.cpsrN = spsr & 0x80000000;
 	this.cpsrZ = spsr & 0x40000000;
 	this.cpsrC = spsr & 0x20000000;
