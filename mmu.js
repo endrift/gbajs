@@ -103,6 +103,12 @@ var GameBoyAdvanceMMU = function() {
 	this.DMA_TIMING_HBLANK = 2;
 	this.DMA_TIMING_CUSTOM = 3;
 
+	this.DMA_INCREMENT = 0;
+	this.DMA_DECREMENT = 1;
+	this.DMA_FIXED = 2;
+
+	this.DMA_OFFSET = [ 1, -1, 0 ];
+
 	this.WAITSTATES = [ 0, 0, 2, 0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4 ];
 	this.WAITSTATES_32 = [ 0, 0, 5, 0, 0, 1, 0, 1, 7, 0, 9, 0, 13, 0, 8 ];
 	this.WAITSTATES_SEQ = [ 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 4, 0, 8, 0, 4 ];
@@ -156,6 +162,21 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.waitstatesSeq = this.WAITSTATES_SEQ.slice(0);
 	this.waitstates32 = this.WAITSTATES_32.slice(0);
 	this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
+
+	// This must be done after a CPU object is set
+	this.DMA_IRQ = [
+		this.cpu.irq.IRQ_DMA0,
+		this.cpu.irq.IRQ_DMA1,
+		this.cpu.irq.IRQ_DMA2,
+		this.cpu.irq.IRQ_DMA3
+	];
+
+	this.DMA_REGISTER = [
+		this.cpu.irq.io.DMA0CNT_HI >> 1,
+		this.cpu.irq.io.DMA1CNT_HI >> 1,
+		this.cpu.irq.io.DMA2CNT_HI >> 1,
+		this.cpu.irq.io.DMA3CNT_HI >> 1
+	];
 };
 
 GameBoyAdvanceMMU.prototype.loadBios = function(bios) {
@@ -318,39 +339,9 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		return;
 	}
 
-	var INCREMENT = 0;
-	var DECREMENT = 1;
-	var FIXED = 2;
-
-	var sourceOffset;
-	var destOffset;
-
-	var width = info.width ? 4 : 2;
-
-	switch (info.srcControl) {
-	case INCREMENT:
-		sourceOffset = width;
-		break;
-	case DECREMENT:
-		sourceOffset = -width;
-		break;
-	case FIXED:
-		sourceOffset = 0;
-		break;
-	}
-
-	switch (info.dstControl) {
-	case INCREMENT:
-		destOffset = width;
-		break;
-	case DECREMENT:
-		destOffset = -width;
-		break;
-	case FIXED:
-		destOffset = 0;
-		break;
-	}
-
+	var width = info.width;
+	var sourceOffset = this.DMA_OFFSET[info.srcControl] * width;
+	var destOffset = this.DMA_OFFSET[info.dstControl] * width;
 	var wordsRemaining = info.count;
 	var source = info.source & this.OFFSET_MASK;
 	var dest = info.dest & this.OFFSET_MASK;
@@ -358,17 +349,18 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var destRegion = info.dest >> this.BASE_OFFSET;
 	var sourceBlock = this.memory[sourceRegion];
 	var destBlock = this.memory[destRegion];
+	var word;
 	if (sourceBlock && destBlock) {
 		if (width == 4) {
-			for (var i = 0; i < wordsRemaining; ++i) {
-				var word = sourceBlock.load32(source);
+			while (wordsRemaining--) {
+				word = sourceBlock.load32(source);
 				destBlock.store32(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
 			}
 		} else {
 			if (source & 0x2) {
-				var word = sourceBlock.load16(source);
+				word = sourceBlock.load16(source);
 				destBlock.store16(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
@@ -376,7 +368,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 			}
 
 			while (wordsRemaining > 1) {
-				var word = sourceBlock.load32(source);
+				word = sourceBlock.load32(source);
 				destBlock.store32(dest, word);
 				source += sourceOffset << 1;
 				dest += destOffset << 1;
@@ -384,7 +376,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 			}
 
 			if (wordsRemaining) {
-				var word = sourceBlock.load16(source);
+				word = sourceBlock.load16(source);
 				destBlock.store16(dest, word);
 				source += sourceOffset;
 				dest += destOffset;
@@ -395,23 +387,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	}
 
 	if (info.doIrq) {
-		var irq;
-		switch (number) {
-		case 0:
-			irq = this.cpu.irq.IRQ_DMA0;
-			break;
-		case 1:
-			irq = this.cpu.irq.IRQ_DMA1;
-			break;
-		case 2:
-			irq = this.cpu.irq.IRQ_DMA2;
-			break;
-		case 3:
-			irq = this.cpu.irq.IRQ_DMA3;
-			break;
-		}
-
-		this.cpu.irq.raiseIRQ(irq);
+		this.cpu.irq.raiseIRQ(this.DMA_IRQ[number]);
 	}
 
 	if (!info.repeat) {
@@ -419,22 +395,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 
 		// Clear the enable bit in memory
 		var io = this.memory[this.REGION_IO];
-		var dmaRegister;
-		switch (number) {
-		case 0:
-			dmaRegister = io.DMA0CNT_HI >> 1;
-			break;
-		case 1:
-			dmaRegister = io.DMA1CNT_HI >> 1;
-			break;
-		case 2:
-			dmaRegister = io.DMA2CNT_HI >> 1;
-			break;
-		case 3:
-			dmaRegister = io.DMA3CNT_HI >> 1;
-			break;
-		}
-		io.registers[dmaRegister] &= 0x7FE0;
+		io.registers[this.DMA_REGISTER[number]] &= 0x7FE0;
 	}
 };
 
