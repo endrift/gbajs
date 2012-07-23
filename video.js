@@ -57,61 +57,41 @@ GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
 GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 	var cycles = cpu.cycles;
 
-	while (this.nextEvent < cycles) {
+	if (this.nextEvent <= cycles) {
 		if (this.inHblank) {
+			// End Hblank
 			this.inHblank = false;
-			this.nextEvent = this.nextHblank;
 			++this.vcount;
 			switch (this.vcount) {
 			case this.VERTICAL_PIXELS:
 				this.inVblank = true;
-				this.nextVblankIRQ = this.lastHblank + this.TOTAL_LENGTH;
+				this.nextVblankIRQ = this.nextEvent + this.TOTAL_LENGTH;
 				this.cpu.mmu.runVblankDmas();
+				if (this.vblankIRQ) {
+					this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
+				}
 				break;
 			case this.VERTICAL_TOTAL_PIXELS - 1:
 				this.inVblank = false;
-				this.nextVblankIRQ += this.TOTAL_LENGTH;
 				break;
 			case this.VERTICAL_TOTAL_PIXELS:
 				this.vcount = 0;
 				break;
 			}
+			this.nextEvent = this.nextHblank;
 		} else {
+			// Begin Hblank
 			this.inHblank = true;
 			this.lastHblank = this.nextHblank;
 			this.nextEvent = this.lastHblank + this.HBLANK_LENGTH;
 			this.nextHblank = this.nextEvent + this.HDRAW_LENGTH;
 			this.nextHblankIRQ = this.nextHblank;
 			this.cpu.mmu.runHblankDmas();
+			if (this.hblankIRQ) {
+				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
+			}
 		}
 	}
-};
-
-GameBoyAdvanceVideo.prototype.pollIRQ = function(enabledIRQs) {
-	// If our IRQs are enabled, and our next IRQs are less than the current cycles, it means the
-	// IRQs were just enabled. Trigger them immediately.
-
-	var next = 0;
-
-	if (this.hblankIRQ && (enabledIRQs & (1 << this.cpu.irq.IRQ_HBLANK))) {
-		next = this.nextHblankIRQ;
-		if (this.inHblank && this.nextHblankIRQ <= this.cpu.cycles) {
-			this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
-			this.nextHblankIRQ += this.HORIZONTAL_LENGTH;
-		}
-	}
-
-	if (this.vblankIRQ && (enabledIRQs & (1 << this.cpu.irq.IRQ_VBLANK))) {
-		next = this.nextVblankIRQ;
-		if (this.inVblank && this.nextVblankIRQ <= this.cpu.cycles) {
-			this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
-			this.nextVblankIRQ += this.TOTAL_LENGTH;
-		}
-	}
-
-	// TODO: vcounter
-
-	return next;
 };
 
 GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
@@ -135,8 +115,6 @@ GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
 	this.hblankIRQ = value & 0x0010;
 	this.vcounterIRQ = value & 0x0020;
 	this.vcountSetting = (value & 0xFF00) >> 8;
-
-	this.pollIRQ(this.cpu.irq.enabledIRQs);
 };
 
 GameBoyAdvanceVideo.prototype.readDisplayStat = function() {

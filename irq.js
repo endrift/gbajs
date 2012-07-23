@@ -75,10 +75,9 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	this.video.updateTimers(this.cpu);
 	if (this.timersEnabled) {
 		// TODO: ensure incrementing only on read and overflow
-		// TODO: eliminate the while loops
-		if (this.timersEnabled & 0x1) {
-			var timer = this.timers[0];
-			while (this.cpu.cycles >= timer.nextEvent) {
+		var timer = this.timers[0];
+		if (timer.enable) {
+			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM0CNT_LO >> 1] = timer.reload;
@@ -98,9 +97,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				}
 			}
 		}
-		if (this.timersEnabled & 0x2) {
-			var timer = this.timers[1];
-			while (this.cpu.cycles >= timer.nextEvent) {
+
+		timer = this.timers[1];
+		if (timer.enable) {
+			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM1CNT_LO >> 1] = timer.reload;
@@ -120,9 +120,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				}
 			}
 		}
-		if (this.timersEnabled & 0x4) {
-			var timer = this.timers[2];
-			while (this.cpu.cycles >= timer.nextEvent) {
+
+		timer = this.timers[2];
+		if (timer.enable) {
+			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM2CNT_LO >> 1] = timer.reload;
@@ -132,9 +133,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				}
 			}
 		}
-		if (this.timersEnabled & 0x8) {
-			var timer = this.timers[3];
-			while (this.cpu.cycles >= timer.nextEvent) {
+
+		timer = this.timers[3];
+		if (timer.enable) {
+			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM3CNT_LO >> 1] = timer.reload;
@@ -154,11 +156,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		if (!this.enable) {
 			throw "Requested HALT when interrupts were disabled!";
 		}
-		// Polling can cause an IRQ immediately!
-		this.poll();
-		if (this.nextInterrupt >= this.cpu.cycles) {
-			this.cpu.cycles = this.nextInterrupt;
-		} else if (!this.interruptFlags) {
+		if (!this.waitForIRQ()) {
 			throw "Waiting on interrupt forever.";
 		}
 		break;
@@ -234,12 +232,8 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 	this.enable = value;
 
-	if (this.enable) {
-		this.poll();
-
-		if (this.enabledIRQs && this.interruptFlags) {
-			this.cpu.raiseIRQ();
-		}
+	if (this.enable && this.enabledIRQs && this.interruptFlags) {
+		this.cpu.raiseIRQ();
 	}
 };
 
@@ -258,20 +252,67 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 		this.cpu.log('Gamepak interrupts not implemented');
 	}
 
-	if (this.enable) {
-		this.poll();
-
-		if (this.enabledIRQs && this.interruptFlags) {
-			this.cpu.raiseIRQ();
-		}
+	if (this.enable && this.enabledIRQs && this.interruptFlags) {
+		this.cpu.raiseIRQ();
 	}
 };
 
-GameBoyAdvanceInterruptHandler.prototype.poll = function() {
-	this.nextInterrupt = 0; // Clear pending interrupt timer--it'll be reset anyway.
-	var next = this.video.pollIRQ(this.enabledIRQs);
-	if (next < this.nextInterrupt || !this.nextInterrupt) {
-		this.nextInterrupt = next;
+GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
+	var nextEvent = 0;
+	var test;
+	var timer;
+	var irqPending = this.video.hblankIRQ || this.video.vblankIRQ;
+	if (this.timersEnabled) {
+		timer = this.timers[0];
+		irqPending = irqPending || timer.doIrq;
+		timer = this.timers[1];
+		irqPending = irqPending || timer.doIrq;
+		timer = this.timers[2];
+		irqPending = irqPending || timer.doIrq;
+		timer = this.timers[3];
+		irqPending = irqPending || timer.doIrq;
+	}
+	if (!irqPending) {
+		return false;
+	}
+
+	for (;;) {
+		test = this.video.nextEvent;
+		if (!nextEvent || test < nextEvent) {
+			nextEvent = test;
+		}
+
+		timer = this.timers[0];
+		test = timer.nextEvent;
+		if (timer.enable && (!nextEvent || test < nextEvent)) {
+			nextEvent = test;
+		}
+
+		timer = this.timers[1];
+		test = timer.nextEvent;
+		if (timer.enable && (!nextEvent || test < nextEvent)) {
+			nextEvent = test;
+		}
+		timer = this.timers[2];
+		test = timer.nextEvent;
+		if (timer.enable && (!nextEvent || test < nextEvent)) {
+			nextEvent = test;
+		}
+		timer = this.timers[3];
+		test = timer.nextEvent;
+		if (timer.enable && (!nextEvent || test < nextEvent)) {
+			nextEvent = test;
+		}
+
+		if (!nextEvent || nextEvent < this.cpu.cycles) {
+			return false;
+		} else {
+			this.cpu.cycles = nextEvent;
+			this.updateTimers();
+			if (this.interruptFlags) {
+				return true;
+			}
+		}
 	}
 };
 
@@ -346,11 +387,13 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 	currentTimer.overflowInterval = (0x10000 - currentTimer.reload) * (1 << currentTimer.prescaleBits);
 	var wasEnabled = currentTimer.enable;
 	currentTimer.enable = ((control & 0x0080) >> 7) << timer;
-	this.timersEnabled = (this.timersEnabled & ~(1 << timer)) | currentTimer.enable;
 	if (!wasEnabled && currentTimer.enable) {
 		currentTimer.lastEvent = this.cpu.cycles;
 		currentTimer.nextEvent = this.cpu.cycles + currentTimer.overflowInterval;
 		this.io.registers[(this.io.TM0CNT_LO + (timer << 2)) >> 1] = currentTimer.reload;
+		++this.timersEnabled;
+	} else if (wasEnabled && !currentTimer.enable) {
+		--this.timersEnabled;
 	}
 
 	if (currentTimer.countUp) {
