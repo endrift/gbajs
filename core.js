@@ -1565,13 +1565,15 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// CMP(2)
 			op = function() {
 				cpu.mmu.waitSeq(cpu.gprs[cpu.PC]);
-				var aluOut = cpu.gprs[rd] - cpu.gprs[rm];
+				var d = cpu.gprs[rd];
+				var m = cpu.gprs[rm];
+				var aluOut = d - m;
 				var an = aluOut & 0x80000000;
-				var dn = cpu.gprs[rd] & 0x80000000;
+				var dn = d & 0x80000000;
 				cpu.cpsrN = an;
 				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
-				cpu.cpsrC = (cpu.gprs[rd] >>> 0) >= (cpu.gprs[rm] >>> 0);
-				cpu.cpsrV = dn != (cpu.gprs[rm] & 0x80000000) && dn != an;
+				cpu.cpsrC = (d >>> 0) >= (m >>> 0);
+				cpu.cpsrV = dn != (m & 0x80000000) && dn != an;
 			};
 			break;
 		case 0x02C0:
