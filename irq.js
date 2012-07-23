@@ -69,9 +69,14 @@ var GameBoyAdvanceInterruptHandler = function() {
 	}
 
 	this.nextInterrupt = 0;
+	this.nextEvent = 0;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
+	if (this.nextEvent > this.cpu.cycles) {
+		return;
+	}
+
 	this.video.updateTimers(this.cpu);
 	if (this.timersEnabled) {
 		// TODO: ensure incrementing only on read and overflow
@@ -147,6 +152,8 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 			}
 		}
 	}
+
+	this.pollNextEvent();
 }
 
 GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
@@ -257,9 +264,45 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 	}
 };
 
-GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
-	var nextEvent = 0;
+GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
+	this.nextEvent = 0;
 	var test;
+
+	test = this.video.nextEvent;
+	if (!this.nextEvent || test < this.nextEvent) {
+		this.nextEvent = test;
+	}
+
+	if (this.timersEnabled) {
+		timer = this.timers[0];
+		test = timer.nextEvent;
+		if (timer.enable && (!this.nextEvent || test < this.nextEvent)) {
+			this.nextEvent = test;
+		}
+
+		timer = this.timers[1];
+		test = timer.nextEvent;
+		if (timer.enable && (!this.nextEvent || test < this.nextEvent)) {
+			this.nextEvent = test;
+		}
+		timer = this.timers[2];
+		test = timer.nextEvent;
+		if (timer.enable && (!this.nextEvent || test < this.nextEvent)) {
+			this.nextEvent = test;
+		}
+		timer = this.timers[3];
+		test = timer.nextEvent;
+		if (timer.enable && (!this.nextEvent || test < this.nextEvent)) {
+			this.nextEvent = test;
+		}
+	}
+
+	if (this.nextEvent < this.cpu.cycles) {
+		this.nextEvent = 0;
+	}
+};
+
+GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
 	var timer;
 	var irqPending = this.video.hblankIRQ || this.video.vblankIRQ;
 	if (this.timersEnabled) {
@@ -277,37 +320,12 @@ GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
 	}
 
 	for (;;) {
-		test = this.video.nextEvent;
-		if (!nextEvent || test < nextEvent) {
-			nextEvent = test;
-		}
+		this.pollNextEvent();
 
-		timer = this.timers[0];
-		test = timer.nextEvent;
-		if (timer.enable && (!nextEvent || test < nextEvent)) {
-			nextEvent = test;
-		}
-
-		timer = this.timers[1];
-		test = timer.nextEvent;
-		if (timer.enable && (!nextEvent || test < nextEvent)) {
-			nextEvent = test;
-		}
-		timer = this.timers[2];
-		test = timer.nextEvent;
-		if (timer.enable && (!nextEvent || test < nextEvent)) {
-			nextEvent = test;
-		}
-		timer = this.timers[3];
-		test = timer.nextEvent;
-		if (timer.enable && (!nextEvent || test < nextEvent)) {
-			nextEvent = test;
-		}
-
-		if (!nextEvent || nextEvent < this.cpu.cycles) {
+		if (!this.nextEvent) {
 			return false;
 		} else {
-			this.cpu.cycles = nextEvent;
+			this.cpu.cycles = this.nextEvent;
 			this.updateTimers();
 			if (this.interruptFlags) {
 				return true;
@@ -395,6 +413,9 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 	} else if (wasEnabled && !currentTimer.enable) {
 		--this.timersEnabled;
 	}
+
+	// We've changed the timers somehow...we need to reset the next event
+	this.pollNextEvent();
 
 	if (currentTimer.countUp) {
 		this.cpu.log('Timer count up not implemented');
