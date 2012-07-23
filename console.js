@@ -278,12 +278,28 @@ Memory.prototype.resize = function() {
 }
 
 Memory.prototype.refresh = function(row) {
+	var showChanged;
+	var newValue;
+	var child;
 	row.firstChild.textContent = hex(row.offset);
+	if (row.oldOffset == row.offset) {
+		showChanged = true;
+	} else {
+		row.oldOffset = row.offset;
+		showChanged = false;
+	}
 	for (var i = 0; i < 16; ++i) {
+		child = row.children[i + 1];
 		try {
-			row.children[i + 1].textContent = hex(this.mmu.loadU8(row.offset + i), 2, false);
+			newValue = hex(this.mmu.loadU8(row.offset + i), 2, false);
+			if (child.textContent == newValue) {
+				child.setAttribute('class', 'memoryCell');
+			} else {
+				child.setAttribute('class', 'memoryCell changed');
+				child.textContent = newValue;
+			}
 		} catch (exception) {
-			row.children[i + 1].textContent = '??';
+			child.textContent = '??';
 		}
 	}
 }
@@ -308,6 +324,7 @@ Memory.prototype.createRow = function(startOffset) {
 		li.appendChild(b);
 	}
 	li.offset = startOffset;
+	li.oldOffset = startOffset;
 	return li;
 }
 

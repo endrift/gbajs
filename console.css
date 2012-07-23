@@ -204,6 +204,11 @@ ul, ol, #registers {
 	display: block;
 	-webkit-box-flex: 2;
 	-moz-box-flex: 2;
+	text-align: center;
+}
+
+#memory .memoryCell.changed {
+	background-color: #5C616F;
 }
 
 .disabled {
