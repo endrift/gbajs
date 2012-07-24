@@ -533,7 +533,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 					break;
 				}
 			} else {
-				var immediate = (instruction & 0x00000F00) >> 7;
+				var immediate = (instruction & 0x00000F80) >> 7;
 				switch (shiftType) {
 				case 0x00000000:
 					// LSL
