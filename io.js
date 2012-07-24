@@ -177,7 +177,6 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DMA1CNT_HI:
 	case this.DMA2CNT_HI:
 	case this.DMA3CNT_HI:
-	case this.KEYINPUT:
 	case this.WAITCNT:
 	case this.IE:
 	case this.IF:
@@ -188,6 +187,8 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		return this.registers[offset >> 1] | this.video.readDisplayStat();
 	case this.VCOUNT:
 		return this.video.vcount;
+	case this.KEYINPUT:
+		return 0x03FF;
 	default:
 		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
 	}
