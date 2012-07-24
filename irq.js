@@ -231,6 +231,14 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			}
 		}
 		return;
+	case 0x11:
+		// LZ77UnCompWram
+		this.lz77(this.cpu.gprs[0], this.cpu.gprs[1], 1);
+		break;
+	case 0x12:
+		// LZ77UnCompVram
+		this.lz77(this.cpu.gprs[0], this.cpu.gprs[1], 2);
+		break;
 	default:
 		throw "Unimplemented software interrupt: 0x" + opcode.toString(16);
 	}
@@ -419,5 +427,43 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 
 	if (currentTimer.countUp) {
 		this.cpu.log('Timer count up not implemented');
+	}
+};
+
+GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize) {
+	// TODO: move to a different file
+	var remaining = (this.cpu.mmu.load32(source) & 0xFFFFFF00) >> 8;
+	this.cpu.log('Decompressing ' + remaining +' bytes from 0x' + source.toString(16) + ' to 0x' + dest.toString(16));
+	// We assume the first byte is correct
+	var blockheader;
+	var sPointer = source + 4;
+	var dPointer = dest;
+	var blocksRemaining = 0;
+	var block;
+	var disp;
+	var bytes;
+	while (remaining) {
+		if (blocksRemaining) {
+			if (blockheader & 0x80) {
+				// Compressed
+				block = this.cpu.mmu.loadU8(sPointer) | (this.cpu.mmu.loadU8(sPointer + 1) << 8);
+				sPointer += 2;
+				disp = dPointer - (((block & 0x000F) << 8) | ((block & 0xFF00) >> 8)) - 1;
+				bytes = ((block & 0x00F0) >> 4) + 3;
+				remaining -= bytes;
+				while (bytes--) {
+					this.cpu.mmu.store8(dPointer++, this.cpu.mmu.loadU8(disp++));
+				}
+			} else {
+				// Uncompressed
+				this.cpu.mmu.store8(dPointer++, this.cpu.mmu.loadU8(sPointer++));
+				--remaining;
+			}
+			blockheader <<= 1;
+			--blocksRemaining;
+		} else {
+			blockheader = this.cpu.mmu.loadU8(sPointer++);
+			blocksRemaining = 8;
+		}
 	}
 };
