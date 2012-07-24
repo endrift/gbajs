@@ -254,6 +254,42 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		value &= this.video.DISPSTAT_MASK;
 		this.video.writeDisplayStat(value);
 		break;
+	case this.BG0CNT:
+		this.video.writeBackgroundControl(0, value);
+		break;
+	case this.BG1CNT:
+		this.video.writeBackgroundControl(1, value);
+		break;
+	case this.BG2CNT:
+		this.video.writeBackgroundControl(2, value);
+		break;
+	case this.BG3CNT:
+		this.video.writeBackgroundControl(3, value);
+		break;
+	case this.BG0HOFS:
+		this.video.writeBackgroundHOffset(0, value);
+		break;
+	case this.BG0VOFS:
+		this.video.writeBackgroundVOffset(0, value);
+		break;
+	case this.BG1HOFS:
+		this.video.writeBackgroundHOffset(1, value);
+		break;
+	case this.BG1VOFS:
+		this.video.writeBackgroundVOffset(1, value);
+		break;
+	case this.BG2HOFS:
+		this.video.writeBackgroundHOffset(2, value);
+		break;
+	case this.BG2VOFS:
+		this.video.writeBackgroundVOffset(2, value);
+		break;
+	case this.BG3HOFS:
+		this.video.writeBackgroundHOffset(3, value);
+		break;
+	case this.BG3VOFS:
+		this.video.writeBackgroundVOffset(3, value);
+		break;
 	case this.BLDCNT:
 		value &= 0x4FFF;
 		this.cpu.log('Unimplemented video register write: 0x' + offset.toString(16));

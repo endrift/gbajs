@@ -120,3 +120,15 @@ GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
 GameBoyAdvanceVideo.prototype.readDisplayStat = function() {
 	return (this.inVblank) | (this.inHblank << 1) | (this.vcounter << 2);
 };
+
+GameBoyAdvanceVideo.prototype.writeBackgroundControl = function(bg, value) {
+	this.cpu.log('Unimplemented video register write: BG' + bg + 'CNT');
+};
+
+GameBoyAdvanceVideo.prototype.writeBackgroundHOffset = function(bg, value) {
+	this.cpu.log('Unimplemented video register write: BG' + bg + 'HOFS');
+};
+
+GameBoyAdvanceVideo.prototype.writeBackgroundVOffset = function(bg, value) {
+	this.cpu.log('Unimplemented video register write: BG' + bg + 'VOFS');
+};
