@@ -228,7 +228,7 @@ Memory = function(mmu) {
 	for (var i = 0; i < this.numberRows; ++i) {
 		this.ul.appendChild(this.createRow(i << 4));
 	}
-	this.ul.scrollTop = 100;
+	this.ul.scrollTop = 50;
 
 	var self = this;
 	this.ul.addEventListener('scroll', function(e) { self.scroll() }, true);
@@ -236,7 +236,7 @@ Memory = function(mmu) {
 }
 
 Memory.prototype.scroll = function() {
-	while (this.ul.scrollTop - 100 < this.rowHeight) {
+	while (this.ul.scrollTop - 50 < this.rowHeight) {
 		if (this.ul.firstChild.offset == 0) {
 			break;
 		}
@@ -247,7 +247,7 @@ Memory.prototype.scroll = function() {
 		this.ul.insertBefore(victim, this.ul.firstChild);
 		this.ul.scrollTop += this.rowHeight;
 	}
-	while (this.ul.scrollTop - 100 > this.rowHeight * 2) {
+	while (this.ul.scrollTop - 50 > this.rowHeight * 2) {
 		var victim = this.ul.firstChild;
 		this.ul.removeChild(victim);
 		victim.offset = this.ul.lastChild.offset + 16;
@@ -255,8 +255,8 @@ Memory.prototype.scroll = function() {
 		this.ul.appendChild(victim);
 		this.ul.scrollTop -= this.rowHeight;
 	}
-	if (this.ul.scrollTop < 100) {
-		this.ul.scrollTop = 100;
+	if (this.ul.scrollTop < 50) {
+		this.ul.scrollTop = 50;
 	}
 }
 
@@ -294,11 +294,15 @@ Memory.prototype.refresh = function(row) {
 			newValue = hex(this.mmu.loadU8(row.offset + i), 2, false);
 			if (child.textContent == newValue) {
 				child.setAttribute('class', 'memoryCell');
-			} else {
+			} else if (showChanged) {
 				child.setAttribute('class', 'memoryCell changed');
+				child.textContent = newValue;
+			} else {
+				child.setAttribute('class', 'memoryCell');
 				child.textContent = newValue;
 			}
 		} catch (exception) {
+			child.setAttribute('class', 'memoryCell');
 			child.textContent = '??';
 		}
 	}
@@ -336,13 +340,13 @@ Memory.prototype.scrollTo = function(offset) {
 			child.offset = offset + (i - 1) * 16;
 			this.refresh(child);
 		}
-		this.ul.scrollTop = 100+ this.rowHeight;
+		this.ul.scrollTop = 50+ this.rowHeight;
 	} else {
 		for (var i = 0; i < this.ul.children.length; ++i) {
 			var child = this.ul.children[i];
 			child.offset = offset + i * 16;
 			this.refresh(child);
 		}
-		this.ul.scrollTop = 100;
+		this.ul.scrollTop = 50;
 	}
 }

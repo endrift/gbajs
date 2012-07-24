@@ -177,11 +177,11 @@ ul, ol, #registers {
 }
 
 #memoryView li:first-child {
-	margin-top: 100px;
+	margin-top: 50px;
 }
 
 #memoryView li:last-child {
-	margin-bottom: 100px;
+	margin-bottom: 50px;
 }
 
 #memory li {
