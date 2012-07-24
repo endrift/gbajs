@@ -239,6 +239,10 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		// LZ77UnCompVram
 		this.lz77(this.cpu.gprs[0], this.cpu.gprs[1], 2);
 		break;
+	case 0x1F:
+		// MidiKey2Freq
+		this.cpu.STUB('MidiKey2Freq');
+		break;
 	default:
 		throw "Unimplemented software interrupt: 0x" + opcode.toString(16);
 	}
