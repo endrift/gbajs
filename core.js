@@ -930,6 +930,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
 		// Single data swap
 	} else {
+		var SHIFT_32 = 1/0x100000000;
 		switch (i) {
 		case 0x00000000:
 			if ((instruction & 0x010000F0) == 0x00000090) {
@@ -957,6 +958,32 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
 						}
 					};
+					break;
+				case 0x00200000:
+					// MLA
+					break;
+				case 0x00800000:
+					// UMULL
+					op = function() {
+						// TODO: timings
+						var hi = ((cpu.gprs[rm] & 0xFFFF0000) * cpu.gprs[rs]);
+						var lo = ((cpu.gprs[rm] & 0x0000FFFF) * cpu.gprs[rs]);
+						cpu.gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
+						cpu.gprs[rd] = (hi * SHIFT_32 + lo * SHIFT_32) >>> 0;
+						if (s) {
+							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !((cpu.gprs[rd] & 0xFFFFFFFF) || (cpu.gprs[rn] & 0xFFFFFFFF));
+						}
+					};
+					break;
+				case 0x00A00000:
+					// UMLAL
+					break;
+				case 0x00C00000:
+					// SMULL
+					break;
+				case 0x00E00000:
+					// SMLAL
 					break;
 				}
 				op.touchesPC = rd == this.PC;
