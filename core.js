@@ -961,6 +961,21 @@ ARMCore.prototype.compileArm = function(instruction) {
 					break;
 				case 0x00200000:
 					// MLA
+					op = function() {
+						// TODO: timings
+						if ((cpu.gprs[rm] & 0xFFFF0000) && (cpu.gprs[rs] & 0xFFFF0000)) {
+							// Our data type is a double--we'll lose bits if we do it all at once!
+							var hi = ((cpu.gprs[rm] & 0xFFFF0000) * cpu.gprs[rs]) & 0xFFFFFFFF;
+							var lo = ((cpu.gprs[rm] & 0x0000FFFF) * cpu.gprs[rs]) & 0xFFFFFFFF;
+							cpu.gprs[rd] = (hi + lo + cpu.gprs[rn]) & 0xFFFFFFFF;
+						} else {
+							cpu.gprs[rd] = cpu.gprs[rm] * cpu.gprs[rs] + cpu.gprs[rn];
+						}
+						if (s) {
+							cpu.cpsrN = cpu.gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !(cpu.gprs[rd] & 0xFFFFFFFF);
+						}
+					};
 					break;
 				case 0x00800000:
 					// UMULL
