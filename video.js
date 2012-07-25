@@ -88,6 +88,25 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.nextHblankIRQ = 0;
 	this.nextVblankIRQ = 0;
 	this.nextVcounterIRQ = 0;
+
+	this.bg = new Array();
+	for (var i = 0; i < 4; ++i) {
+		this.bg.push({
+			priority: 0,
+			charBase: 0,
+			mosaic: false,
+			multipalette: false,
+			screenBase: 0,
+			overflow: 0,
+			size: 0,
+			x: 0,
+			y: 0,
+			dx: 0,
+			dmx: 0,
+			dy: 0,
+			dmy: 0
+		});
+	}
 };
 
 GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
@@ -162,13 +181,20 @@ GameBoyAdvanceVideo.prototype.readDisplayStat = function() {
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundControl = function(bg, value) {
-	this.cpu.log('Unimplemented video register write: BG' + bg + 'CNT');
+	var bgData = this.bg[bg];
+	bgData.priority = value & 0x0003;
+	bgData.charBase = (value & 0x000C) << 12;
+	bgData.mosaic = value & 0x0040;
+	bgData.multipalette = value & 0x0080;
+	bgData.screenBase = (value & 0x1F00) << 3;
+	bgData.overflow = value & 0x2000;
+	bgData.size = (value & 0xC000) >> 14;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundHOffset = function(bg, value) {
-	this.cpu.log('Unimplemented video register write: BG' + bg + 'HOFS');
+	this.bg[bg].x = value & 0x1FF;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundVOffset = function(bg, value) {
-	this.cpu.log('Unimplemented video register write: BG' + bg + 'VOFS');
+	this.bg[bg].y = value & 0x1FF;
 };
