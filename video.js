@@ -1,3 +1,28 @@
+var GameBoyAdvancePalette = function() {
+	this.palette = [ new Uint16Array(0x100), new Uint16Array(0x100) ];
+};
+
+GameBoyAdvancePalette.prototype.loadU8 = function(offset) {
+	return (this.loadU16(offset) >> (8 * (offset & 1))) & 0xFF;
+};
+
+GameBoyAdvancePalette.prototype.loadU16 = function(offset) {
+	return this.palette[(offset & 0x200) >> 9][(offset & 0x1FF) >> 1];
+};
+
+GameBoyAdvancePalette.prototype.load16 = function(offset) {
+	return (this.loadU16(offset) << 16) >> 16;
+};
+
+GameBoyAdvancePalette.prototype.store16 = function(offset, value) {
+	this.palette[(offset & 0x200) >> 9][(offset & 0x1FF) >> 1] = value;
+};
+
+GameBoyAdvancePalette.prototype.store32 = function(offset, value) {
+	this.store16(offset, value & 0xFFFF);
+	this.store16(offset + 2, value >> 16);
+};
+
 var GameBoyAdvanceVideo = function() {
 	this.CYCLES_PER_PIXEL = 4;
 
@@ -12,6 +37,10 @@ var GameBoyAdvanceVideo = function() {
 	this.VERTICAL_TOTAL_PIXELS = 228;
 
 	this.TOTAL_LENGTH = 280896;
+};
+
+GameBoyAdvanceVideo.prototype.clear = function() {
+	this.palette = new GameBoyAdvancePalette();
 
 	// DISPCNT
 	this.backgroundMode = 0;

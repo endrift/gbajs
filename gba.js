@@ -28,8 +28,10 @@ var GameBoyAdvance = function() {
 	this.mmu.clear();
 	this.io.clear();
 	this.audio.clear();
+	this.video.clear();
 
 	this.mmu.mmap(this.mmu.REGION_IO, this.io);
+	this.mmu.mmap(this.mmu.REGION_PALETTE_RAM, this.video.palette);
 };
 
 GameBoyAdvance.prototype.setCanvas = function(video) {

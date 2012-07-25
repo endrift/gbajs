@@ -137,7 +137,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		new MemoryBlock(this.SIZE_WORKING_RAM),
 		new MemoryBlock(this.SIZE_WORKING_IRAM),
 		null, // This is owned by GameBoyAdvanceIO
-		new MemoryBlock(this.SIZE_PALETTE_RAM),
+		null, // This is owned by GameBoyAdvancePalette
 		new MemoryBlock(this.SIZE_VRAM),
 		new MemoryBlock(this.SIZE_OAM),
 		null,
