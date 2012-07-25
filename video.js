@@ -1,5 +1,6 @@
 var GameBoyAdvancePalette = function() {
-	this.palette = [ new Uint16Array(0x100), new Uint16Array(0x100) ];
+	this.rawPalette = [ new Uint16Array(0x100), new Uint16Array(0x100) ];
+	this.colors = [ new Array(0x100), new Array(0x100) ];
 };
 
 GameBoyAdvancePalette.prototype.loadU8 = function(offset) {
@@ -7,7 +8,7 @@ GameBoyAdvancePalette.prototype.loadU8 = function(offset) {
 };
 
 GameBoyAdvancePalette.prototype.loadU16 = function(offset) {
-	return this.palette[(offset & 0x200) >> 9][(offset & 0x1FF) >> 1];
+	return this.rawPalette[(offset & 0x200) >> 9][(offset & 0x1FF) >> 1];
 };
 
 GameBoyAdvancePalette.prototype.load16 = function(offset) {
@@ -15,12 +16,22 @@ GameBoyAdvancePalette.prototype.load16 = function(offset) {
 };
 
 GameBoyAdvancePalette.prototype.store16 = function(offset, value) {
-	this.palette[(offset & 0x200) >> 9][(offset & 0x1FF) >> 1] = value;
+	var type = (offset & 0x200) >> 9;
+	var index = (offset & 0x1FF) >> 1;
+	this.rawPalette[type][index] = value;
+	this.colors[type][index] = this.convert16To32(value);
 };
 
 GameBoyAdvancePalette.prototype.store32 = function(offset, value) {
 	this.store16(offset, value & 0xFFFF);
 	this.store16(offset + 2, value >> 16);
+};
+
+GameBoyAdvancePalette.prototype.convert16To32 = function(value) {
+	var r = (value & 0x001F) << 3;
+	var g = (value & 0x03E0) >> 2;
+	var b = (value & 0x7C00) >> 7;
+	return [ r, g, b ];
 };
 
 var GameBoyAdvanceVideo = function() {
