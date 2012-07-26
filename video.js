@@ -234,22 +234,23 @@ GameBoyAdvanceVideo.prototype.accessMap = function(base, x, y) {
 	};
 };
 
-GameBoyAdvanceVideo.prototype.accessTile = function(base, map, x, y) {
+GameBoyAdvanceVideo.prototype.accessTile = function(base, map, y) {
 	var offset = base | (map.tile << 5);
-	if (!map.hflip) {
-		offset |= x >> 1;
-	} else {
-		offset |= (7 - x) >> 1;
-	}
 	if (!map.vflip) {
 		offset |= y << 2;
 	} else {
 		offset |= (7 - y) << 2;
 	}
 
-	var pixel = this.cpu.mmu.loadU8(offset);
-	pixel >>= (x & 1) << 2;
-	pixel &= 0x0F;
+	return this.cpu.mmu.load32(offset);
+}
+
+GameBoyAdvanceVideo.prototype.pullPixel = function(map, row, x) {
+	if (map.hflip) {
+		x = 7 - x;
+	}
+
+	var pixel = (row >> (x << 2)) & 0xF;
 	// TODO: 256-color mode
 	return this.palette.colors[0][(map.palette << 4) | pixel];
 };
@@ -276,6 +277,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function() {
 	var charBase;
 	var screenBase;
 	var pixel;
+	var tileRow;
 
 	if (this.bg3) {
 		offset = y * 4 * this.HORIZONTAL_PIXELS;
@@ -286,12 +288,14 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function() {
 		screenBase = 0x06000000 | bg.screenBase;
 		charBase = 0x06000000 | bg.charBase;
 		map = this.accessMap(screenBase, xOff, localY);
+		tileRow = this.accessTile(charBase, map, localY & 0x7);
 		for (x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 			localX = x + xOff;
 			if (!(localX & 0x7)) {
 				map = this.accessMap(screenBase, localX, localY);
+				tileRow = this.accessTile(charBase, map, localY & 0x7);
 			}
-			pixel = this.accessTile(charBase, map, localX & 0x7, localY & 0x7);
+			pixel = this.pullPixel(map, tileRow, localX & 0x7);
 			this.pixelData.data[offset++] = pixel[0];
 			this.pixelData.data[offset++] = pixel[1];
 			this.pixelData.data[offset++] = pixel[2];
