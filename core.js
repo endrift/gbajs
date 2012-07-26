@@ -944,7 +944,11 @@ ARMCore.prototype.compileArm = function(instruction) {
 				case 0x00000000:
 					// MUL
 					op = function() {
-						// TODO: timings
+						cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						cpu.cycles += 4; // TODO: better timing
 						if ((cpu.gprs[rm] & 0xFFFF0000) && (cpu.gprs[rs] & 0xFFFF0000)) {
 							// Our data type is a double--we'll lose bits if we do it all at once!
 							var hi = ((cpu.gprs[rm] & 0xFFFF0000) * cpu.gprs[rs]) & 0xFFFFFFFF;
@@ -962,7 +966,11 @@ ARMCore.prototype.compileArm = function(instruction) {
 				case 0x00200000:
 					// MLA
 					op = function() {
-						// TODO: timings
+						cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						cpu.cycles += 5; // TODO: better timing
 						if ((cpu.gprs[rm] & 0xFFFF0000) && (cpu.gprs[rs] & 0xFFFF0000)) {
 							// Our data type is a double--we'll lose bits if we do it all at once!
 							var hi = ((cpu.gprs[rm] & 0xFFFF0000) * cpu.gprs[rs]) & 0xFFFFFFFF;
@@ -980,7 +988,11 @@ ARMCore.prototype.compileArm = function(instruction) {
 				case 0x00800000:
 					// UMULL
 					op = function() {
-						// TODO: timings
+						cpu.mmu.waitSeq32(cpu.gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						cpu.cycles += 5; // TODO: better timing
 						var hi = ((cpu.gprs[rm] & 0xFFFF0000) * cpu.gprs[rs]);
 						var lo = ((cpu.gprs[rm] & 0x0000FFFF) * cpu.gprs[rs]);
 						cpu.gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
