@@ -34,8 +34,9 @@ var GameBoyAdvance = function() {
 	this.mmu.mmap(this.mmu.REGION_PALETTE_RAM, this.video.palette);
 };
 
-GameBoyAdvance.prototype.setCanvas = function(video) {
-	this.video.setCanvas();
+GameBoyAdvance.prototype.setCanvas = function(canvas) {
+	this.context = canvas.getContext('2d');
+	this.video.setBacking(this.context);
 };
 
 GameBoyAdvance.prototype.reset = function() {

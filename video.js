@@ -107,10 +107,13 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 			dmy: 0
 		});
 	}
+
+	this.drawScanline = this.drawScanlineMode0;
 };
 
-GameBoyAdvanceVideo.prototype.setCanvas = function(canvas) {
-	this.canvas = canvas;
+GameBoyAdvanceVideo.prototype.setBacking = function(backing) {
+	this.pixelData = backing.createImageData(this.HORIZONTAL_PIXELS, this.VERTICAL_PIXELS);
+	this.context = backing;
 }
 
 GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
@@ -124,6 +127,8 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			switch (this.vcount) {
 			case this.VERTICAL_PIXELS:
 				this.inVblank = true;
+				this.drawScanline(); // Draw final scanline
+				this.finishDraw();
 				this.nextVblankIRQ = this.nextEvent + this.TOTAL_LENGTH;
 				this.cpu.mmu.runVblankDmas();
 				if (this.vblankIRQ) {
@@ -135,6 +140,11 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 				break;
 			case this.VERTICAL_TOTAL_PIXELS:
 				this.vcount = 0;
+				break;
+			default:
+				if (!this.inVblank) {
+					this.drawScanline();
+				}
 				break;
 			}
 			this.nextEvent = this.nextHblank;
@@ -167,6 +177,18 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 	this.win0 = value & 0x2000;
 	this.win1 = value & 0x4000;
 	this.objwin = value & 0x8000;
+
+	if (this.forcedBlank) {
+		this.drawScanline = this.drawScanlineBlank;
+	} else {
+		switch (this.backgroundMode) {
+		case 0:
+			this.drawScanline = this.drawScanlineMode0;
+			break;
+		default:
+			break;
+		}
+	}
 };
 
 GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
@@ -197,4 +219,87 @@ GameBoyAdvanceVideo.prototype.writeBackgroundHOffset = function(bg, value) {
 
 GameBoyAdvanceVideo.prototype.writeBackgroundVOffset = function(bg, value) {
 	this.bg[bg].y = value & 0x1FF;
+};
+
+GameBoyAdvanceVideo.prototype.accessMap = function(base, x, y) {
+	var offset = base | ((x >> 2) & 0x3E) | ((y << 3) & 0x7C0);
+	// TODO: precompute Y
+	// TODO: calculate size > 1
+	var mem = this.cpu.mmu.loadU16(offset);
+	return {
+		tile: mem & 0x03FF,
+		hflip: mem & 0x0400,
+		vflip: mem & 0x0800,
+		palette: (mem & 0xF000) >> 12
+	};
+};
+
+GameBoyAdvanceVideo.prototype.accessTile = function(base, map, x, y) {
+	var offset = base | (map.tile << 5);
+	if (!map.hflip) {
+		offset |= x >> 1;
+	} else {
+		offset |= (7 - x) >> 1;
+	}
+	if (!map.vflip) {
+		offset |= y << 2;
+	} else {
+		offset |= (7 - y) << 2;
+	}
+
+	var pixel = this.cpu.mmu.loadU8(offset);
+	pixel >>= (x & 1) << 2;
+	pixel &= 0x0F;
+	// TODO: 256-color mode
+	return this.palette.colors[0][(map.palette << 4) | pixel];
+};
+
+GameBoyAdvanceVideo.prototype.drawScanlineBlank = function() {
+	var offset = (this.vcount - 1) * 4 * this.HORIZONTAL_PIXELS;
+	for (var x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
+		this.pixelData.data[offset++] = 0xFF;
+		this.pixelData.data[offset++] = 0xFF;
+		this.pixelData.data[offset++] = 0xFF;
+		this.pixelData.data[offset++] = 0xFF;
+	}
+};
+
+GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function() {
+	var y = this.vcount - 1;
+	var x;
+	var localX;
+	var localY;
+	var xOff;
+	var yOff;
+	var bg;
+	var map;
+	var charBase;
+	var screenBase;
+	var pixel;
+
+	if (this.bg3) {
+		offset = y * 4 * this.HORIZONTAL_PIXELS;
+		bg = this.bg[3];
+		xOff = bg.x;
+		yOff = bg.y;
+		localY = y + yOff;
+		screenBase = 0x06000000 | bg.screenBase;
+		charBase = 0x06000000 | bg.charBase;
+		map = this.accessMap(screenBase, xOff, localY);
+		for (x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
+			localX = x + xOff;
+			if (!(localX & 0x7)) {
+				map = this.accessMap(screenBase, localX, localY);
+			}
+			pixel = this.accessTile(charBase, map, localX & 0x7, localY & 0x7);
+			this.pixelData.data[offset++] = pixel[0];
+			this.pixelData.data[offset++] = pixel[1];
+			this.pixelData.data[offset++] = pixel[2];
+			this.pixelData.data[offset++] = 0xFF;
+		}
+	}
+};
+
+GameBoyAdvanceVideo.prototype.finishDraw = function() {
+	this.context.putImageData(this.pixelData, 0, 0);
 };
