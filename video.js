@@ -265,6 +265,17 @@ GameBoyAdvanceVideo.prototype.drawScanlineBlank = function() {
 	}
 };
 
+GameBoyAdvanceVideo.prototype.drawScanlineBackdrop = function() {
+	var offset = (this.vcount - 1) * 4 * this.HORIZONTAL_PIXELS;
+	var bd = this.palette.colors[0][0];
+	for (var x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
+		this.pixelData.data[offset++] = bd[0];
+		this.pixelData.data[offset++] = bd[1];
+		this.pixelData.data[offset++] = bd[2];
+		offset++;
+	}
+};
+
 GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function() {
 	var y = this.vcount - 1;
 	var x;
@@ -279,6 +290,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function() {
 	var pixel;
 	var tileRow;
 
+	this.drawScanlineBackdrop();
 	if (this.bg3) {
 		offset = y * 4 * this.HORIZONTAL_PIXELS;
 		bg = this.bg[3];
@@ -299,7 +311,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function() {
 			this.pixelData.data[offset++] = pixel[0];
 			this.pixelData.data[offset++] = pixel[1];
 			this.pixelData.data[offset++] = pixel[2];
-			this.pixelData.data[offset++] = 0xFF;
+			offset++;
 		}
 	}
 };
