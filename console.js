@@ -152,6 +152,7 @@ Console.prototype.run = function() {
 	mem.setAttribute('class', 'disabled');
 	var self = this;
 	var instructions = 0;
+	var interval;
 	run = function() {
 		if (self.stillRunning) {
 			try {
@@ -167,21 +168,23 @@ Console.prototype.run = function() {
 					}
 				} else {
 					var base = self.cpu.cycles;
-					while (self.cpu.cycles - base < 280896 * 8) {
+					while (self.cpu.cycles - base < 280896) {
 						++instructions;
 						self.cpu.step();
 					}
 				}
-				setTimeout(run, 0);
 			} catch (exception) {
+				clearInterval(interval);
 				self.log("Exception hit after " + instructions + " instructions in " + (new Date().getTime() - start) + " milliseconds!");
 				self.log(exception);
 				self.pause();
 				throw exception;
 			}
+		} else {
+			clearInterval(interval);
 		}
 	}
-	setTimeout(run, 0);
+	setInterval(run, 1/60);
 }
 
 Console.prototype.runFrame = function() {
