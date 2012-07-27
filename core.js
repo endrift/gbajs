@@ -107,16 +107,17 @@ ARMCore.prototype.setLogger = function(logger) {
 
 ARMCore.prototype.fetchPage = function(address) {
 	var pageId = address >> this.mmu.ICACHE_PAGE_BITS;
-	if (pageId != this.pageId) {
-		this.pageId = pageId;
-		this.page = this.mmu.icache[pageId];
-		if (!this.page) {
-			this.page = {
-				thumb: new Array(1 << (this.mmu.ICACHE_PAGE_BITS)),
-				arm: new Array(1 << this.mmu.ICACHE_PAGE_BITS - 1)
-			}
-			this.mmu.icache[pageId] = this.page;
+	if (pageId == this.pageId) {
+		return;
+	}
+	this.pageId = pageId;
+	this.page = this.mmu.icache[pageId];
+	if (!this.page) {
+		this.page = {
+			thumb: new Array(1 << (this.mmu.ICACHE_PAGE_BITS)),
+			arm: new Array(1 << this.mmu.ICACHE_PAGE_BITS - 1)
 		}
+		this.mmu.icache[pageId] = this.page;
 	}
 };
 
@@ -154,7 +155,9 @@ ARMCore.prototype.step = function() {
 	this.conditionPassed = true;
 	instruction();
 
-	if (instruction.writesPC && this.conditionPassed) {
+	if (!instruction.writesPC) {
+		this.irq.updateTimers();
+	} else if (this.conditionPassed) {
 		var pc = this.gprs[this.PC] &= 0xFFFFFFFE;
 		// TODO: move execution mode switching to a function
 		if (this.execMode == this.MODE_ARM) {
@@ -169,8 +172,10 @@ ARMCore.prototype.step = function() {
 			this.mmu.waitSeq(pc);
 		}
 		this.gprs[this.PC] += this.instructionWidth;
+		this.irq.updateTimers();
+	} else {
+		this.irq.updateTimers();
 	}
-	this.irq.updateTimers();
 };
 
 ARMCore.prototype.selectBank = function(mode) {
