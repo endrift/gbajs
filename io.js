@@ -169,6 +169,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DISPCNT:
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
+	case this.BLDCNT:
 	case this.TM0CNT_HI:
 	case this.TM1CNT_HI:
 	case this.TM2CNT_HI:
@@ -292,7 +293,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.BLDCNT:
 		value &= 0x4FFF;
-		this.cpu.log('Unimplemented video register write: 0x' + offset.toString(16));
+		this.video.writeBlendControl(value);
 		break;
 	case this.BLDALPHA:
 		value &= 0x1F1F;
@@ -300,7 +301,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.BLDY:
 		value &= 0x001F;
-		this.cpu.log('Unimplemented video register write: 0x' + offset.toString(16));
+		this.video.writeBlendY(value);
 		break;
 
 	// Sound
