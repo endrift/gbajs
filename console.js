@@ -12,6 +12,7 @@ function hex(number, leading, usePrefix) {
 
 Console = function(gba) {
 	this.cpu = gba.cpu;
+	this.gba = gba;
 	this.ul = document.getElementById('console');
 	this.gprs = document.getElementById('gprs');
 	this.memory = new Memory(gba.mmu);
@@ -131,6 +132,7 @@ Console.prototype.runVisible = function() {
 				self.flushLog();
 				setTimeout(run, 0);
 			} catch (exception) {
+				self.log(exception);
 				self.pause();
 				throw exception;
 			}
@@ -158,7 +160,7 @@ Console.prototype.run = function() {
 			try {
 				if (self.breakpoints.length) {
 					var base = self.cpu.cycles;
-					while (self.cpu.cycles - base < 280896 * 8) {
+					while (self.cpu.cycles - base < 280896) {
 						++instructions;
 						self.cpu.step();
 						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
@@ -175,7 +177,8 @@ Console.prototype.run = function() {
 				}
 			} catch (exception) {
 				clearInterval(interval);
-				self.log("Exception hit after " + instructions + " instructions in " + (new Date().getTime() - start) + " milliseconds!");
+				var time = (new Date().getTime() - start);
+				self.log("Exception hit after " + instructions + " instructions in " +  time + " milliseconds! (" + Math.floor(self.cpu.cycles / time * 100000 / self.gba.irq.FREQUENCY) + "% speed)");
 				self.log(exception);
 				self.pause();
 				throw exception;
@@ -184,7 +187,7 @@ Console.prototype.run = function() {
 			clearInterval(interval);
 		}
 	}
-	setInterval(run, 1/60);
+	setInterval(run, 1000/60);
 }
 
 Console.prototype.runFrame = function() {
@@ -222,7 +225,6 @@ Console.prototype.runFrame = function() {
 					}
 				}
 			} catch (exception) {
-				self.log("Exception hit after " + instructions + " instructions in " + (new Date().getTime() - start) + " milliseconds!");
 				self.log(exception);
 				throw exception;
 			} finally {
