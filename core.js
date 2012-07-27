@@ -111,7 +111,11 @@ ARMCore.prototype.fetchPage = function(address) {
 		this.pageId = pageId;
 		this.page = this.mmu.icache[pageId];
 		if (!this.page) {
-			this.mmu.icache[pageId] = this.page = new Array(1 << this.mmu.ICACHE_PAGE_BITS);
+			this.page = {
+				thumb: new Array(1 << (this.mmu.ICACHE_PAGE_BITS)),
+				arm: new Array(1 << this.mmu.ICACHE_PAGE_BITS - 1)
+			}
+			this.mmu.icache[pageId] = this.page;
 		}
 	}
 };
@@ -119,13 +123,14 @@ ARMCore.prototype.fetchPage = function(address) {
 ARMCore.prototype.loadInstructionArm = function(address) {
 	var next = null;
 	this.fetchPage(address);
-	var offset = (address & this.mmu.PAGE_MASK) >> 1;
-	next = this.page[offset];
-	if (!next || next.execMode != this.MODE_ARM) {
-		var instruction = this.mmu.load32(address) >>> 0;
-		next = this.compileArm(instruction);
-		this.page[offset] = next;
+	var offset = (address & this.mmu.PAGE_MASK) >> 2;
+	next = this.page.arm[offset];
+	if (next) {
+		return next;
 	}
+	var instruction = this.mmu.load32(address) >>> 0;
+	next = this.compileArm(instruction);
+	this.page.arm[offset] = next;
 	return next;
 };
 
@@ -133,12 +138,13 @@ ARMCore.prototype.loadInstructionThumb = function(address) {
 	var next = null;
 	this.fetchPage(address);
 	var offset = (address & this.mmu.PAGE_MASK) >> 1;
-	next = this.page[offset];
-	if (!next || next.execMode != this.MODE_THUMB) {
-		var instruction = this.mmu.load16(address);
-		next = this.compileThumb(instruction);
-		this.page[offset] = next;
+	next = this.page.thumb[offset];
+	if (next) {
+		return next;
 	}
+	var instruction = this.mmu.load16(address);
+	next = this.compileThumb(instruction);
+	this.page.thumb[offset] = next;
 	return next;
 }; 
 
