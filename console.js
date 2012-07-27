@@ -184,6 +184,52 @@ Console.prototype.run = function() {
 	setTimeout(run, 0);
 }
 
+Console.prototype.runFrame = function() {
+	if (this.stillRunning) {
+		return;
+	}
+
+	this.stillRunning = true;
+	var regs = document.getElementById('registers');
+	var mem = document.getElementById('memory');
+	var start = new Date().getTime();
+	regs.setAttribute('class', 'disabled');
+	mem.setAttribute('class', 'disabled');
+	var self = this;
+	var instructions = 0;
+	run = function() {
+		if (self.stillRunning) {
+			try {
+				if (self.breakpoints.length) {
+					var base = self.cpu.cycles;
+					base -= (base % 280896);
+					while (self.cpu.cycles - base < 280896) {
+						++instructions;
+						self.cpu.step();
+						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
+							self.breakpointHit();
+							return;
+						}
+					}
+				} else {
+					var base = self.cpu.cycles;
+					while (self.cpu.cycles - base < 280896) {
+						++instructions;
+						self.cpu.step();
+					}
+				}
+			} catch (exception) {
+				self.log("Exception hit after " + instructions + " instructions in " + (new Date().getTime() - start) + " milliseconds!");
+				self.log(exception);
+				throw exception;
+			} finally {
+				self.pause();
+			}
+		}
+	}
+	setTimeout(run, 0);
+}
+
 Console.prototype.pause = function() {
 	this.stillRunning = false;
 	var regs = document.getElementById('registers');
