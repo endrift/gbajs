@@ -2291,9 +2291,12 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			if (cond == 0xF) {
 				// SWI
 				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					// Additional +1S+1N handled in BIOS
 					cpu.irq.swi(immediate);
+					cpu.mmu.waitSeq(gprs[cpu.PC]);
+					// Wait on BIOS
+					// FIXME: Is this correct?
+					cpu.mmu.wait32(0);
+					cpu.mmu.waitSeq32(0);
 				}
 				op.writesPC = false;
 			} else {
