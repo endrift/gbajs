@@ -99,6 +99,8 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 
 	this.page = null;
 	this.pageId = 0;
+
+	this.instruction;
 };
 
 ARMCore.prototype.setLogger = function(logger) {
@@ -145,37 +147,42 @@ ARMCore.prototype.loadInstructionThumb = function(address) {
 	}
 	var instruction = this.mmu.load16(address);
 	next = this.compileThumb(instruction);
+	next.next = null;
 	this.page.thumb[offset] = next;
 	return next;
 }; 
 
 ARMCore.prototype.step = function() {
-	var instruction = this.loadInstruction(this.gprs[this.PC] - this.instructionWidth);
+	var instruction;
+	if (this.instruction) {
+		instruction = this.instruction;
+	} else {
+		instruction = this.loadInstruction(this.gprs[this.PC] - this.instructionWidth);
+	}
 	this.gprs[this.PC] += this.instructionWidth;
 	this.conditionPassed = true;
 	instruction();
 
 	if (!instruction.writesPC) {
-		this.irq.updateTimers();
-	} else if (this.conditionPassed) {
-		var pc = this.gprs[this.PC] &= 0xFFFFFFFE;
-		// TODO: move execution mode switching to a function
-		if (this.execMode == this.MODE_ARM) {
-			this.instructionWidth = this.WORD_SIZE_ARM;
-			this.loadInstruction = this.loadInstructionArm;
-			this.mmu.wait32(pc);
-			this.mmu.waitSeq32(pc);
-		} else {
-			this.instructionWidth = this.WORD_SIZE_THUMB;
-			this.loadInstruction = this.loadInstructionThumb;
-			this.mmu.wait(pc);
-			this.mmu.waitSeq(pc);
+		if (!instruction.next) {
+			instruction.next = this.loadInstruction(this.gprs[this.PC] - this.instructionWidth);
 		}
-		this.gprs[this.PC] += this.instructionWidth;
-		this.irq.updateTimers();
+		this.instruction = instruction.next;
 	} else {
-		this.irq.updateTimers();
+		this.instruction = null;
+		if (this.conditionPassed) {
+			var pc = this.gprs[this.PC] &= 0xFFFFFFFE;
+			if (this.execMode == this.MODE_ARM) {
+				this.mmu.wait32(pc);
+				this.mmu.waitSeq32(pc);
+			} else {
+				this.mmu.wait(pc);
+				this.mmu.waitSeq(pc);
+			}
+			this.gprs[this.PC] += this.instructionWidth;
+		}
 	}
+	this.irq.updateTimers();
 };
 
 ARMCore.prototype.selectBank = function(mode) {
@@ -197,6 +204,20 @@ ARMCore.prototype.selectBank = function(mode) {
 	default:
 		throw "Invalid user mode passed to selectBank";
 	}
+};
+
+ARMCore.prototype.switchExecMode = function(newMode) {
+	if (this.execMode != newMode) {
+		this.execMode = newMode;
+		if (newMode == this.MODE_ARM) {
+			this.instructionWidth = this.WORD_SIZE_ARM;
+			this.loadInstruction = this.loadInstructionArm;
+		} else {
+			this.instructionWidth = this.WORD_SIZE_THUMB;
+			this.loadInstruction = this.loadInstructionThumb;
+		}
+	}
+	
 };
 
 ARMCore.prototype.switchMode = function(newMode) {
@@ -232,7 +253,7 @@ ARMCore.prototype.packCPSR = function() {
 
 ARMCore.prototype.unpackCPSR = function(spsr) {
 	this.switchMode(spsr & 0x0000001F);
-	this.execMode = !!(spsr & 0x00000020);
+	this.switchExecMode(!!(spsr & 0x00000020));
 	this.cpsrF = spsr & 0x00000040;
 	this.cpsrI = spsr & 0x00000080;
 	this.cpsrN = spsr & 0x80000000;
@@ -256,8 +277,9 @@ ARMCore.prototype.raiseIRQ = function() {
 	this.spsr = cpsr;
 	this.gprs[this.LR] = this.gprs[this.PC] + this.instructionWidth;
 	this.gprs[this.PC] = this.BASE_IRQ + this.WORD_SIZE_ARM;
+	this.instruction = null;
 
-	this.execMode = this.MODE_ARM;
+	this.switchExecMode(this.MODE_ARM);
 	this.loadInstruction = this.loadInstructionArm;
 	this.instructionWidth = this.WORD_SIZE_ARM;
 
@@ -368,7 +390,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				cpu.mmu.waitSeq32(gprs[cpu.PC]);
 				return;
 			}
-			cpu.execMode = gprs[rm] & 0x00000001;
+			cpu.switchExecMode(gprs[rm] & 0x00000001);
 			gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			cpu.mmu.wait32(gprs[cpu.PC]);
@@ -1741,7 +1763,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// BX
 			op = function() {
 				// TODO: implement timings
-				cpu.execMode = gprs[rm] & 0x00000001;
+				cpu.switchExecMode(gprs[rm] & 0x00000001);
 				gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
 			};
 			op.writesPC = true;
@@ -2313,7 +2335,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					var pc = gprs[cpu.PC];
 					gprs[cpu.PC] = (gprs[cpu.LR] + (immediate << 1)) & 0xFFFFFFFC;
 					gprs[cpu.LR] = pc - 1;
-					cpu.execMode = cpu.MODE_ARM;
+					cpu.switchExecMode(cpu.MODE_ARM);
 				}*/
 				break;
 			case 0x1000:
