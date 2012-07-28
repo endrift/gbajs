@@ -18,6 +18,12 @@ var GameBoyAdvancePalette = function() {
 		this.colors[0] // Backdrop
 	];
 
+	var i;
+	for (i = 0; i < 255; ++i) {
+		this.colors[0][i] = [ 0, 0, 0 ];
+		this.colors[1][i] = [ 0, 0, 0 ];
+	}
+
 	this.blendY = 1;
 };
 
