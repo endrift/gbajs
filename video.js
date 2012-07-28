@@ -11,11 +11,11 @@ var GameBoyAdvancePalette = function() {
 	this.adjustedColors = [ new Array(0x100), new Array(0x100) ];
 	this.passthroughColors = [
 		this.colors[0], // BG0
-		this.colors[1], // BG1
-		this.colors[2], // BG2
-		this.colors[3], // BG3
-		this.colors[4], // OBJ
-		this.colors[5] // Backdrop
+		this.colors[0], // BG1
+		this.colors[0], // BG2
+		this.colors[0], // BG3
+		this.colors[1], // OBJ
+		this.colors[0] // Backdrop
 	];
 
 	this.blendY = 1;
