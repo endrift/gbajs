@@ -19,9 +19,11 @@ var GameBoyAdvancePalette = function() {
 	];
 
 	var i;
-	for (i = 0; i < 255; ++i) {
+	for (i = 0; i < 256; ++i) {
 		this.colors[0][i] = [ 0, 0, 0 ];
 		this.colors[1][i] = [ 0, 0, 0 ];
+		this.adjustedColors[0][i] = [ 0, 0, 0 ];
+		this.adjustedColors[1][i] = [ 0, 0, 0 ];
 	}
 
 	this.blendY = 1;
@@ -43,8 +45,8 @@ GameBoyAdvancePalette.prototype.store16 = function(offset, value) {
 	var type = (offset & 0x200) >> 9;
 	var index = (offset & 0x1FF) >> 1;
 	this.rawPalette[type][index] = value;
-	this.colors[type][index] = this.convert16To32(value);
-	this.adjustedColors[type][index] = this.adjustColor(value);
+	this.convert16To32(value, this.colors[type][index]);
+	this.adjustColor(value, this.adjustedColors[type][index]);
 };
 
 GameBoyAdvancePalette.prototype.store32 = function(offset, value) {
@@ -52,11 +54,14 @@ GameBoyAdvancePalette.prototype.store32 = function(offset, value) {
 	this.store16(offset + 2, value >> 16);
 };
 
-GameBoyAdvancePalette.prototype.convert16To32 = function(value) {
+GameBoyAdvancePalette.prototype.convert16To32 = function(value, array) {
 	var r = (value & 0x001F) << 3;
 	var g = (value & 0x03E0) >> 2;
 	var b = (value & 0x7C00) >> 7;
-	return [ r, g, b ];
+
+	array[0] = r;
+	array[1] = g;
+	array[2] = b;
 };
 
 GameBoyAdvancePalette.prototype.makeDarkPalettes = function(layers) {
@@ -118,13 +123,13 @@ GameBoyAdvancePalette.prototype.resetPalettes = function() {
 	var outPalette = this.adjustedColors[0];
 	var inPalette = this.rawPalette[0];
 	for (i = 0; i < 256; ++i) {
-		outPalette[i] = this.adjustColor(inPalette[i]);
+		this.adjustColor(inPalette[i], outPalette[i]);
 	}
 
 	outPalette = this.adjustedColors[1];
 	inPalette = this.rawPalette[1];
 	for (i = 0; i < 256; ++i) {
-		outPalette[i] = this.adjustColor(inPalette[i]);
+		this.adjustColor(inPalette[i], outPalette[i]);
 	}
 }
 
@@ -132,7 +137,7 @@ GameBoyAdvancePalette.prototype.accessColor = function(layer, index) {
 	return this.passthroughColors[layer][index];
 };
 
-GameBoyAdvancePalette.prototype.adjustColorDark = function(color) {
+GameBoyAdvancePalette.prototype.adjustColorDark = function(color, array) {
 	var r = (color & 0x001F);
 	var g = (color & 0x03E0) >> 5;
 	var b = (color & 0x7C00) >> 10;
@@ -141,10 +146,12 @@ GameBoyAdvancePalette.prototype.adjustColorDark = function(color) {
 	g = g - (g * this.blendY);
 	b = b - (b * this.blendY);
 
-	return [ r << 3, g << 3, b << 3 ];
+	array[0] = r << 3;
+	array[1] = g << 3;
+	array[2] = b << 3;
 };
 
-GameBoyAdvancePalette.prototype.adjustColorBright = function(color) {
+GameBoyAdvancePalette.prototype.adjustColorBright = function(color, array) {
 	var r = (color & 0x001F);
 	var g = (color & 0x03E0) >> 5;
 	var b = (color & 0x7C00) >> 10;
@@ -153,7 +160,9 @@ GameBoyAdvancePalette.prototype.adjustColorBright = function(color) {
 	g = g + ((31 - g) * this.blendY);
 	b = b + ((31 - b) * this.blendY);
 
-	return [ r << 3, g << 3, b << 3 ];
+	array[0] = r << 3;
+	array[1] = g << 3;
+	array[2] = b << 3;
 };
 
 GameBoyAdvancePalette.prototype.adjustColor = GameBoyAdvancePalette.prototype.convert16To32;
