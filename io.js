@@ -101,6 +101,10 @@ var GameBoyAdvanceIO = function() {
 	this.TM3CNT_LO = 0x10C;
 	this.TM3CNT_HI = 0x10E;
 
+	// SIO
+	this.RCNT = 0x134;
+	this.SIOCNT = 0x128;
+
 	// Keypad
 	this.KEYINPUT = 0x130;
 	this.KEYCNT = 0x132;
@@ -411,6 +415,14 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.TM3CNT_HI:
 		value &= 0x00C7
 		this.cpu.irq.timerWriteControl(3, value);
+		break;
+
+	// SIO
+	case this.RCNT:
+		this.cpu.log('Unimplemented RCNT write: 0x' + value.toString(16));
+		break;
+	case this.SIOCNT:
+		this.cpu.log('Unimplemented SIOCNT write: 0x' + value.toString(16));
 		break;
 
 	// Misc
