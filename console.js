@@ -261,6 +261,10 @@ Console.prototype.addBreakpoint = function(addr) {
 		var cb = document.createElement('input');
 		cb.setAttribute('type', 'checkbox');
 		cb.setAttribute('checked', 'checked');
+		var self = this;
+		cb.addEventListener('click', function() {
+			self.breakpoints[addr] = cb.checked;
+		}, false);
 		bpLi.appendChild(cb);
 		bpLi.appendChild(document.createTextNode(hex(addr)));
 		document.getElementById('breakpointView').appendChild(bpLi);
