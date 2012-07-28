@@ -167,6 +167,23 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			throw "Waiting on interrupt forever.";
 		}
 		break;
+	case 0x05:
+		// VBlankIntrWait
+		this.cpu.gprs[0] = 1;
+		this.cpu.gprs[1] = 1;
+		// Fall through:
+	case 0x04:
+		// IntrWait
+		if (!this.enable) {
+			this.io.store16(this.io.IME, 1);
+		}
+		if (!this.cpu.gprs[0] && this.enabledIRQs & this.cpu.gprs[1]) {
+			return;
+		}
+		var ie = this.io.loadU16(this.io.IE);
+		this.waitForIRQ();
+		this.io.store16(this.io.IE, ie);
+		break;
 	case 0x0B:
 		// CpuSet
 		var source = this.cpu.gprs[0];
