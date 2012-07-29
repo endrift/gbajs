@@ -180,7 +180,7 @@ Console.prototype.run = function() {
 				if (exception.stack) {
 					var lines = exception.stack.split(/\n/);
 					for (var i = 0; i < lines.length; ++i) {
-						self.log(lines);
+						self.log(lines[i]);
 					}
 				}
 				self.pause();
