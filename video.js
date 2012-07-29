@@ -65,15 +65,19 @@ GameBoyAdvancePalette.prototype.convert16To32 = function(value, array) {
 };
 
 GameBoyAdvancePalette.prototype.makeDarkPalettes = function(layers) {
-	this.adjustColor = this.adjustColorDark;
+	if (this.adjustColor != this.adjustColorDark) {
+		this.adjustColor = this.adjustColorDark;
+		this.resetPalettes();
+	}
 	this.resetPaletteLayers(layers);
-	this.resetPalettes();
 };
 
 GameBoyAdvancePalette.prototype.makeBrightPalettes = function(layers) {
-	this.adjustColor = this.adjustColorDark;
+	if (this.adjustColor != this.adjustColorBright) {
+		this.adjustColor = this.adjustColorBright;
+		this.resetPalettes();
+	}
 	this.resetPaletteLayers(layers);
-	this.resetPalettes();
 };
 
 GameBoyAdvancePalette.prototype.makeNormalPalettes = function() {
@@ -168,8 +172,10 @@ GameBoyAdvancePalette.prototype.adjustColorBright = function(color, array) {
 GameBoyAdvancePalette.prototype.adjustColor = GameBoyAdvancePalette.prototype.convert16To32;
 
 GameBoyAdvancePalette.prototype.setBlendY = function(y) {
-	this.blendY = y;
-	this.resetPalettes();
+	if (this.blendY != y) {
+		this.blendY = y;
+		this.resetPalettes();
+	}
 };
 
 var GameBoyAdvanceVideo = function() {
