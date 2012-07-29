@@ -451,10 +451,13 @@ GameBoyAdvanceVideo.prototype.layerComparator = function(a, b) {
 	return diff;
 };
 
-GameBoyAdvanceVideo.prototype.accessMap = function(base, x, y) {
-	var offset = base | ((x >> 2) & 0x3E) | ((y << 3) & 0x7C0);
-	// TODO: precompute Y
-	// TODO: calculate size > 1
+GameBoyAdvanceVideo.prototype.accessMap = function(base, size, x, yBase) {
+	var offset = base | ((x >> 2) & 0x3E) | yBase;
+
+	if (size & 1) {
+		offset += (x & 0x100) << 3;
+	}
+
 	var mem = this.cpu.mmu.loadU16(offset);
 	return {
 		tile: mem & 0x03FF,
@@ -525,12 +528,22 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	var localY = y + yOff;
 	var screenBase = 0x06000000 | bg.screenBase;
 	var charBase = 0x06000000 | bg.charBase;
-	var map = this.accessMap(screenBase, xOff, localY);
+	var size = bg.size;
+
+	var yBase = (localY << 3) & 0x7C0;
+	if (size == 2) {
+		yBase += (y << 3) & 0x800;
+	}
+	if (size == 3) {
+		offset += (y << 4) & 0x1000;
+	}
+
+	var map = this.accessMap(screenBase, size, xOff, yBase);
 	var tileRow = this.accessTile(charBase, map, localY & 0x7);
 	for (x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 		localX = x + xOff;
 		if (!(localX & 0x7)) {
-			map = this.accessMap(screenBase, localX, localY);
+			map = this.accessMap(screenBase, size, localX, yBase);
 			tileRow = this.accessTile(charBase, map, localY & 0x7);
 		}
 		this.pushPixel(3, map, tileRow, localX & 0x7, offset);
