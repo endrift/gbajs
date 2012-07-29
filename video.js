@@ -1,5 +1,5 @@
 function GameBoyAdvanceVRAM(size) {
-	this.vram = new Uint16Array(size);
+	this.vram = new Uint16Array(size >> 1);
 };
 
 GameBoyAdvanceVRAM.prototype.loadU8 = function(offset, value) {
