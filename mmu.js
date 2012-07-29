@@ -1,4 +1,4 @@
-var MemoryView = function(memory, offset) {
+function MemoryView(memory, offset) {
 	this.buffer = memory;
 	this.view = new DataView(this.buffer, !!offset);
 };
@@ -35,7 +35,7 @@ MemoryView.prototype.store32 = function(offset, value) {
 	this.view.setInt32(offset, value, true);
 };
 
-var MemoryBlock = function(size) {
+function MemoryBlock(size) {
 	MemoryView.call(this, new ArrayBuffer(size));
 };
 
@@ -57,7 +57,7 @@ ROMView.prototype.storeU16 = function(offset, value) {};
 
 ROMView.prototype.store32 = function(offset, value) {};
 
-var BIOSView = function(rom, offset) {
+function BIOSView(rom, offset) {
 	MemoryView.call(this, rom, offset);
 };
 
@@ -98,7 +98,7 @@ BIOSView.prototype.load32 = function(offset) {
 	return this.view.getInt32(offset, true);
 };
 
-var GameBoyAdvanceMMU = function() {
+function GameBoyAdvanceMMU() {
 	this.REGION_BIOS = 0x0;
 	this.REGION_WORKING_RAM = 0x2;
 	this.REGION_WORKING_IRAM = 0x3;

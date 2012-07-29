@@ -1,4 +1,4 @@
-var GameBoyAdvancePalette = function() {
+function GameBoyAdvancePalette() {
 	this.LAYER_BG0 = 0;
 	this.LAYER_BG1 = 1;
 	this.LAYER_BG2 = 2;
@@ -178,7 +178,7 @@ GameBoyAdvancePalette.prototype.setBlendY = function(y) {
 	}
 };
 
-var GameBoyAdvanceVideo = function() {
+function GameBoyAdvanceVideo() {
 	this.CYCLES_PER_PIXEL = 4;
 
 	this.HORIZONTAL_PIXELS = 240;

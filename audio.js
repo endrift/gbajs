@@ -1,4 +1,4 @@
-var GameBoyAdvanceAudio = function() {
+function GameBoyAdvanceAudio() {
 };
 
 GameBoyAdvanceAudio.prototype.clear = function() {

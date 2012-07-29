@@ -10,7 +10,7 @@ function hex(number, leading, usePrefix) {
 	return (usePrefix ? '0x' : '')  + new Array(leading + 1).join('0') + string;
 }
 
-Console = function(gba) {
+function Console(gba) {
 	this.cpu = gba.cpu;
 	this.gba = gba;
 	this.ul = document.getElementById('console');

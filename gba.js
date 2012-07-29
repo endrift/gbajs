@@ -1,4 +1,4 @@
-var GameBoyAdvance = function() {
+function GameBoyAdvance() {
 	this.cpu = new ARMCore();
 	this.mmu = new GameBoyAdvanceMMU()
 	this.irq = new GameBoyAdvanceInterruptHandler();
