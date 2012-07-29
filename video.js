@@ -304,7 +304,8 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 			dx: 0,
 			dmx: 0,
 			dy: 0,
-			dmy: 0
+			dmy: 0,
+			pushPixel: this.pushPixelOpaque
 		});
 	}
 
@@ -451,15 +452,28 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 	this.target2[5] = value & 0x2000;
 	this.blendMode = (value & 0x00C0) >> 6;
 
+	var i;
+	for (i = 0; i < 4; ++i) {
+		this.bg[i].pushPixel = this.pushPixelOpaque;
+	}
 	switch (this.blendMode) {
-	case 0:
 	case 1:
+		// Alpha
+		for (i = 0; i < 4; ++i) {
+			if (this.target1[i]) {
+				this.bg[i].pushPixel = this.pushPixelBlend;
+			}
+		}
+	case 0:
+		// Normal
 		this.palette.makeNormalPalettes()
 		break;
 	case 2:
+		// Brighter
 		this.palette.makeBrightPalettes(value & 0x3F);
 		break;
 	case 3:
+		// Darker
 		this.palette.makeDarkPalettes(value & 0x3F);
 		break;
 	}
@@ -533,7 +547,7 @@ GameBoyAdvanceVideo.prototype.accessTile = function(base, map, y) {
 	return this.vram.load32(offset);
 }
 
-GameBoyAdvanceVideo.prototype.pushPixel = function(layer, map, row, x, offset, backing) {
+GameBoyAdvanceVideo.prototype.pushPixelOpaque = function(layer, map, row, x, offset, backing) {
 	if (map.hflip) {
 		x = 7 - x;
 	}
@@ -542,17 +556,26 @@ GameBoyAdvanceVideo.prototype.pushPixel = function(layer, map, row, x, offset, b
 	// Index 0 is transparent
 	if (index) {
 		var pixel = this.palette.accessColor(layer, map.palette | index);
-		if (this.blendMode != 1 || !this.target1[layer]) {
-			// TODO: 256-color mode
-			backing.data[offset] = pixel[0];
-			backing.data[offset + 1] = pixel[1];
-			backing.data[offset + 2] = pixel[2];
-		} else {
-			// TODO: better detect which layer is below us
-			backing.data[offset] = backing.data[offset] * this.blendB + pixel[0] * this.blendA;
-			backing.data[offset + 1] = backing.data[offset + 1] * this.blendB + pixel[1] * this.blendA;
-			backing.data[offset + 2] = backing.data[offset + 2] * this.blendB + pixel[2] * this.blendA;
-		}
+		// TODO: 256-color mode
+		backing.data[offset] = pixel[0];
+		backing.data[offset + 1] = pixel[1];
+		backing.data[offset + 2] = pixel[2];
+	}
+};
+
+GameBoyAdvanceVideo.prototype.pushPixelBlend = function(layer, map, row, x, offset, backing) {
+	if (map.hflip) {
+		x = 7 - x;
+	}
+
+	var index = (row >> (x << 2)) & 0xF;
+	// Index 0 is transparent
+	if (index) {
+		var pixel = this.palette.accessColor(layer, map.palette | index);
+		// TODO: better detect which layer is below us
+		backing.data[offset] = backing.data[offset] * this.blendB + pixel[0] * this.blendA;
+		backing.data[offset + 1] = backing.data[offset + 1] * this.blendB + pixel[1] * this.blendA;
+		backing.data[offset + 2] = backing.data[offset + 2] * this.blendB + pixel[2] * this.blendA;
 	}
 };
 
@@ -593,6 +616,8 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	var screenBase = bg.screenBase;
 	var charBase = bg.charBase;
 	var size = bg.size;
+	this.pushPixel = bg.pushPixel;
+	var index = bg.index;
 
 	var yBase = (localY << 3) & 0x7C0;
 	if (size == 2) {
@@ -610,7 +635,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 			map = this.accessMap(screenBase, size, localX, yBase);
 			tileRow = this.accessTile(charBase, map, localYLo);
 		}
-		this.pushPixel(bg.index, map, tileRow, localX & 0x7, offset, this.pixelData);
+		this.pushPixel(index, map, tileRow, localX & 0x7, offset, this.pixelData);
 		offset += 4;
 	}
 };
