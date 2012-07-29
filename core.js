@@ -1822,7 +1822,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// MOV(2)
 				op = function() {
 					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					var d = (gprs[rn] >>> 0);
+					var d = gprs[rn];
 					cpu.cpsrN = d & 0x80000000;
 					cpu.cpsrZ = !(d & 0xFFFFFFFF);
 					cpu.cpsrC = 0;
