@@ -50,7 +50,7 @@ function GameBoyAdvanceOAM(size) {
 	this.oam = this.buffer;
 	this.objs = new Array(128);
 	for (var i = 0; i < 128; ++i) {
-		this.objs[i] = new GameBoyAdvanceOBJ();
+		this.objs[i] = new GameBoyAdvanceOBJ(i);
 	}
 };
 
@@ -61,6 +61,7 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 	var obj = this.objs[index];
 	var layer = obj.priority;
 	var disable = obj.disable;
+	var y = obj.y;
 	switch (offset & 0x00000006) {
 	case 0:
 		// Attribute 0
@@ -83,11 +84,11 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.shape = value & 0xC000;
 
 		if (disable && !obj.disable) {
-			//this.video.objLayers[layer].insert(obj);
+			this.video.objLayers[layer].insert(obj);
 		} else if (!disable && obj.disable) {
-			//this.video.objLayers[layer].remove(obj);
-		} else {
-			//this.video.objLayers[layer].sort();
+			this.video.objLayers[layer].remove(obj);
+		} else if (y != obj.y) {
+			this.video.objLayers[layer].moved(obj);
 		}
 		break;
 	case 2:
@@ -109,8 +110,8 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.priority = (value & 0x0C00) >> 10;
 		obj.palette = (value & 0xF000) >> 12;
 		if (layer != obj.priority) {
-			//this.video.objLayers[layer].remove(obj);
-			//this.video.objLayers[obj.priority].remove(obj);
+			this.video.objLayers[layer].remove(obj);
+			this.video.objLayers[obj.priority].insert(obj);
 		}
 		break;
 	case 6:
@@ -302,7 +303,8 @@ GameBoyAdvancePalette.prototype.setBlendY = function(y) {
 	}
 };
 
-function GameBoyAdvanceOBJ() {
+function GameBoyAdvanceOBJ(index) {
+	this.index = index;
 	this.x = 0;
 	this.y = 0;
 	this.scalerot = 0;
@@ -321,14 +323,20 @@ function GameBoyAdvanceOBJ() {
 	this.drawScanline = this.drawScanlineNormal;
 };
 
-GameBoyAdvanceOBJLayer.prototype.drawScanlineNormal = function(video, y) {
+GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(video, y) {
 	// TODO
+};
+
+GameBoyAdvanceOBJ.prototype.height = function() {
+	// TODO
+	return 8;
 };
 
 function GameBoyAdvanceOBJLayer(i) {
 	this.bg = false;
 	this.index = i;
 	this.scanlines = new Array();
+	// FIXME: is this scanline optimization even necessary?
 	for (var j = 0; j < 160; ++j) {
 		this.scanlines.push(new Array());
 	}
@@ -341,6 +349,53 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(video) {
 	for (var i = objs.length; i--;) {
 		objs[i].drawScanline(video, y);
 	}
+};
+
+GameBoyAdvanceOBJLayer.prototype.insert = function(obj) {
+	var y = obj.y;
+	var height = obj.height() + y;
+	for (; y < height && y < 160; ++y) {
+		this.scanlines[y].push(obj);
+		this.scanlines[y].sort(this.objComparator);
+	}
+};
+
+GameBoyAdvanceOBJLayer.prototype.remove = function(obj) {
+	for (var y = 0; y < 160; ++y) {
+		var scanline = this.scanlines[y];
+		for (var i = 0; i < scanline.length; ++i) {
+			if (scanline[i] === obj) {
+				this.scanlines[y] = scanline.splice(i, 1);
+				break;
+			}
+		}
+	}
+};
+
+GameBoyAdvanceOBJLayer.prototype.moved = function(obj) {
+	var objY = obj.y;
+	var height = obj.height() + objY;
+	var found = false;
+	for (var y = 0; y < 160; ++y) {
+		var scanline = this.scanlines[y];
+		for (var i = 0; i < scanline.length; ++i) {
+			if (scanline[i] === obj) {
+				if (y < objY || y >= height) {
+					this.scanlines[y] = scanline.splice(i, 1);
+				}
+				found = true;
+				break;
+			}
+		}
+		if (!found && y >= objY && y < height) {
+			this.scanlines[y].push(obj);
+			this.scanlines[y].sort(this.objComparator);
+		}
+	}
+};
+
+GameBoyAdvanceOBJLayer.prototype.objComparator = function(a, b) {
+	return a.index - b.index;
 };
 
 function GameBoyAdvanceVideo() {
