@@ -285,10 +285,6 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 		this.cpu.log('Keypad interrupts not implemented');
 	}
 
-	if (this.enabledIRQs & this.MASK_GAMEPAK) {
-		this.cpu.log('Gamepak interrupts not implemented');
-	}
-
 	if (this.enable && this.enabledIRQs && this.interruptFlags) {
 		this.cpu.raiseIRQ();
 	}
@@ -327,9 +323,7 @@ GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
 		}
 	}
 
-	if (this.nextEvent < this.cpu.cycles) {
-		this.nextEvent = 0;
-	}
+	this.cpu.ASSERT(this.nextEvent >= this.cpu.cycles, "Next event is before present");
 };
 
 GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {

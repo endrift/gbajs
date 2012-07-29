@@ -163,7 +163,7 @@ var GameBoyAdvanceMMU = function() {
 		[ 8, 1 ]
 	];
 
-	this.ICACHE_PAGE_BITS = 9;
+	this.ICACHE_PAGE_BITS = 10;
 	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
 };
 
