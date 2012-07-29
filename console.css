@@ -143,6 +143,7 @@ ul, ol, #registers {
 }
 
 #memory {
+	overflow-y: scroll;
 	min-width: 400px;
 	display: -webkit-box;
 	display: -moz-box;
@@ -154,12 +155,15 @@ ul, ol, #registers {
 #memoryControls {
 	border-bottom: 1px solid #DADDE1;
 	padding: 2px;
+	position: fixed;
+	top: 0;
+	background-color: #2A2F32;
+	width: 100%;
 }
 
 #memoryControls ul {
-	margin: 0;
+	margin: 0 0 0 80px;
 	padding: 0;
-	float: right;
 }
 
 #memoryControls ul > li {
@@ -167,48 +171,40 @@ ul, ol, #registers {
 	margin-left: 16px;
 }
 
-#memoryView, #breakpointView {
+#breakpointView {
 	margin: 0;
-	overflow-y: scroll;
+	overflow-y: auto;
 	display: -moz-box;
 	-moz-box-orient: vertical;
 	-moz-box-flex: 1;
 	-webkit-box-flex: 1;
 }
 
-#memoryView li:first-child {
-	margin-top: 50px;
-}
-
-#memoryView li:last-child {
-	margin-bottom: 50px;
+#memoryView {
+	display: table;
+	width: 100%;
+	margin: 50px 0;
+	border-spacing: 1px 1px;
 }
 
 #memory li {
-	display: -webkit-box;
-	display: -moz-box;
-	-webkit-box-orient: horizontal;
-	-moz-box-orient: horizontal;
+	display: table-row;
 	list-style-type: none;
 }
 
 #memory .memoryOffset {
-	margin-right: 5px;
-	display: block;
-	-webkit-box-flex: 1;
-	-moz-box-flex: 1;
+	margin: 0;
+	display: table-cell;
 }
 
 #memory .memoryCell {
-	margin: 0 3px;
-	display: block;
-	-webkit-box-flex: 2;
-	-moz-box-flex: 2;
+	padding: 0 3px;
+	display: table-cell;
 	text-align: center;
 }
 
 #memory .memoryCell.changed {
-	background-color: #5C616F;
+	font-weight: bold;
 }
 
 .disabled {

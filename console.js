@@ -153,7 +153,6 @@ Console.prototype.run = function() {
 	regs.setAttribute('class', 'disabled');
 	mem.setAttribute('class', 'disabled');
 	var self = this;
-	var instructions = 0;
 	var interval;
 	run = function() {
 		if (self.stillRunning) {
@@ -161,7 +160,6 @@ Console.prototype.run = function() {
 				if (self.breakpoints.length) {
 					var base = self.cpu.cycles;
 					while (self.cpu.cycles - base < 280896) {
-						++instructions;
 						self.cpu.step();
 						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
 							self.breakpointHit();
@@ -171,15 +169,20 @@ Console.prototype.run = function() {
 				} else {
 					var base = self.cpu.cycles;
 					while (self.cpu.cycles - base < 280896) {
-						++instructions;
 						self.cpu.step();
 					}
 				}
 			} catch (exception) {
 				clearInterval(interval);
 				var time = (new Date().getTime() - start);
-				self.log("Exception hit after " + instructions + " instructions in " +  time + " milliseconds! (" + Math.floor(self.cpu.cycles / time * 100000 / self.gba.irq.FREQUENCY) + "% speed)");
+				self.log("Exception hit after " + self.cpu.cycles + " cycles in " +  time + " milliseconds! (" + Math.floor(self.cpu.cycles / time * 100000 / self.gba.irq.FREQUENCY) + "% speed)");
 				self.log(exception);
+				if (exception.stack) {
+					var lines = exception.stack.split(/\n/);
+					for (var i = 0; i < lines.length; ++i) {
+						self.log(lines);
+					}
+				}
 				self.pause();
 				throw exception;
 			}
@@ -187,7 +190,7 @@ Console.prototype.run = function() {
 			clearInterval(interval);
 		}
 	}
-	setInterval(run, 1000/60);
+	interval = setInterval(run, 1000/60);
 }
 
 Console.prototype.runFrame = function() {
@@ -202,7 +205,6 @@ Console.prototype.runFrame = function() {
 	regs.setAttribute('class', 'disabled');
 	mem.setAttribute('class', 'disabled');
 	var self = this;
-	var instructions = 0;
 	run = function() {
 		if (self.stillRunning) {
 			try {
@@ -210,7 +212,6 @@ Console.prototype.runFrame = function() {
 					var base = self.cpu.cycles;
 					base -= (base % 280896);
 					while (self.cpu.cycles - base < 280896) {
-						++instructions;
 						self.cpu.step();
 						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
 							self.breakpointHit();
@@ -220,7 +221,6 @@ Console.prototype.runFrame = function() {
 				} else {
 					var base = self.cpu.cycles;
 					while (self.cpu.cycles - base < 280896) {
-						++instructions;
 						self.cpu.step();
 					}
 				}
@@ -277,21 +277,22 @@ Memory = function(mmu) {
 	row = this.createRow(0);
 	this.ul.appendChild(row);
 	this.rowHeight = row.offsetHeight;
-	this.numberRows = this.ul.offsetHeight / this.rowHeight + 2;
+	this.numberRows = this.ul.parentNode.offsetHeight / this.rowHeight + 2;
 	this.ul.removeChild(row);
+	this.scrollTop = 50 - this.ul.parentElement.firstElementChild.offsetHeight;
 
 	for (var i = 0; i < this.numberRows; ++i) {
 		this.ul.appendChild(this.createRow(i << 4));
 	}
-	this.ul.scrollTop = 50;
+	this.ul.parentElement.scrollTop = this.scrollTop;
 
 	var self = this;
-	this.ul.addEventListener('scroll', function(e) { self.scroll() }, true);
+	this.ul.parentElement.addEventListener('scroll', function(e) { self.scroll(e) }, true);
 	window.addEventListener('resize', function(e) { self.resize() }, true);
 }
 
-Memory.prototype.scroll = function() {
-	while (this.ul.scrollTop - 50 < this.rowHeight) {
+Memory.prototype.scroll = function(e) {
+	while (this.ul.parentElement.scrollTop - this.scrollTop < this.rowHeight) {
 		if (this.ul.firstChild.offset == 0) {
 			break;
 		}
@@ -300,23 +301,24 @@ Memory.prototype.scroll = function() {
 		victim.offset = this.ul.firstChild.offset - 16;
 		this.refresh(victim);
 		this.ul.insertBefore(victim, this.ul.firstChild);
-		this.ul.scrollTop += this.rowHeight;
+		this.ul.parentElement.scrollTop += this.rowHeight;
 	}
-	while (this.ul.scrollTop - 50 > this.rowHeight * 2) {
+	while (this.ul.parentElement.scrollTop - this.scrollTop > this.rowHeight * 2) {
 		var victim = this.ul.firstChild;
 		this.ul.removeChild(victim);
 		victim.offset = this.ul.lastChild.offset + 16;
 		this.refresh(victim);
 		this.ul.appendChild(victim);
-		this.ul.scrollTop -= this.rowHeight;
+		this.ul.parentElement.scrollTop -= this.rowHeight;
 	}
-	if (this.ul.scrollTop < 50) {
-		this.ul.scrollTop = 50;
+	if (this.ul.parentElement.scrollTop < this.scrollTop) {
+		this.ul.parentElement.scrollTop = this.scrollTop;
+		e.preventDefault();
 	}
 }
 
 Memory.prototype.resize = function() {
-	this.numberRows = this.ul.offsetHeight / this.rowHeight + 2;
+	this.numberRows = this.ul.parentNode.offsetHeight / this.rowHeight + 2;
 	if (this.numberRows > this.ul.children.length) {
 		var offset = this.ul.lastChild.offset + 16;
 		for (var i = 0; i < this.numberRows - this.ul.children.length; ++i) {
@@ -395,13 +397,13 @@ Memory.prototype.scrollTo = function(offset) {
 			child.offset = offset + (i - 1) * 16;
 			this.refresh(child);
 		}
-		this.ul.scrollTop = 50+ this.rowHeight;
+		this.ul.parentElement.scrollTop = this.scrollTop + this.rowHeight;
 	} else {
 		for (var i = 0; i < this.ul.children.length; ++i) {
 			var child = this.ul.children[i];
 			child.offset = offset + i * 16;
 			this.refresh(child);
 		}
-		this.ul.scrollTop = 50;
+		this.ul.parentElement.scrollTop = this.scrollTop;
 	}
 }
