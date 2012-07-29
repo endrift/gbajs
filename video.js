@@ -22,9 +22,9 @@ MemoryAligned16.prototype.load32 = function(offset) {
 MemoryAligned16.prototype.store8 = function(offset, value) {
 	var index = offset >> 1;
 	if (offset & 1) {
-		this.buffer[index] = (this.buffer[index] & 0x00FF) | (value << 8);
+		this.store16(offset, (this.buffer[index] & 0x00FF) | (value << 8));
 	} else {
-		this.buffer[index] = (this.buffer[index] & 0xFF00) | value;
+		this.store16(offset, this.buffer[index] = (this.buffer[index] & 0xFF00) | value);
 	}
 };
 
@@ -33,8 +33,9 @@ MemoryAligned16.prototype.store16 = function(offset, value) {
 };
 
 MemoryAligned16.prototype.store32 = function(offset, value) {
-	this.buffer[offset >> 1] = value & 0xFFFF;
-	this.buffer[(offset >> 1) + 1] = value >>> 16;
+	var index = offset >> 1;
+	this.store16(offset, this.buffer[index] = value & 0xFFFF);
+	this.store16(offset + 2, this.buffer[index + 1] = value >>> 16);
 };
 
 function GameBoyAdvanceVRAM(size) {
@@ -49,23 +50,7 @@ function GameBoyAdvanceOAM(size) {
 	this.oam = this.buffer;
 	this.objs = new Array(128);
 	for (var i = 0; i < 128; ++i) {
-		this.objs[i] = {
-			x: 0,
-			y: 0,
-			scalerot: 0,
-			doublesize: false,
-			disable: 1,
-			mode: 0,
-			mosaic: false,
-			multipalette: false,
-			shape: 0,
-			scalerotParam: 0,
-			hflip: 0,
-			vflip: 0,
-			tileBase: 0,
-			priority: 0,
-			palette: 0
-		};
+		this.objs[i] = new GameBoyAdvanceOBJ();
 	}
 };
 
@@ -74,6 +59,8 @@ GameBoyAdvanceOAM.prototype = Object.create(MemoryAligned16.prototype);
 GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 	var index = (offset & 0x3F8) >> 3;
 	var obj = this.objs[index];
+	var layer = obj.priority;
+	var disable = obj.disable;
 	switch (offset & 0x00000006) {
 	case 0:
 		// Attribute 0
@@ -94,6 +81,14 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.mosaic = value & 0x1000;
 		obj.multipalette = value & 0x2000;
 		obj.shape = value & 0xC000;
+
+		if (disable && !obj.disable) {
+			//this.video.objLayers[layer].insert(obj);
+		} else if (!disable && obj.disable) {
+			//this.video.objLayers[layer].remove(obj);
+		} else {
+			//this.video.objLayers[layer].sort();
+		}
 		break;
 	case 2:
 		// Attribute 1
@@ -113,11 +108,16 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.tileBase = value & 0x03FF;
 		obj.priority = (value & 0x0C00) >> 10;
 		obj.palette = (value & 0xF000) >> 12;
+		if (layer != obj.priority) {
+			//this.video.objLayers[layer].remove(obj);
+			//this.video.objLayers[obj.priority].remove(obj);
+		}
 		break;
 	case 6:
 		// Scaling/rotation parameter
 		break;
 	}
+
 
 	MemoryAligned16.prototype.store16.call(this, offset, value);
 };
@@ -302,6 +302,47 @@ GameBoyAdvancePalette.prototype.setBlendY = function(y) {
 	}
 };
 
+function GameBoyAdvanceOBJ() {
+	this.x = 0;
+	this.y = 0;
+	this.scalerot = 0;
+	this.doublesize = false;
+	this.disable = 1;
+	this.mode = 0;
+	this.mosaic = false;
+	this.multipalette = false;
+	this.shape = 0;
+	this.scalerotParam = 0;
+	this.hflip = 0;
+	this.vflip = 0;
+	this.tileBase = 0;
+	this.priority = 0;
+	this.palette = 0;
+	this.drawScanline = this.drawScanlineNormal;
+};
+
+GameBoyAdvanceOBJLayer.prototype.drawScanlineNormal = function(video, y) {
+	// TODO
+};
+
+function GameBoyAdvanceOBJLayer(i) {
+	this.bg = false;
+	this.index = i;
+	this.scanlines = new Array();
+	for (var j = 0; j < 160; ++j) {
+		this.scanlines.push(new Array());
+	}
+};
+
+GameBoyAdvanceOBJLayer.prototype.drawScanline = function(video) {
+	var y = video.vcount - 1;
+	var objs = this.scanlines[y];
+	// Draw in reverse: OBJ0 is higher priority than OBJ1, etc
+	for (var i = objs.length; i--;) {
+		objs[i].drawScanline(video, y);
+	}
+};
+
 function GameBoyAdvanceVideo() {
 	this.CYCLES_PER_PIXEL = 4;
 
@@ -323,6 +364,12 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.vram = new GameBoyAdvanceVRAM(this.cpu.mmu.SIZE_VRAM);
 	this.oam = new GameBoyAdvanceOAM(this.cpu.mmu.SIZE_OAM);
 	this.oam.video = this;
+	this.objLayers = [
+		new GameBoyAdvanceOBJLayer(0),
+		new GameBoyAdvanceOBJLayer(1),
+		new GameBoyAdvanceOBJLayer(2),
+		new GameBoyAdvanceOBJLayer(3)
+	];
 
 	// DISPCNT
 	this.backgroundMode = 0;
@@ -583,7 +630,7 @@ GameBoyAdvanceVideo.prototype.writeBlendY = function(value) {
 };
 
 GameBoyAdvanceVideo.prototype.resetLayers = function() {
-	this.drawLayers = [];
+	this.drawLayers = this.objLayers.slice(0);
 	if (this.bg0) {
 		this.drawLayers.push(this.bg[0]);
 	}
@@ -602,6 +649,11 @@ GameBoyAdvanceVideo.prototype.resetLayers = function() {
 GameBoyAdvanceVideo.prototype.layerComparator = function(a, b) {
 	var diff = a.priority - b.priority;
 	if (!diff) {
+		if (a.bg && !b.bg) {
+			return 1;
+		} else if (!a.bg && b.bg) {
+			return -1;
+		}
 		return a.index - b.index;
 	}
 	return diff;
@@ -733,7 +785,11 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function() {
 	// Draw lower priority first and then draw over them
 	for (var i = this.drawLayers.length; i--;) {
 		layer = this.drawLayers[i];
-		this.drawScanlineBGMode0(layer);
+		if (layer.bg) {
+			this.drawScanlineBGMode0(layer);
+		} else {
+			layer.drawScanline(this);
+		}
 	}
 };
 
