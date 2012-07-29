@@ -299,22 +299,22 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFF;
 	var memory = this.memory[offset >> this.BASE_OFFSET];
 	memory.store8(maskedOffset, value);
-	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
+	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
 };
 
 GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFE;
 	var memory = this.memory[offset >> this.BASE_OFFSET];
 	memory.store16(maskedOffset, value);
-	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
+	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
 };
 
 GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFC;
 	var memory = this.memory[offset >> this.BASE_OFFSET];
 	memory.store32(maskedOffset, value);
-	delete this.icache[offset >> this.ICACHE_PAGE_BITS];
-	delete this.icache[(offset + 2) >> this.ICACHE_PAGE_BITS];
+	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
+	this.icache[(offset + 2) >> this.ICACHE_PAGE_BITS] = null;
 };
 
 GameBoyAdvanceMMU.prototype.wait = function(memory) {

@@ -108,6 +108,8 @@ ARMCore.prototype.setLogger = function(logger) {
 }
 
 ARMCore.prototype.fetchPage = function(address) {
+	// FIXME: because this page held onto, it won't get invalidated if we're using it, even if
+	// someone else writes over the instructions
 	var pageId = address >> this.mmu.ICACHE_PAGE_BITS;
 	if (pageId == this.pageId) {
 		return;
