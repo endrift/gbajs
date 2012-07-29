@@ -478,7 +478,7 @@ GameBoyAdvanceVideo.prototype.accessMap = function(base, size, x, yBase) {
 		tile: mem & 0x03FF,
 		hflip: mem & 0x0400,
 		vflip: mem & 0x0800,
-		palette: (mem & 0xF000) >> 12
+		palette: (mem & 0xF000) >> 8 // This is shifted up 4 to make pushPixel faster
 	};
 };
 
@@ -493,7 +493,7 @@ GameBoyAdvanceVideo.prototype.accessTile = function(base, map, y) {
 	return this.cpu.mmu.load32(offset);
 }
 
-GameBoyAdvanceVideo.prototype.pushPixel = function(layer, map, row, x, offset) {
+GameBoyAdvanceVideo.prototype.pushPixel = function(layer, map, row, x, offset, backing) {
 	if (map.hflip) {
 		x = 7 - x;
 	}
@@ -501,17 +501,17 @@ GameBoyAdvanceVideo.prototype.pushPixel = function(layer, map, row, x, offset) {
 	var index = (row >> (x << 2)) & 0xF;
 	// Index 0 is transparent
 	if (index) {
-		var pixel = this.palette.accessColor(layer, (map.palette << 4) | index);
+		var pixel = this.palette.accessColor(layer, map.palette | index);
 		if (this.blendMode != 1 || !this.target1[layer]) {
 			// TODO: 256-color mode
-			this.pixelData.data[offset++] = pixel[0];
-			this.pixelData.data[offset++] = pixel[1];
-			this.pixelData.data[offset++] = pixel[2];
+			backing.data[offset] = pixel[0];
+			backing.data[offset + 1] = pixel[1];
+			backing.data[offset + 2] = pixel[2];
 		} else {
 			// TODO: better detect which layer is below us
-			this.pixelData.data[offset] = this.pixelData.data[offset] * this.blendB + pixel[0] * this.blendA;
-			this.pixelData.data[offset + 1] = this.pixelData.data[offset + 1] * this.blendB + pixel[1] * this.blendA;
-			this.pixelData.data[offset + 2] = this.pixelData.data[offset + 2] * this.blendB + pixel[2] * this.blendA;
+			backing.data[offset] = backing.data[offset] * this.blendB + pixel[0] * this.blendA;
+			backing.data[offset + 1] = backing.data[offset + 1] * this.blendB + pixel[1] * this.blendA;
+			backing.data[offset + 2] = backing.data[offset + 2] * this.blendB + pixel[2] * this.blendA;
 		}
 	}
 };
@@ -549,6 +549,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	var yOff = bg.y;
 	var localX;
 	var localY = y + yOff;
+	var localYLo = localY & 0x7;
 	var screenBase = 0x06000000 | bg.screenBase;
 	var charBase = 0x06000000 | bg.charBase;
 	var size = bg.size;
@@ -562,14 +563,14 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	}
 
 	var map = this.accessMap(screenBase, size, xOff, yBase);
-	var tileRow = this.accessTile(charBase, map, localY & 0x7);
+	var tileRow = this.accessTile(charBase, map, localYLo);
 	for (x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 		localX = x + xOff;
 		if (!(localX & 0x7)) {
 			map = this.accessMap(screenBase, size, localX, yBase);
-			tileRow = this.accessTile(charBase, map, localY & 0x7);
+			tileRow = this.accessTile(charBase, map, localYLo);
 		}
-		this.pushPixel(bg.index, map, tileRow, localX & 0x7, offset);
+		this.pushPixel(bg.index, map, tileRow, localX & 0x7, offset, this.pixelData);
 		offset += 4;
 	}
 };
