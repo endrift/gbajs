@@ -180,7 +180,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null, // This is owned by GameBoyAdvanceIO
 		null, // This is owned by GameBoyAdvancePalette
 		null, // This is owned by GameBoyAdvanceVRAM
-		new MemoryBlock(this.SIZE_OAM),
+		null, // This is owned by GameBoyAdvanceOAM
 		null,
 		null,
 		null,

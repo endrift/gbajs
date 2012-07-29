@@ -1,40 +1,125 @@
+function MemoryAligned16(size) {
+	this.buffer = new Uint16Array(size >> 1);
+};
+
+MemoryAligned16.prototype.loadU8 = function(offset, value) {
+	var index = offset >> 1;
+	if (offset & 1) {
+		return (this.buffer[index] & 0xFF00) >>> 8;
+	} else {
+		return this.buffer[index] & 0x00FF;
+	}
+};
+
+MemoryAligned16.prototype.loadU16 = function(offset) {
+	return this.buffer[offset >> 1];
+};
+
+MemoryAligned16.prototype.load32 = function(offset) {
+	return this.buffer[offset >> 1] | (this.vram[(offset >> 1) | 1] << 16);
+};
+
+MemoryAligned16.prototype.store8 = function(offset, value) {
+	var index = offset >> 1;
+	if (offset & 1) {
+		this.buffer[index] = (this.buffer[index] & 0x00FF) | (value << 8);
+	} else {
+		this.buffer[index] = (this.buffer[index] & 0xFF00) | value;
+	}
+};
+
+MemoryAligned16.prototype.store16 = function(offset, value) {
+	this.buffer[offset >> 1] = value;
+};
+
+MemoryAligned16.prototype.store32 = function(offset, value) {
+	this.buffer[offset >> 1] = value & 0xFFFF;
+	this.buffer[(offset >> 1) + 1] = value >>> 16;
+};
+
 function GameBoyAdvanceVRAM(size) {
-	this.vram = new Uint16Array(size >> 1);
+	MemoryAligned16.call(this, size);
+	this.vram = this.buffer;
 };
 
-GameBoyAdvanceVRAM.prototype.loadU8 = function(offset, value) {
-	var index = offset >> 1;
-	if (offset & 1) {
-		return (this.vram[index] & 0xFF00) >>> 8;
-	} else {
-		return this.vram[index] & 0x00FF;
+GameBoyAdvanceVRAM.prototype = Object.create(MemoryAligned16.prototype);
+
+function GameBoyAdvanceOAM(size) {
+	MemoryAligned16.call(this, size);
+	this.oam = this.buffer;
+	this.objs = new Array(128);
+	for (var i = 0; i < 128; ++i) {
+		this.objs[i] = {
+			x: 0,
+			y: 0,
+			scalerot: 0,
+			doublesize: false,
+			disable: 1,
+			mode: 0,
+			mosaic: false,
+			multipalette: false,
+			shape: 0,
+			scalerotParam: 0,
+			hflip: 0,
+			vflip: 0,
+			tileBase: 0,
+			priority: 0,
+			palette: 0
+		};
 	}
 };
 
-GameBoyAdvanceVRAM.prototype.loadU16 = function(offset) {
-	return this.vram[offset >> 1];
-};
+GameBoyAdvanceOAM.prototype = Object.create(MemoryAligned16.prototype);
 
-GameBoyAdvanceVRAM.prototype.load32 = function(offset) {
-	return this.vram[offset >> 1] | (this.vram[(offset >> 1) | 1] << 16);
-};
-
-GameBoyAdvanceVRAM.prototype.store16 = function(offset, value) {
-	this.vram[offset >> 1] = value;
-};
-
-GameBoyAdvanceVRAM.prototype.store8 = function(offset, value) {
-	var index = offset >> 1;
-	if (offset & 1) {
-		this.vram[index] = (this.vram[index] & 0x00FF) | (value << 8);
-	} else {
-		this.vram[index] = (this.vram[index] & 0xFF00) | value;
+GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
+	var index = (offset & 0x3F8) >> 3;
+	var obj = this.objs[index];
+	switch (offset & 0x00000006) {
+	case 0:
+		// Attribute 0
+		obj.y = value & 0x00FF;
+		obj.scalerot = value & 0x0100;
+		if (obj.scalerot) {
+			obj.doublesize = value & 0x0200;
+			obj.disable = 0;
+			obj.hflip = 0;
+			obj.vflip = 0;
+		} else {
+			obj.doublesize = false;
+			obj.disable = value & 0x0200;
+			obj.hflip = obj.scalerotParam & 0x0008;
+			obj.vflip = obj.scalerotParam & 0x0010;
+		}
+		obj.mode = value & 0x0C00;
+		obj.mosaic = value & 0x1000;
+		obj.multipalette = value & 0x2000;
+		obj.shape = value & 0xC000;
+		break;
+	case 2:
+		// Attribute 1
+		obj.x = value & 0x01FF;
+		if (obj.scalerot) {
+			obj.scalerotParam = (value & 0x3E00) >> 9;
+			obj.hflip = 0;
+			obj.vflip = 0;
+		} else {
+			obj.hflip = value & 0x1000;
+			obj.vflip = value & 0x2000;
+		}
+		obj.size = value & 0xC000;
+		break;
+	case 4:
+		// Attribute 2
+		obj.tileBase = value & 0x03FF;
+		obj.priority = (value & 0x0C00) >> 10;
+		obj.palette = (value & 0xF000) >> 12;
+		break;
+	case 6:
+		// Scaling/rotation parameter
+		break;
 	}
-};
 
-GameBoyAdvanceVRAM.prototype.store32 = function(offset, value) {
-	this.vram[offset >> 1] = value & 0xFFFF;
-	this.vram[(offset >> 1) + 1] = value >>> 16;
+	MemoryAligned16.prototype.store16.call(this, offset, value);
 };
 
 function GameBoyAdvancePalette() {
@@ -236,6 +321,8 @@ function GameBoyAdvanceVideo() {
 GameBoyAdvanceVideo.prototype.clear = function() {
 	this.palette = new GameBoyAdvancePalette();
 	this.vram = new GameBoyAdvanceVRAM(this.cpu.mmu.SIZE_VRAM);
+	this.oam = new GameBoyAdvanceOAM(this.cpu.mmu.SIZE_OAM);
+	this.oam.video = this;
 
 	// DISPCNT
 	this.backgroundMode = 0;

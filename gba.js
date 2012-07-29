@@ -33,6 +33,7 @@ function GameBoyAdvance() {
 	this.mmu.mmap(this.mmu.REGION_IO, this.io);
 	this.mmu.mmap(this.mmu.REGION_PALETTE_RAM, this.video.palette);
 	this.mmu.mmap(this.mmu.REGION_VRAM, this.video.vram);
+	this.mmu.mmap(this.mmu.REGION_OAM, this.video.oam);
 };
 
 GameBoyAdvance.prototype.setCanvas = function(canvas) {
