@@ -101,6 +101,41 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 	this.pageId = 0;
 
 	this.instruction;
+
+	var gprs = this.gprs;
+	var mmu = this.mmu;
+	this.step = function() {
+		var instruction;
+		if (this.instruction) {
+			instruction = this.instruction;
+		} else {
+			instruction = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
+		}
+		gprs[this.PC] += this.instructionWidth;
+		this.conditionPassed = true;
+		instruction();
+	
+		if (!instruction.writesPC) {
+			if (!instruction.next) {
+				instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
+			}
+			this.instruction = instruction.next;
+		} else {
+			this.instruction = null;
+			if (this.conditionPassed) {
+				var pc = gprs[this.PC] &= 0xFFFFFFFE;
+				if (this.execMode == this.MODE_ARM) {
+					mmu.wait32(pc);
+					mmu.waitSeq32(pc);
+				} else {
+					mmu.wait(pc);
+					mmu.waitSeq(pc);
+				}
+				gprs[this.PC] += this.instructionWidth;
+			}
+		}
+		this.irq.updateTimers();
+	};
 };
 
 ARMCore.prototype.setLogger = function(logger) {
@@ -152,39 +187,6 @@ ARMCore.prototype.loadInstructionThumb = function(address) {
 	next.next = null;
 	this.page.thumb[offset] = next;
 	return next;
-}; 
-
-ARMCore.prototype.step = function() {
-	var instruction;
-	if (this.instruction) {
-		instruction = this.instruction;
-	} else {
-		instruction = this.loadInstruction(this.gprs[this.PC] - this.instructionWidth);
-	}
-	this.gprs[this.PC] += this.instructionWidth;
-	this.conditionPassed = true;
-	instruction();
-
-	if (!instruction.writesPC) {
-		if (!instruction.next) {
-			instruction.next = this.loadInstruction(this.gprs[this.PC] - this.instructionWidth);
-		}
-		this.instruction = instruction.next;
-	} else {
-		this.instruction = null;
-		if (this.conditionPassed) {
-			var pc = this.gprs[this.PC] &= 0xFFFFFFFE;
-			if (this.execMode == this.MODE_ARM) {
-				this.mmu.wait32(pc);
-				this.mmu.waitSeq32(pc);
-			} else {
-				this.mmu.wait(pc);
-				this.mmu.waitSeq(pc);
-			}
-			this.gprs[this.PC] += this.instructionWidth;
-		}
-	}
-	this.irq.updateTimers();
 };
 
 ARMCore.prototype.selectBank = function(mode) {
