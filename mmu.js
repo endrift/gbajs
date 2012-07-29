@@ -57,6 +57,47 @@ ROMView.prototype.storeU16 = function(offset, value) {};
 
 ROMView.prototype.store32 = function(offset, value) {};
 
+var BIOSView = function(rom, offset) {
+	MemoryView.call(this, rom, offset);
+};
+
+BIOSView.prototype = Object.create(ROMView.prototype);
+
+BIOSView.prototype.load8 = function(offset) {
+	if (offset >= this.buffer.byteLength) {
+		return -1;
+	}
+	return this.view.getInt8(offset);
+};
+
+BIOSView.prototype.load16 = function(offset) {
+	if (offset >= this.buffer.byteLength) {
+		return -1;
+	}
+	return this.view.getInt16(offset, true);
+};
+
+BIOSView.prototype.loadU8 = function(offset) {
+	if (offset >= this.buffer.byteLength) {
+		return -1;
+	}
+	return this.view.getUint8(offset);
+};
+
+BIOSView.prototype.loadU16 = function(offset) {
+	if (offset >= this.buffer.byteLength) {
+		return -1;
+	}
+	return this.view.getUint16(offset, true);
+};
+
+BIOSView.prototype.load32 = function(offset) {
+	if (offset >= this.buffer.byteLength) {
+		return -1;
+	}
+	return this.view.getInt32(offset, true);
+};
+
 var GameBoyAdvanceMMU = function() {
 	this.REGION_BIOS = 0x0;
 	this.REGION_WORKING_RAM = 0x2;
@@ -174,7 +215,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 };
 
 GameBoyAdvanceMMU.prototype.loadBios = function(bios) {
-	this.memory[this.REGION_BIOS] = new ROMView(bios);
+	this.memory[this.REGION_BIOS] = new BIOSView(bios);
 };
 
 GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
