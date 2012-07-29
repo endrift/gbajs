@@ -171,6 +171,7 @@ GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
 	case this.DISPCNT:
+	case this.SOUNDCNT_LO:
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
 	case this.BLDCNT:
@@ -230,6 +231,8 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 		value &= 0x77;
 		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
+	case this.SOUNDCNT_LO | 1:
+		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 	case this.SOUNDCNT_X:
 		value &= 0x80;
 		this.audio.writeEnable(value);
