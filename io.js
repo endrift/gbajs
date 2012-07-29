@@ -23,7 +23,7 @@ var GameBoyAdvanceIO = function() {
 	this.BG2PC = 0x024;
 	this.BG2PD = 0x026;
 	this.BG2X_LO = 0x028;
-	this.BG2X_HI = 0x02E;
+	this.BG2X_HI = 0x02A;
 	this.BG2Y_LO = 0x02C;
 	this.BG2Y_HI = 0x02E;
 	this.BG3PA = 0x030;
@@ -298,6 +298,30 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.BG3VOFS:
 		this.video.writeBackgroundVOffset(3, value);
 		break;
+	case this.BG2X_LO:
+		this.video.writeBackgroundRefX(2, (this.registers[offset | 1] << 16) | value);
+		break;
+	case this.BG2X_HI:
+		this.video.writeBackgroundRefX(2, this.registers[offset ^ 1] | (value << 16));
+		break;
+	case this.BG2Y_LO:
+		this.video.writeBackgroundRefY(2, (this.registers[offset | 1] << 16) | value);
+		break;
+	case this.BG2Y_HI:
+		this.video.writeBackgroundRefY(2, this.registers[offset ^ 1] | (value << 16));
+		break;
+	case this.BG3X_LO:
+		this.video.writeBackgroundRefX(3, (this.registers[offset | 1] << 16) | value);
+		break;
+	case this.BG3X_HI:
+		this.video.writeBackgroundRefX(3, this.registers[offset ^ 1] | (value << 16));
+		break;
+	case this.BG3Y_LO:
+		this.video.writeBackgroundRefY(3, (this.registers[offset | 1] << 16) | value);
+		break;
+	case this.BG3Y_HI:
+		this.video.writeBackgroundRefY(3, this.registers[offset ^ 1] | (value << 16));
+		break;
 	case this.BLDCNT:
 		value &= 0x4FFF;
 		this.video.writeBlendControl(value);
@@ -452,6 +476,22 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 
 GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
 	switch (offset) {
+	case this.BG2X_LO:
+		value &= 0x0FFFFFFF;
+		this.video.writeBackgroundRefX(2, value);
+		break;
+	case this.BG2Y_LO:
+		value &= 0x0FFFFFFF;
+		this.video.writeBackgroundRefY(2, value);
+		break;
+	case this.BG3X_LO:
+		value &= 0x0FFFFFFF;
+		this.video.writeBackgroundRefX(3, value);
+		break;
+	case this.BG3Y_LO:
+		value &= 0x0FFFFFFF;
+		this.video.writeBackgroundRefY(3, value);
+		break;
 	case this.DMA0SAD_LO:
 		this.cpu.irq.dmaSetSourceAddress(0, value);
 		break;

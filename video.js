@@ -259,6 +259,8 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 			size: 0,
 			x: 0,
 			y: 0,
+			refx: 0,
+			refy: 0,
 			dx: 0,
 			dmx: 0,
 			dy: 0,
@@ -346,6 +348,7 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 			this.drawScanline = this.drawScanlineMode0;
 			break;
 		default:
+			throw "Unimplemented background mode: " + this.backgroundMode;
 			break;
 		}
 	}
@@ -383,6 +386,14 @@ GameBoyAdvanceVideo.prototype.writeBackgroundHOffset = function(bg, value) {
 
 GameBoyAdvanceVideo.prototype.writeBackgroundVOffset = function(bg, value) {
 	this.bg[bg].y = value & 0x1FF;
+};
+
+GameBoyAdvanceVideo.prototype.writeBackgroundRefX = function(bg, value) {
+	this.bg[bg].refx = (value << 4) / 4096;
+};
+
+GameBoyAdvanceVideo.prototype.writeBackgroundRefY = function(bg, value) {
+	this.bg[bg].refy = (value << 4) / 4096;
 };
 
 GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
