@@ -1,3 +1,42 @@
+function GameBoyAdvanceVRAM(size) {
+	this.vram = new Uint16Array(size);
+};
+
+GameBoyAdvanceVRAM.prototype.loadU8 = function(offset, value) {
+	var index = offset >> 1;
+	if (offset & 1) {
+		return (this.vram[index] & 0xFF00) >>> 8;
+	} else {
+		return this.vram[index] & 0x00FF;
+	}
+};
+
+GameBoyAdvanceVRAM.prototype.loadU16 = function(offset) {
+	return this.vram[offset >> 1];
+};
+
+GameBoyAdvanceVRAM.prototype.load32 = function(offset) {
+	return this.vram[offset >> 1] | (this.vram[(offset >> 1) | 1] << 16);
+};
+
+GameBoyAdvanceVRAM.prototype.store16 = function(offset, value) {
+	this.vram[offset >> 1] = value;
+};
+
+GameBoyAdvanceVRAM.prototype.store8 = function(offset, value) {
+	var index = offset >> 1;
+	if (offset & 1) {
+		this.vram[index] = (this.vram[index] & 0x00FF) | (value << 8);
+	} else {
+		this.vram[index] = (this.vram[index] & 0xFF00) | value;
+	}
+};
+
+GameBoyAdvanceVRAM.prototype.store32 = function(offset, value) {
+	this.vram[offset >> 1] = value & 0xFFFF;
+	this.vram[(offset >> 1) + 1] = value >>> 16;
+};
+
 function GameBoyAdvancePalette() {
 	this.LAYER_BG0 = 0;
 	this.LAYER_BG1 = 1;
@@ -196,6 +235,7 @@ function GameBoyAdvanceVideo() {
 
 GameBoyAdvanceVideo.prototype.clear = function() {
 	this.palette = new GameBoyAdvancePalette();
+	this.vram = new GameBoyAdvanceVRAM(this.cpu.mmu.SIZE_VRAM);
 
 	// DISPCNT
 	this.backgroundMode = 0;
@@ -473,7 +513,7 @@ GameBoyAdvanceVideo.prototype.accessMap = function(base, size, x, yBase) {
 		offset += (x & 0x100) << 3;
 	}
 
-	var mem = this.cpu.mmu.loadU16(offset);
+	var mem = this.vram.loadU16(offset);
 	return {
 		tile: mem & 0x03FF,
 		hflip: mem & 0x0400,
@@ -490,7 +530,7 @@ GameBoyAdvanceVideo.prototype.accessTile = function(base, map, y) {
 		offset |= (7 - y) << 2;
 	}
 
-	return this.cpu.mmu.load32(offset);
+	return this.vram.load32(offset);
 }
 
 GameBoyAdvanceVideo.prototype.pushPixel = function(layer, map, row, x, offset, backing) {
@@ -550,8 +590,8 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	var localX;
 	var localY = y + yOff;
 	var localYLo = localY & 0x7;
-	var screenBase = 0x06000000 | bg.screenBase;
-	var charBase = 0x06000000 | bg.charBase;
+	var screenBase = bg.screenBase;
+	var charBase = bg.charBase;
 	var size = bg.size;
 
 	var yBase = (localY << 3) & 0x7C0;
