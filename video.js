@@ -254,6 +254,8 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.bg = new Array();
 	for (var i = 0; i < 4; ++i) {
 		this.bg.push({
+			bg: true,
+			index: i,
 			priority: 0,
 			charBase: 0,
 			mosaic: false,
@@ -271,6 +273,8 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	}
 
 	this.drawScanline = this.drawScanlineMode0;
+
+	this.drawLayers = [];
 };
 
 GameBoyAdvanceVideo.prototype.setBacking = function(backing) {
@@ -351,6 +355,8 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 			break;
 		}
 	}
+
+	this.resetLayers();
 };
 
 GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
@@ -373,6 +379,8 @@ GameBoyAdvanceVideo.prototype.writeBackgroundControl = function(bg, value) {
 	bgData.screenBase = (value & 0x1F00) << 3;
 	bgData.overflow = value & 0x2000;
 	bgData.size = (value & 0xC000) >> 14;
+
+	this.drawLayers.sort(this.layerComparator);
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundHOffset = function(bg, value) {
@@ -416,6 +424,31 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 GameBoyAdvanceVideo.prototype.writeBlendY = function(value) {
 	this.blendY = value;
 	this.palette.setBlendY(value >= 16 ? 1 : (value / 16));
+};
+
+GameBoyAdvanceVideo.prototype.resetLayers = function() {
+	this.drawLayers = [];
+	if (this.bg0) {
+		this.drawLayers.push(this.bg[0]);
+	}
+	if (this.bg1) {
+		this.drawLayers.push(this.bg[1]);
+	}
+	if (this.bg2) {
+		this.drawLayers.push(this.bg[2]);
+	}
+	if (this.bg3) {
+		this.drawLayers.push(this.bg[3]);
+	}
+	this.drawLayers.sort(this.layerComparator);
+};
+
+GameBoyAdvanceVideo.prototype.layerComparator = function(a, b) {
+	var diff = a.priority - b.priority;
+	if (!diff) {
+		return a.index - b.index;
+	}
+	return diff;
 };
 
 GameBoyAdvanceVideo.prototype.accessMap = function(base, x, y) {
@@ -482,11 +515,10 @@ GameBoyAdvanceVideo.prototype.drawScanlineBackdrop = function() {
 	}
 };
 
-GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(number) {
+GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	var x;
 	var y = this.vcount - 1;
 	var offset = y * 4 * this.HORIZONTAL_PIXELS;
-	var bg = this.bg[number];
 	var xOff = bg.x;
 	var yOff = bg.y;
 	var localX;
@@ -508,7 +540,12 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(number) {
 
 GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function() {
 	this.drawScanlineBackdrop();
-	this.drawScanlineBGMode0(3);
+	var layer;
+	// Draw lower priority first and then draw over them
+	for (var i = this.drawLayers.length; i--;) {
+		layer = this.drawLayers[i];
+		this.drawScanlineBGMode0(layer);
+	}
 };
 
 GameBoyAdvanceVideo.prototype.finishDraw = function() {
