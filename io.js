@@ -301,7 +301,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.BLDALPHA:
 		value &= 0x1F1F;
-		this.cpu.log('Unimplemented video register write: 0x' + offset.toString(16));
+		this.video.writeBlendAlpha(value);
 		break;
 	case this.BLDY:
 		value &= 0x001F;

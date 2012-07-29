@@ -226,19 +226,13 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.vcount = 0;
 
 	// BLDCNT
-	this.bg0Target1 = 0;
-	this.bg1Target1 = 0;
-	this.bg2Target1 = 0;
-	this.bg3Target1 = 0;
-	this.objTarget1 = 0;
-	this.bdTarget1 = 0;
-	this.bg0Target2 = 0;
-	this.bg1Target2 = 0;
-	this.bg2Target2 = 0;
-	this.bg3Target2 = 0;
-	this.objTarget2 = 0;
-	this.bdTarget2 = 0;
+	this.target1 = new Array(5);
+	this.target2 = new Array(5);
 	this.blendMode = 0;
+
+	// BLDALPHA
+	this.blendA = 0;
+	this.blendB = 0;
 
 	// BLDY
 	this.blendY = 0;
@@ -392,25 +386,24 @@ GameBoyAdvanceVideo.prototype.writeBackgroundVOffset = function(bg, value) {
 };
 
 GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
-	this.bg0Target1 = value & 0x0001;
-	this.bg1Target1 = value & 0x0002;
-	this.bg2Target1 = value & 0x0004;
-	this.bg3Target1 = value & 0x0008;
-	this.objTarget1 = value & 0x0010;
-	this.bdTarget1 = value & 0x0020;
-	this.bg0Target2 = value & 0x0100;
-	this.bg1Target2 = value & 0x0200;
-	this.bg2Target2 = value & 0x0400;
-	this.bg3Target2 = value & 0x0800;
-	this.objTarget2 = value & 0x1000;
-	this.bdTarget2 = value & 0x2000;
+	this.target1[0] = value & 0x0001;
+	this.target1[1] = value & 0x0002;
+	this.target1[2] = value & 0x0004;
+	this.target1[3] = value & 0x0008;
+	this.target1[4] = value & 0x0010;
+	this.target1[5] = value & 0x0020;
+	this.target2[0] = value & 0x0100;
+	this.target2[1] = value & 0x0200;
+	this.target2[2] = value & 0x0400;
+	this.target2[3] = value & 0x0800;
+	this.target2[4] = value & 0x1000;
+	this.target2[5] = value & 0x2000;
 	this.blendMode = (value & 0x00C0) >> 6;
 
 	switch (this.blendMode) {
 	case 0:
-		break;
 	case 1:
-		this.cpu.log('Unimplemented blending mode: alpha blending');
+		this.palette.makeNormalPalettes()
 		break;
 	case 2:
 		this.palette.makeBrightPalettes(value & 0x3F);
@@ -418,6 +411,17 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 	case 3:
 		this.palette.makeDarkPalettes(value & 0x3F);
 		break;
+	}
+};
+
+GameBoyAdvanceVideo.prototype.writeBlendAlpha = function(value) {
+	this.blendA = (value & 0x001F) / 16;
+	if (this.blendA > 1) {
+		this.blendA = 1;
+	}
+	this.blendB = ((value & 0x1F00) >> 8) / 16;
+	if (this.blendB > 1) {
+		this.blendB = 1;
 	}
 };
 
@@ -484,12 +488,20 @@ GameBoyAdvanceVideo.prototype.pushPixel = function(layer, map, row, x, offset) {
 	}
 
 	var index = (row >> (x << 2)) & 0xF;
+	// Index 0 is transparent
 	if (index) {
 		var pixel = this.palette.accessColor(layer, (map.palette << 4) | index);
-		// TODO: 256-color mode
-		this.pixelData.data[offset++] = pixel[0];
-		this.pixelData.data[offset++] = pixel[1];
-		this.pixelData.data[offset++] = pixel[2];
+		if (this.blendMode != 1 || !this.target1[layer]) {
+			// TODO: 256-color mode
+			this.pixelData.data[offset++] = pixel[0];
+			this.pixelData.data[offset++] = pixel[1];
+			this.pixelData.data[offset++] = pixel[2];
+		} else {
+			// TODO: better detect which layer is below us
+			this.pixelData.data[offset] = this.pixelData.data[offset] * this.blendB + pixel[0] * this.blendA;
+			this.pixelData.data[offset + 1] = this.pixelData.data[offset + 1] * this.blendB + pixel[1] * this.blendA;
+			this.pixelData.data[offset + 2] = this.pixelData.data[offset + 2] * this.blendB + pixel[2] * this.blendA;
+		}
 	}
 };
 
@@ -546,7 +558,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 			map = this.accessMap(screenBase, size, localX, yBase);
 			tileRow = this.accessTile(charBase, map, localY & 0x7);
 		}
-		this.pushPixel(3, map, tileRow, localX & 0x7, offset);
+		this.pushPixel(bg.index, map, tileRow, localX & 0x7, offset);
 		offset += 4;
 	}
 };
