@@ -170,6 +170,7 @@ ARMCore.prototype.loadInstructionArm = function(address) {
 	}
 	var instruction = this.mmu.load32(address) >>> 0;
 	next = this.compileArm(instruction);
+	next.next = null;
 	this.page.arm[offset] = next;
 	return next;
 };
