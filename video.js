@@ -678,6 +678,22 @@ GameBoyAdvanceVideo.prototype.writeBackgroundRefY = function(bg, value) {
 	this.bg[bg].refy = (value << 4) / 4096;
 };
 
+GameBoyAdvanceVideo.prototype.writeBackgroundParamA = function(bg, value) {
+	this.bg[bg].dx = (value >> 0) / 256;
+};
+
+GameBoyAdvanceVideo.prototype.writeBackgroundParamB = function(bg, value) {
+	this.bg[bg].dmx = (value >> 0) / 256;
+};
+
+GameBoyAdvanceVideo.prototype.writeBackgroundParamC = function(bg, value) {
+	this.bg[bg].dy = (value >> 0) / 256;
+};
+
+GameBoyAdvanceVideo.prototype.writeBackgroundParamD = function(bg, value) {
+	this.bg[bg].dmy = (value >> 0) / 256;
+};
+
 GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 	this.target1[0] = value & 0x0001;
 	this.target1[1] = value & 0x0002;
