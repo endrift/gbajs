@@ -5,6 +5,7 @@ function GameBoyAdvance() {
 	this.io = new GameBoyAdvanceIO();
 	this.audio = new GameBoyAdvanceAudio();
 	this.video = new GameBoyAdvanceVideo();
+	this.keypad = new GameBoyAdvanceKeypad();
 
 	// TODO: simplify this graph
 	this.cpu.mmu = this.mmu;
@@ -20,6 +21,7 @@ function GameBoyAdvance() {
 	this.io.cpu = this.cpu;
 	this.io.audio = this.audio;
 	this.io.video = this.video;
+	this.io.keypad = this.keypad;
 
 	this.audio.cpu = this.cpu;
 
@@ -34,6 +36,8 @@ function GameBoyAdvance() {
 	this.mmu.mmap(this.mmu.REGION_PALETTE_RAM, this.video.palette);
 	this.mmu.mmap(this.mmu.REGION_VRAM, this.video.vram);
 	this.mmu.mmap(this.mmu.REGION_OAM, this.video.oam);
+
+	this.keypad.registerKeyboardHandlers();
 };
 
 GameBoyAdvance.prototype.setCanvas = function(canvas) {

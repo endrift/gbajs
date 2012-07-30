@@ -194,7 +194,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.VCOUNT:
 		return this.video.vcount;
 	case this.KEYINPUT:
-		return 0x03FF;
+		return this.keypad.currentDown;
 	default:
 		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
 	}
