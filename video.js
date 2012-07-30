@@ -346,11 +346,19 @@ function GameBoyAdvanceOBJ(oam, index) {
 	this.cachedHeight = 8;
 };
 
-GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(y) {
+GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(y, yOff) {
 	var video = this.oam.video;
 	var x;
-	var offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
-	var yOff = this.y;
+	var underflow;
+	var offset;
+	if (this.x < video.HORIZONTAL_PIXELS) {
+		underflow = 0;
+		offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
+	} else {
+		underflow = 512 - this.x;
+		offset = (y * video.HORIZONTAL_PIXELS) * 4;
+	}
+	
 	var localX;
 	var localY;
 	if (!this.vflip) {
@@ -361,7 +369,13 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(y) {
 	var localYLo = localY & 0x7;
 	var tileOffset = (localY & 0x01F8) << 2;
 
-	for (x = 0; x < this.cachedWidth; ++x) {
+	if (!this.hflip) {
+		localX = underflow;
+	} else {
+		localX = this.cachedWidth - underflow - 1;
+	}
+	tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (localX >> 3), localYLo);
+	for (x = underflow; x < this.cachedWidth; ++x) {
 		if (!this.hflip) {
 			localX = x;
 		} else {
@@ -439,12 +453,18 @@ function GameBoyAdvanceOBJLayer(i) {
 
 GameBoyAdvanceOBJLayer.prototype.drawScanline = function(video) {
 	var y = video.vcount - 1;
+	var wrappedY;
 	var obj;
 	// Draw in reverse: OBJ0 is higher priority than OBJ1, etc
 	for (var i = this.objs.length; i--;) {
 		obj = this.objs[i];
-		if (obj.y <= y && obj.y + obj.cachedHeight > y) {
-			this.objs[i].drawScanline(y);
+		if (obj.y < video.VERTICAL_PIXELS) {
+			wrappedY = obj.y;
+		} else {
+			wrappedY = obj.y - 256;
+		}
+		if (wrappedY <= y && wrappedY + obj.cachedHeight > y) {
+			this.objs[i].drawScanline(y, wrappedY);
 		}
 	}
 };
