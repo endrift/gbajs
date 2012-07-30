@@ -406,6 +406,7 @@ GameBoyAdvanceOBJ.prototype.recalcSize = function() {
 function GameBoyAdvanceOBJLayer(i) {
 	this.bg = false;
 	this.index = i;
+	this.priority = i;
 	this.objs = new Array();
 };
 
@@ -428,7 +429,7 @@ GameBoyAdvanceOBJLayer.prototype.insert = function(obj) {
 GameBoyAdvanceOBJLayer.prototype.remove = function(obj) {
 	for (var i = 0; i < this.objs.length; ++i) {
 		if (this.objs[i] === obj) {
-			this.objs = this.objs.splice(i, 1);
+			this.objs.splice(i, 1);
 			break;
 		}
 	}
