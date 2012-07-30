@@ -359,6 +359,9 @@ GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
 };
 
 GameBoyAdvanceInterruptHandler.prototype.raiseIRQ = function(irqType) {
+	if (!(this.enabledIRQs & 1 << irqType)) {
+		return;
+	}
 	this.interruptFlags |= 1 << irqType;
 	this.io.registers[this.io.IF >> 1] = this.interruptFlags;
 

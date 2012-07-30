@@ -23,7 +23,7 @@ function ARMCore() {
 
 	this.UNALLOC_MASK = 0x0FFFFF00;
 	this.USER_MASK = 0xF0000000;
-	this.PRIV_MASK = 0x0000000F; // TODO: this prevents MSR from setting status bits
+	this.PRIV_MASK = 0x000000CF; // This is out of spec, but it seems to be what's done in other implementations
 	this.STATE_MASK = 0x00000020;
 
 	this.WORD_SIZE_ARM = 4;
@@ -91,6 +91,7 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 	];
 	this.spsr = 0;
 	this.bankedSPSRs = new Int32Array(6);
+	this.irqPending = 0;
 
 	this.cycles = 0;
 
@@ -273,9 +274,10 @@ ARMCore.prototype.hasSPSR = function() {
 
 ARMCore.prototype.raiseIRQ = function() {
 	if (this.cpsrI) {
-		// TODO: do I queue IRQs?
+		this.irqPending = true;
 		return;
 	}
+	this.irqPending = false;
 
 	var cpsr = this.packCPSR();
 	var instructionWidth = this.instructionWidth;
@@ -447,9 +449,8 @@ ARMCore.prototype.compileArm = function(instruction) {
 						}
 						if (cpu.mode != cpu.MODE_USER && (mask & cpu.PRIV_MASK)) {
 							cpu.switchMode((operand & 0x0000000F) | 0x00000010);
-							// TODO: is disabling interrupts allowed here?
-							//cpu.cpsrI = operand & 0x00000080;
-							//cpu.cpsrF = operand & 0x00000040;
+							cpu.cpsrI = operand & 0x00000080;
+							cpu.cpsrF = operand & 0x00000040;
 						}
 					}
 				};
