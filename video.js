@@ -81,15 +81,15 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.mode = value & 0x0C00;
 		obj.mosaic = value & 0x1000;
 		obj.multipalette = value & 0x2000;
-		obj.shape = value & 0xC000;
+		obj.shape = (value & 0xC000) >> 14;
 
 		if (disable && !obj.disable) {
 			this.video.objLayers[layer].insert(obj);
 		} else if (!disable && obj.disable) {
 			this.video.objLayers[layer].remove(obj);
-		} else if (y != obj.y) {
-			this.video.objLayers[layer].moved(obj);
 		}
+
+		obj.recalcSize();
 		break;
 	case 2:
 		// Attribute 1
@@ -102,13 +102,15 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 			obj.hflip = value & 0x1000;
 			obj.vflip = value & 0x2000;
 		}
-		obj.size = value & 0xC000;
+		obj.size = (value & 0xC000) >> 14;
+
+		obj.recalcSize();
 		break;
 	case 4:
 		// Attribute 2
 		obj.tileBase = value & 0x03FF;
 		obj.priority = (value & 0x0C00) >> 10;
-		obj.palette = (value & 0xF000) >> 12;
+		obj.palette = (value & 0xF000) >> 8; // This is shifted up 4 to make pushPixel faster
 		if (layer != obj.priority) {
 			this.video.objLayers[layer].remove(obj);
 			this.video.objLayers[obj.priority].insert(obj);
@@ -124,6 +126,7 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 };
 
 function GameBoyAdvancePalette() {
+	// TODO: move these constants to GameBoyAdvanceVideo
 	this.LAYER_BG0 = 0;
 	this.LAYER_BG1 = 1;
 	this.LAYER_BG2 = 2;
@@ -304,6 +307,8 @@ GameBoyAdvancePalette.prototype.setBlendY = function(y) {
 };
 
 function GameBoyAdvanceOBJ(index) {
+	this.TILE_OFFSET = 0x10000;
+
 	this.index = index;
 	this.x = 0;
 	this.y = 0;
@@ -321,75 +326,110 @@ function GameBoyAdvanceOBJ(index) {
 	this.priority = 0;
 	this.palette = 0;
 	this.drawScanline = this.drawScanlineNormal;
+	this.cachedWidth = 8;
+	this.cachedHeight = 8;
 };
 
 GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(video, y) {
-	// TODO
+	var x;
+	var offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
+	var yOff = this.y;
+	var localY = y - yOff;
+	var localYLo = localY & 0x7;
+	var tileOffset = (localY & 0x01F8) << 2;
+
+	var tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset, this, localYLo);
+	for (x = 0; x < this.cachedWidth; ++x) {
+		if (!(x & 0x7)) {
+			tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (x >> 3), this, localYLo);
+		}
+		video.pushPixelOpaque(4, this, tileRow, x & 0x7, offset, video.pixelData);
+		offset += 4;
+	}
 };
 
-GameBoyAdvanceOBJ.prototype.height = function() {
-	// TODO
-	return 8;
+GameBoyAdvanceOBJ.prototype.recalcSize = function() {
+	// TODO: scale/rotation
+	switch (this.shape) {
+	case 0:
+		// Square
+		this.cachedHeight = this.cachedWidth = (this.size + 1) << 3;
+		break;
+	case 1:
+		// Horizontal
+		switch (this.size) {
+		case 0:
+			this.cachedHeight = 8;
+			this.cachedWidth = 16;
+			break;
+		case 1:
+			this.cachedHeight = 8;
+			this.cachedWidth = 32;
+			break;
+		case 2:
+			this.cachedHeight = 16;
+			this.cachedWidth = 32;
+			break;
+		case 3:
+			this.cachedHeight = 32;
+			this.cachedWidth = 64;
+			break;
+		}
+		break;
+	case 2:
+		// Vertical
+		switch (this.size) {
+		case 0:
+			this.cachedHeight = 16;
+			this.cachedWidth = 8;
+			break;
+		case 1:
+			this.cachedHeight = 32;
+			this.cachedWidth = 8;
+			break;
+		case 2:
+			this.cachedHeight = 32;
+			this.cachedWidth = 16;
+			break;
+		case 3:
+			this.cachedHeight = 64;
+			this.cachedWidth = 32;
+			break;
+		}
+		break;
+	default:
+		// Bad!
+	}
+
 };
 
 function GameBoyAdvanceOBJLayer(i) {
 	this.bg = false;
 	this.index = i;
-	this.scanlines = new Array();
-	// FIXME: is this scanline optimization even necessary?
-	for (var j = 0; j < 160; ++j) {
-		this.scanlines.push(new Array());
-	}
+	this.objs = new Array();
 };
 
 GameBoyAdvanceOBJLayer.prototype.drawScanline = function(video) {
 	var y = video.vcount - 1;
-	var objs = this.scanlines[y];
+	var obj;
 	// Draw in reverse: OBJ0 is higher priority than OBJ1, etc
-	for (var i = objs.length; i--;) {
-		objs[i].drawScanline(video, y);
+	for (var i = this.objs.length; i--;) {
+		obj = this.objs[i];
+		if (obj.y <= y && obj.y + obj.cachedHeight > y) {
+			this.objs[i].drawScanline(video, y);
+		}
 	}
 };
 
 GameBoyAdvanceOBJLayer.prototype.insert = function(obj) {
-	var y = obj.y;
-	var height = obj.height() + y;
-	for (; y < height && y < 160; ++y) {
-		this.scanlines[y].push(obj);
-		this.scanlines[y].sort(this.objComparator);
-	}
+	this.objs.push(obj);
 };
 
 GameBoyAdvanceOBJLayer.prototype.remove = function(obj) {
-	for (var y = 0; y < 160; ++y) {
-		var scanline = this.scanlines[y];
-		for (var i = 0; i < scanline.length; ++i) {
-			if (scanline[i] === obj) {
-				this.scanlines[y] = scanline.splice(i, 1);
-				break;
-			}
-		}
-	}
-};
-
-GameBoyAdvanceOBJLayer.prototype.moved = function(obj) {
-	var objY = obj.y;
-	var height = obj.height() + objY;
-	var found = false;
-	for (var y = 0; y < 160; ++y) {
-		var scanline = this.scanlines[y];
-		for (var i = 0; i < scanline.length; ++i) {
-			if (scanline[i] === obj) {
-				if (y < objY || y >= height) {
-					this.scanlines[y] = scanline.splice(i, 1);
-				}
-				found = true;
-				break;
-			}
-		}
-		if (!found && y >= objY && y < height) {
-			this.scanlines[y].push(obj);
-			this.scanlines[y].sort(this.objComparator);
+	for (var i = 0; i < this.objs.length; ++i) {
+		if (this.objs[i] === obj) {
+			this.objs = this.objs.splice(i, 1);
+			break;
 		}
 	}
 };
@@ -730,8 +770,8 @@ GameBoyAdvanceVideo.prototype.accessMap = function(base, size, x, yBase) {
 	};
 };
 
-GameBoyAdvanceVideo.prototype.accessTile = function(base, map, y) {
-	var offset = base | (map.tile << 5);
+GameBoyAdvanceVideo.prototype.accessTile = function(base, tile, map, y) {
+	var offset = base | (tile << 5);
 	if (!map.vflip) {
 		offset |= y << 2;
 	} else {
@@ -822,12 +862,12 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	}
 
 	var map = this.accessMap(screenBase, size, xOff, yBase);
-	var tileRow = this.accessTile(charBase, map, localYLo);
+	var tileRow = this.accessTile(charBase, map.tile, map, localYLo);
 	for (x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 		localX = x + xOff;
 		if (!(localX & 0x7)) {
 			map = this.accessMap(screenBase, size, localX, yBase);
-			tileRow = this.accessTile(charBase, map, localYLo);
+			tileRow = this.accessTile(charBase, map.tile, map, localYLo);
 		}
 		this.pushPixel(index, map, tileRow, localX & 0x7, offset, this.pixelData);
 		offset += 4;
