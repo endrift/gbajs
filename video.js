@@ -50,7 +50,7 @@ function GameBoyAdvanceOAM(size) {
 	this.oam = this.buffer;
 	this.objs = new Array(128);
 	for (var i = 0; i < 128; ++i) {
-		this.objs[i] = new GameBoyAdvanceOBJ(i);
+		this.objs[i] = new GameBoyAdvanceOBJ(this, i);
 	}
 };
 
@@ -82,6 +82,20 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.mosaic = value & 0x1000;
 		obj.multipalette = value & 0x2000;
 		obj.shape = (value & 0xC000) >> 14;
+
+		switch (obj.mode) {
+		case 0x0000:
+			// Normal
+			obj.pushPixel = this.video.pushPixelOpaque;
+			break;
+		case 0x0400:
+			// Semi-transparent
+			obj.pushPixel = this.video.pushPixelBlend;
+			break;
+		case 0x0800:
+			// OBJ Window
+			break;
+		}
 
 		if (disable && !obj.disable) {
 			this.video.objLayers[layer].insert(obj);
@@ -306,8 +320,9 @@ GameBoyAdvancePalette.prototype.setBlendY = function(y) {
 	}
 };
 
-function GameBoyAdvanceOBJ(index) {
+function GameBoyAdvanceOBJ(oam, index) {
 	this.TILE_OFFSET = 0x10000;
+	this.oam = oam;
 
 	this.index = index;
 	this.x = 0;
@@ -326,11 +341,13 @@ function GameBoyAdvanceOBJ(index) {
 	this.priority = 0;
 	this.palette = 0;
 	this.drawScanline = this.drawScanlineNormal;
+	this.pushPixel = null;
 	this.cachedWidth = 8;
 	this.cachedHeight = 8;
 };
 
-GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(video, y) {
+GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(y) {
+	var video = this.oam.video;
 	var x;
 	var offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
 	var yOff = this.y;
@@ -353,7 +370,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(video, y) {
 		if (!(x & 0x7)) {
 			tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (localX >> 3), localYLo);
 		}
-		video.pushPixelOpaque(4, this, tileRow, localX & 0x7, offset, video.pixelData);
+		this.pushPixel(4, this, video, tileRow, localX & 0x7, offset, video.pixelData);
 		offset += 4;
 	}
 };
@@ -427,7 +444,7 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(video) {
 	for (var i = this.objs.length; i--;) {
 		obj = this.objs[i];
 		if (obj.y <= y && obj.y + obj.cachedHeight > y) {
-			this.objs[i].drawScanline(video, y);
+			this.objs[i].drawScanline(y);
 		}
 	}
 };
@@ -803,11 +820,11 @@ GameBoyAdvanceVideo.prototype.accessTile = function(base, tile, y) {
 	return this.vram.load32(offset);
 }
 
-GameBoyAdvanceVideo.prototype.pushPixelOpaque = function(layer, map, row, x, offset, backing) {
+GameBoyAdvanceVideo.prototype.pushPixelOpaque = function(layer, map, video, row, x, offset, backing) {
 	var index = (row >> (x << 2)) & 0xF;
 	// Index 0 is transparent
 	if (index) {
-		var pixel = this.palette.accessColor(layer, map.palette | index);
+		var pixel = video.palette.accessColor(layer, map.palette | index);
 		// TODO: 256-color mode
 		backing.data[offset] = pixel[0];
 		backing.data[offset + 1] = pixel[1];
@@ -815,15 +832,15 @@ GameBoyAdvanceVideo.prototype.pushPixelOpaque = function(layer, map, row, x, off
 	}
 };
 
-GameBoyAdvanceVideo.prototype.pushPixelBlend = function(layer, map, row, x, offset, backing) {
+GameBoyAdvanceVideo.prototype.pushPixelBlend = function(layer, map, video, row, x, offset, backing) {
 	var index = (row >> (x << 2)) & 0xF;
 	// Index 0 is transparent
 	if (index) {
-		var pixel = this.palette.accessColor(layer, map.palette | index);
+		var pixel = video.palette.accessColor(layer, map.palette | index);
 		// TODO: better detect which layer is below us
-		backing.data[offset] = backing.data[offset] * this.blendB + pixel[0] * this.blendA;
-		backing.data[offset + 1] = backing.data[offset + 1] * this.blendB + pixel[1] * this.blendA;
-		backing.data[offset + 2] = backing.data[offset + 2] * this.blendB + pixel[2] * this.blendA;
+		backing.data[offset] = backing.data[offset] * video.blendB + pixel[0] * video.blendA;
+		backing.data[offset + 1] = backing.data[offset + 1] * video.blendB + pixel[1] * video.blendA;
+		backing.data[offset + 2] = backing.data[offset + 2] * video.blendB + pixel[2] * video.blendA;
 	}
 };
 
@@ -899,7 +916,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 		if (map.hflip) {
 			localXLo = 7 - localXLo;
 		}
-		this.pushPixel(index, map, tileRow, localXLo, offset, this.pixelData);
+		this.pushPixel(index, map, this, tileRow, localXLo, offset, this.pixelData);
 		offset += 4;
 	}
 };
