@@ -196,7 +196,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
 	default:
-		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
+		this.cpu.log('Unimplemented I/O register read: 0x' + offset.toString(16));
 	}
 	return this.registers[offset >> 1];
 };
@@ -242,7 +242,7 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
 		break;
 	default:
-		throw 'Unimplemented 8-bit I/O register write: 0x' + offset.toString(16);
+		this.cpu.log('Unimplemented 8-bit I/O register write: 0x' + offset.toString(16));
 	}
 
 	if (offset & 1) {
@@ -493,7 +493,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.cpu.irq.masterEnable(value);
 		break;
 	default:
-		throw 'Unimplemented I/O register write: 0x' + offset.toString(16);
+		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
 	}
 	this.registers[offset >> 1] = value;
 };

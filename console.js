@@ -155,6 +155,7 @@ Console.prototype.run = function() {
 	var self = this;
 	var interval;
 	run = function() {
+		self.flushLog();
 		if (self.stillRunning) {
 			try {
 				if (self.breakpoints.length) {

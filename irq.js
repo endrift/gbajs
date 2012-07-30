@@ -452,8 +452,7 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize) {
 	// TODO: move to a different file
 	var remaining = (this.cpu.mmu.load32(source) & 0xFFFFFF00) >> 8;
-	this.cpu.log('Decompressing ' + remaining +' bytes from 0x' + source.toString(16) + ' to 0x' + dest.toString(16));
-	// We assume the first byte is correct
+	// We assume the signature byte (0x10) is correct
 	var blockheader;
 	var sPointer = source + 4;
 	var dPointer = dest;
