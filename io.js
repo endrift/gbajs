@@ -196,7 +196,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
 	default:
-		this.cpu.log('Unimplemented I/O register read: 0x' + offset.toString(16));
+		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
 	}
 	return this.registers[offset >> 1];
 };
