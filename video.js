@@ -595,6 +595,14 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 GameBoyAdvanceVideo.prototype.setBacking = function(backing) {
 	this.pixelData = backing.createImageData(this.HORIZONTAL_PIXELS, this.VERTICAL_PIXELS);
 	this.context = backing;
+
+	// Clear backing first
+	for (var offset = 0; offset < this.HORIZONTAL_PIXELS * this.VERTICAL_PIXELS * 4;) {
+		this.pixelData.data[offset++] = 0xFF;
+		this.pixelData.data[offset++] = 0xFF;
+		this.pixelData.data[offset++] = 0xFF;
+		this.pixelData.data[offset++] = 0xFF;
+	}
 }
 
 GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
@@ -874,7 +882,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBlank = function() {
 		this.pixelData.data[offset++] = 0xFF;
 		this.pixelData.data[offset++] = 0xFF;
 		this.pixelData.data[offset++] = 0xFF;
-		this.pixelData.data[offset++] = 0xFF;
+		offset++;
 	}
 };
 
