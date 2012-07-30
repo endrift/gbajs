@@ -334,16 +334,26 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(video, y) {
 	var x;
 	var offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
 	var yOff = this.y;
-	var localY = y - yOff;
+	var localX;
+	var localY;
+	if (!this.vflip) {
+		localY = y - yOff;
+	} else {
+		localY = this.cachedHeight - y + yOff - 1;
+	}
 	var localYLo = localY & 0x7;
 	var tileOffset = (localY & 0x01F8) << 2;
 
-	var tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset, this, localYLo);
 	for (x = 0; x < this.cachedWidth; ++x) {
-		if (!(x & 0x7)) {
-			tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (x >> 3), this, localYLo);
+		if (!this.hflip) {
+			localX = x;
+		} else {
+			localX = this.cachedWidth - x - 1;
 		}
-		video.pushPixelOpaque(4, this, tileRow, x & 0x7, offset, video.pixelData);
+		if (!(x & 0x7)) {
+			tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (localX >> 3), localYLo);
+		}
+		video.pushPixelOpaque(4, this, tileRow, localX & 0x7, offset, video.pixelData);
 		offset += 4;
 	}
 };
@@ -772,22 +782,14 @@ GameBoyAdvanceVideo.prototype.accessMap = function(base, size, x, yBase) {
 	};
 };
 
-GameBoyAdvanceVideo.prototype.accessTile = function(base, tile, map, y) {
+GameBoyAdvanceVideo.prototype.accessTile = function(base, tile, y) {
 	var offset = base | (tile << 5);
-	if (!map.vflip) {
-		offset |= y << 2;
-	} else {
-		offset |= (7 - y) << 2;
-	}
+	offset |= y << 2;
 
 	return this.vram.load32(offset);
 }
 
 GameBoyAdvanceVideo.prototype.pushPixelOpaque = function(layer, map, row, x, offset, backing) {
-	if (map.hflip) {
-		x = 7 - x;
-	}
-
 	var index = (row >> (x << 2)) & 0xF;
 	// Index 0 is transparent
 	if (index) {
@@ -800,10 +802,6 @@ GameBoyAdvanceVideo.prototype.pushPixelOpaque = function(layer, map, row, x, off
 };
 
 GameBoyAdvanceVideo.prototype.pushPixelBlend = function(layer, map, row, x, offset, backing) {
-	if (map.hflip) {
-		x = 7 - x;
-	}
-
 	var index = (row >> (x << 2)) & 0xF;
 	// Index 0 is transparent
 	if (index) {
@@ -847,6 +845,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	var xOff = bg.x;
 	var yOff = bg.y;
 	var localX;
+	var localXLo;
 	var localY = y + yOff;
 	var localYLo = localY & 0x7;
 	var screenBase = bg.screenBase;
@@ -864,14 +863,23 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(bg) {
 	}
 
 	var map = this.accessMap(screenBase, size, xOff, yBase);
-	var tileRow = this.accessTile(charBase, map.tile, map, localYLo);
+	var tileRow = this.accessTile(charBase, map.tile, !map.vflip ? localYLo : 7 - localYLo);
 	for (x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 		localX = x + xOff;
-		if (!(localX & 0x7)) {
+		localXLo = localX & 0x7;
+		if (!localXLo) {
 			map = this.accessMap(screenBase, size, localX, yBase);
-			tileRow = this.accessTile(charBase, map.tile, map, localYLo);
+			tileRow = this.accessTile(charBase, map.tile, !map.vflip ? localYLo : 7 - localYLo);
+			if (!tileRow) {
+				x += 7;
+				offset += 32;
+				continue;
+			}
 		}
-		this.pushPixel(index, map, tileRow, localX & 0x7, offset, this.pixelData);
+		if (map.hflip) {
+			localXLo = 7 - localXLo;
+		}
+		this.pushPixel(index, map, tileRow, localXLo, offset, this.pixelData);
 		offset += 4;
 	}
 };
