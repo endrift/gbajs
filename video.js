@@ -353,7 +353,7 @@ GameBoyAdvanceOBJ.prototype.recalcSize = function() {
 	switch (this.shape) {
 	case 0:
 		// Square
-		this.cachedHeight = this.cachedWidth = (this.size + 1) << 3;
+		this.cachedHeight = this.cachedWidth = 8 << this.size;
 		break;
 	case 1:
 		// Horizontal
@@ -424,6 +424,7 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(video) {
 
 GameBoyAdvanceOBJLayer.prototype.insert = function(obj) {
 	this.objs.push(obj);
+	this.objs.sort(this.objComparator);
 };
 
 GameBoyAdvanceOBJLayer.prototype.remove = function(obj) {
