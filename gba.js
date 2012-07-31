@@ -99,11 +99,11 @@ GameBoyAdvance.prototype.INFO = function(info) {
 };
 
 GameBoyAdvance.prototype.ASSERT_UNREACHED = function(err) {
-	throw "Should be unreached: " + err;
+	throw new Error("Should be unreached: " + err);
 };
 
 GameBoyAdvance.prototype.ASSERT = function(test, err) {
 	if (!test) {
-		throw "Assertion failed: " + err;
+		throw new Error("Assertion failed: " + err);
 	}
 };
