@@ -193,6 +193,9 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		return this.video.vcount;
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
+	case this.BLDALPHA:
+		this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
+		return 0;
 	default:
 		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
 	}
