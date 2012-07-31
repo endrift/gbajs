@@ -449,6 +449,15 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 	}
 };
 
+GameBoyAdvanceInterruptHandler.prototype.timerRead = function(timer) {
+	var currentTimer = this.timers[timer];
+	if (currentTimer.enable) {
+		return currentTimer.reload + (this.cpu.cycles - currentTimer.lastEvent) >> currentTimer.prescaleBits;
+	} else {
+		return currentTimer.reload;
+	}
+};
+
 GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize) {
 	// TODO: move to a different file
 	var remaining = (this.cpu.mmu.load32(source) & 0xFFFFFF00) >> 8;
