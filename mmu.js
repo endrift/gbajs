@@ -394,23 +394,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 				dest += destOffset;
 			}
 		} else {
-			if (source & 0x2) {
-				word = sourceBlock.load16(source);
-				destBlock.store16(dest, word);
-				source += sourceOffset;
-				dest += destOffset;
-				--wordsRemaining;
-			}
-
-			while (wordsRemaining > 1) {
-				word = sourceBlock.load32(source);
-				destBlock.store32(dest, word);
-				source += sourceOffset << 1;
-				dest += destOffset << 1;
-				wordsRemaining -= 2;
-			}
-
-			if (wordsRemaining) {
+			while (wordsRemaining--) {
 				word = sourceBlock.load16(source);
 				destBlock.store16(dest, word);
 				source += sourceOffset;
