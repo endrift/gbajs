@@ -210,6 +210,11 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		this.waitForIRQ();
 		this.io.store16(this.io.IE, ie);
 		break;
+	case 0x08:
+		// Sqrt
+		var root = Math.sqrt(this.cpu.gprs[0]);
+		this.cpu.gprs[0] = root | 0; // Coerce down to int
+		break;
 	case 0x0B:
 		// CpuSet
 		var source = this.cpu.gprs[0];
