@@ -65,6 +65,7 @@ function GameBoyAdvanceInterruptHandler() {
 			doIrq: 0,
 			enable: 0,
 			lastEvent: 0,
+			nextEvent: 0,
 			overflowInterval: 1
 		});
 	}
