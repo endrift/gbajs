@@ -833,21 +833,21 @@ GameBoyAdvanceVideo.prototype.layerComparator = function(a, b) {
 };
 
 GameBoyAdvanceVideo.prototype.accessMap = function(base, size, x, yBase, out) {
-	var offset = base | ((x >> 2) & 0x3E) | yBase;
+	var offset = base + ((x >> 2) & 0x3E) + yBase;
 
 	if (size & 1) {
 		offset += (x & 0x100) << 3;
 	}
 
 	var mem = this.vram.loadU16(offset);
-	out.tile = mem & 0x03FF,
-	out.hflip = mem & 0x0400,
-	out.vflip = mem & 0x0800,
+	out.tile = mem & 0x03FF;
+	out.hflip = mem & 0x0400;
+	out.vflip = mem & 0x0800;
 	out.palette = (mem & 0xF000) >> 8 // This is shifted up 4 to make pushPixel faster
 };
 
 GameBoyAdvanceVideo.prototype.accessTile = function(base, tile, y) {
-	var offset = base | (tile << 5);
+	var offset = base + (tile << 5);
 	offset |= y << 2;
 
 	return this.vram.load32(offset);
