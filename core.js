@@ -93,10 +93,12 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 		instruction();
 	
 		if (!instruction.writesPC) {
-			if (!instruction.next) {
-				instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
+			if (this.instruction) { // We might have gotten an interrupt from the instruction
+				if (!instruction.next) {
+					instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
+				}
+				this.instruction = instruction.next;
 			}
-			this.instruction = instruction.next;
 		} else {
 			this.instruction = null;
 			if (this.conditionPassed) {
