@@ -169,6 +169,10 @@ GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	switch (offset) {
 	case this.DISPCNT:
+	case this.BG0CNT:
+	case this.BG1CNT:
+	case this.BG2CNT:
+	case this.BG3CNT:
 	case this.SOUNDCNT_LO:
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
