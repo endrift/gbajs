@@ -198,14 +198,6 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.waitstates32 = this.WAITSTATES_32.slice(0);
 	this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
 
-	// This must be done after a CPU object is set
-	this.DMA_IRQ = [
-		this.cpu.irq.IRQ_DMA0,
-		this.cpu.irq.IRQ_DMA1,
-		this.cpu.irq.IRQ_DMA2,
-		this.cpu.irq.IRQ_DMA3
-	];
-
 	this.DMA_REGISTER = [
 		this.cpu.irq.io.DMA0CNT_HI >> 1,
 		this.cpu.irq.io.DMA1CNT_HI >> 1,
@@ -406,7 +398,11 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	}
 
 	if (info.doIrq) {
-		this.cpu.irq.raiseIRQ(this.DMA_IRQ[number]);
+		info.nextIRQ = this.cpu.cycles + 2;
+		info.nextIRQ += (width == 4 ? this.waitstates32[sourceRegion] + this.waitstates32[destRegion]
+		                            : this.waitstates[sourceRegion] + this.waitstates[destRegion]);
+		info.nextIRQ += (info.count - 1) * (width == 4 ? this.waitstatesSeq32[sourceRegion] + this.waitstatesSeq32[destRegion]
+		                                               : this.waitstatesSeq[sourceRegion] + this.waitstatesSeq[destRegion]);
 	}
 
 	if (!info.repeat) {

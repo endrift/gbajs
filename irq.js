@@ -50,7 +50,8 @@ function GameBoyAdvanceInterruptHandler() {
 			drq: 0,
 			timing: 0,
 			doIrq: 0,
-			enable: 0
+			enable: 0,
+			nextIRQ: 0
 		});
 	}
 
@@ -64,7 +65,7 @@ function GameBoyAdvanceInterruptHandler() {
 			doIrq: 0,
 			enable: 0,
 			lastEvent: 0,
-			overflowDuration: 1
+			overflowInterval: 1
 		});
 	}
 
@@ -151,6 +152,30 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				}
 			}
 		}
+	}
+
+	var dma = this.dma[0];
+	if (dma.enable && dma.doIrq && dma.nextIRQ && this.cpu.cycles >= dma.nextIRQ) {
+		dma.nextIRQ = 0;
+		this.raiseIRQ(this.IRQ_DMA0);
+	}
+
+	dma = this.dma[1];
+	if (dma.enable && dma.doIrq && dma.nextIRQ && this.cpu.cycles >= dma.nextIRQ) {
+		dma.nextIRQ = 0;
+		this.raiseIRQ(this.IRQ_DMA1);
+	}
+
+	dma = this.dma[2];
+	if (dma.enable && dma.doIrq && dma.nextIRQ && this.cpu.cycles >= dma.nextIRQ) {
+		dma.nextIRQ = 0;
+		this.raiseIRQ(this.IRQ_DMA2);
+	}
+
+	dma = this.dma[3];
+	if (dma.enable && dma.doIrq && dma.nextIRQ && this.cpu.cycles >= dma.nextIRQ) {
+		dma.nextIRQ = 0;
+		this.raiseIRQ(this.IRQ_DMA3);
 	}
 
 	this.pollNextEvent();
@@ -323,6 +348,30 @@ GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
 		}
 	}
 
+	var dma = this.dma[0];
+	test = dma.nextIRQ;
+	if (dma.enable && dma.doIrq && test && (!this.nextEvent || test < this.nextEvent)) {
+		this.nextEvent = test;
+	}
+
+	dma = this.dma[1];
+	test = dma.nextIRQ;
+	if (dma.enable && dma.doIrq && test && (!this.nextEvent || test < this.nextEvent)) {
+		this.nextEvent = test;
+	}
+
+	dma = this.dma[2];
+	test = dma.nextIRQ;
+	if (dma.enable && dma.doIrq && test && (!this.nextEvent || test < this.nextEvent)) {
+		this.nextEvent = test;
+	}
+
+	dma = this.dma[3];
+	test = dma.nextIRQ;
+	if (dma.enable && dma.doIrq && test && (!this.nextEvent || test < this.nextEvent)) {
+		this.nextEvent = test;
+	}
+
 	this.core.ASSERT(this.nextEvent >= this.cpu.cycles, "Next event is before present");
 };
 
@@ -397,6 +446,7 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 	currentDma.timing = (control & 0x3000) >> 12;
 	currentDma.doIrq = control & 0x4000;
 	currentDma.enable = control & 0x8000;
+	currentDma.nextIRQ = 0;
 
 	if (currentDma.drq) {
 		this.core.WARN('DRQ not implemented');
@@ -429,7 +479,7 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 	}
 	currentTimer.countUp = control & 0x0004;
 	currentTimer.doIrq = control & 0x0040;
-	currentTimer.overflowInterval = (0x10000 - currentTimer.reload) * (1 << currentTimer.prescaleBits);
+	currentTimer.overflowInterval = (0x10000 - currentTimer.reload) << currentTimer.prescaleBits;
 	var wasEnabled = currentTimer.enable;
 	currentTimer.enable = ((control & 0x0080) >> 7) << timer;
 	if (!wasEnabled && currentTimer.enable) {
