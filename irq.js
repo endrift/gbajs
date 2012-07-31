@@ -278,11 +278,11 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 	this.enabledIRQs = value;
 
 	if (this.enabledIRQs & this.MASK_SIO) {
-		this.cpu.log('Serial I/O interrupts not implemented');
+		this.core.WARN('Serial I/O interrupts not implemented');
 	}
 
 	if (this.enabledIRQs & this.MASK_KEYPAD) {
-		this.cpu.log('Keypad interrupts not implemented');
+		this.core.WARN('Keypad interrupts not implemented');
 	}
 
 	if (this.enable && this.enabledIRQs && this.interruptFlags) {
@@ -323,7 +323,7 @@ GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
 		}
 	}
 
-	this.cpu.ASSERT(this.nextEvent >= this.cpu.cycles, "Next event is before present");
+	this.core.ASSERT(this.nextEvent >= this.cpu.cycles, "Next event is before present");
 };
 
 GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
@@ -399,7 +399,7 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 	currentDma.enable = control & 0x8000;
 
 	if (currentDma.drq) {
-		this.cpu.log('DRQ not implemented');
+		this.core.WARN('DRQ not implemented');
 	}
 
 	if (currentDma.enable) {
@@ -445,7 +445,7 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 	this.pollNextEvent();
 
 	if (currentTimer.countUp) {
-		this.cpu.log('Timer count up not implemented');
+		this.core.WARN('Timer count up not implemented');
 	}
 };
 

@@ -1,5 +1,3 @@
-"use strict";
-
 function GameBoyAdvanceIO() {
 	// Video
 	this.DISPCNT = 0x000;
@@ -207,42 +205,42 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	case this.SOUND2CNT_LO | 1:
 	case this.SOUND3CNT_HI:
 	case this.SOUND4CNT_LO | 1:
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND1CNT_X | 1:
 	case this.SOUND2CNT_HI | 1:
 		value &= 0xC7;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND1CNT_LO:
 		value &= 0x7F;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND3CNT_LO:
 	case this.SOUND3CNT_HI | 1:
 		value &= 0xE0;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND4CNT_HI | 1:
 		value &= 0xC0;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUNDCNT_LO:
 		value &= 0x77;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUNDCNT_LO | 1:
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 	case this.SOUNDCNT_X:
 		value &= 0x80;
 		this.audio.writeEnable(value);
 		break;
 	case this.SOUNDBIAS | 1:
 		value &= 0xC3;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	default:
-		this.cpu.log('Unimplemented 8-bit I/O register write: 0x' + offset.toString(16));
+		this.STUB_REG('8-bit I/O', offset);
 	}
 
 	if (offset & 1) {
@@ -365,36 +363,36 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		value &= 0x007F;
 	case this.SOUND1CNT_HI:
 	case this.SOUND2CNT_LO:
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND1CNT_X:
 	case this.SOUND2CNT_HI:
 		value &= 0xC7FF;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND3CNT_LO:
 		value &= 0x00E0;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND3CNT_HI:
 		value &= 0xE0FF;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND3CNT_X:
 		value &= 0xC7FF;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND4CNT_LO:
 		value &= 0xFF3F;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND4CNT_HI:
 		value &= 0xE0FF;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUNDCNT_LO:
 		value &= 0xFF77;
-		this.cpu.log('Unimplemented sound register write: 0x' + offset.toString(16));
+		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUNDCNT_HI:
 		value &= 0xFF0F;
@@ -470,10 +468,10 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 
 	// SIO
 	case this.RCNT:
-		this.cpu.log('Unimplemented RCNT write: 0x' + value.toString(16));
+		this.STUB_REG('RCNT', offset);
 		break;
 	case this.SIOCNT:
-		this.cpu.log('Unimplemented SIOCNT write: 0x' + value.toString(16));
+		this.STUB_REG('SIOCNT', offset);
 		break;
 
 	// Misc
@@ -493,7 +491,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.cpu.irq.masterEnable(value);
 		break;
 	default:
-		this.cpu.log('Unimplemented I/O register write: 0x' + offset.toString(16));
+		this.STUB_REG('I/O', offset);
 	}
 	this.registers[offset >> 1] = value;
 };
@@ -554,4 +552,8 @@ GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
 
 	this.registers[offset >> 1] = value & 0xFFFF;
 	this.registers[(offset >> 1) + 1] = value >>> 16;
+};
+
+GameBoyAdvanceIO.prototype.STUB_REG = function(type, offset) {
+	this.core.STUB('Unimplemented ' + type + ' register write: ' + offset.toString(16));
 };

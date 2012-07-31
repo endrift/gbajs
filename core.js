@@ -36,30 +36,6 @@ function ARMCore() {
 	this.BASE_DABT = 0x00000010;
 	this.BASE_IRQ = 0x00000018;
 	this.BASE_FIQ = 0x0000001C;
-
-	this.log = function () {}
-};
-
-ARMCore.prototype.WARN = function(warn) {
-	this.log("[WARNING] " + warn);
-};
-
-ARMCore.prototype.STUB = function(func) {
-	this.log("[STUB] Unimplemented function: " + func);
-};
-
-ARMCore.prototype.OP_STUB = function(op) {
-	this.log("[STUB] Unimplemented opcode: " + op);
-};
-
-ARMCore.prototype.ASSERT_UNREACHED = function(err) {
-	throw "Should be unreached: " + err;
-};
-
-ARMCore.prototype.ASSERT = function(test, err) {
-	if (!test) {
-		throw "Assertion failed: " + err;
-	}
 };
 
 ARMCore.prototype.resetCPU = function(startOffset) {
@@ -138,10 +114,6 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 		this.irq.updateTimers();
 	};
 };
-
-ARMCore.prototype.setLogger = function(logger) {
-	this.log = logger;
-}
 
 ARMCore.prototype.fetchPage = function(address) {
 	// FIXME: because this page held onto, it won't get invalidated if we're using it, even if
@@ -238,7 +210,7 @@ ARMCore.prototype.switchMode = function(newMode) {
 		if (newBank != oldBank) {
 			// TODO: support FIQ
 			if (newMode == this.FIQ || this.mode == this.FIQ) {
-				this.log('FIQ mode switching is unimplemented');
+				throw 'FIQ mode switching is unimplemented';
 			}
 			this.bankedRegisters[oldBank][0] = this.gprs[this.SP];
 			this.bankedRegisters[oldBank][1] = this.gprs[this.LR];
@@ -476,7 +448,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 			var shiftType = instruction & 0x00000060;
 			var rm = instruction & 0x0000000F;
 			var shiftOp = function() {
-				this.ASSERT_UNREACHED("BUG: invalid barrel shifter");
+				throw 'BUG: invalid barrel shifter';
 			};
 			if (instruction & 0x02000000) {
 				var immediate = instruction & 0x000000FF;
@@ -1487,7 +1459,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 			// Coprocessor data operation/SWI
 			break;
 		default:
-			this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
+			throw 'Bad opcode: 0x' + instruction.toString(16);
 		}
 	}
 
@@ -2376,7 +2348,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			this.WARN("Undefined instruction: 0x" + instruction.toString(16));
 		}
 	} else {
-		this.ASSERT_UNREACHED("Bad opcode: 0x" + instruction.toString(16));
+		throw 'Bad opcode: 0x' + instruction.toString(16);
 	}
 
 	op.execMode = this.MODE_THUMB;

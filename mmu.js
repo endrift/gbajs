@@ -347,7 +347,7 @@ GameBoyAdvanceMMU.prototype.scheduleDma = function(number, info) {
 	case this.DMA_TIMING_CUSTOM:
 		switch (number) {
 		case 0:
-			this.cpu.log('Discarding invalid DMA0 scheduling');
+			this.core.WARN('Discarding invalid DMA0 scheduling');
 			break;
 		case 1:
 		case 2:
@@ -418,7 +418,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 			}
 		}
 	} else {
-		this.cpu.log('Invalid DMA');
+		this.core.WARN('Invalid DMA');
 	}
 
 	if (info.doIrq) {

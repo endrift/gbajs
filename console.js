@@ -22,7 +22,7 @@ function Console(gba) {
 	this.memory.refreshAll();
 	this.logQueue = [];
 	var self = this;
-	gba.cpu.setLogger(function (message) { self.log(message) });
+	gba.setLogger(function (message) { self.log(message) });
 }
 
 Console.prototype.updateGPRs = function() {

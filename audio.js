@@ -73,7 +73,7 @@ GameBoyAdvanceAudio.prototype.scheduleFIFODma = function(number, info) {
 		this.dmaB = number;
 		break;
 	default:
-		this.cpu.log('Tried to schedule FIFO DMA for non-FIFO destination');
+		this.core.WARN('Tried to schedule FIFO DMA for non-FIFO destination');
 		break;
 	}
 };
