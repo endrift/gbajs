@@ -926,10 +926,10 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg) {
 
 	var yBase = (localY << 3) & 0x7C0;
 	if (size == 2) {
-		yBase += (y << 3) & 0x800;
+		yBase += (localY << 3) & 0x800;
 	}
 	if (size == 3) {
-		offset += (y << 4) & 0x1000;
+		yBase += (localY << 4) & 0x1000;
 	}
 
 	this.accessMap(screenBase, size, xOff, yBase, map);
