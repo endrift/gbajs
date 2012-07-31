@@ -18,8 +18,8 @@ function GameBoyAdvanceKeypad() {
 	this.LEFT = 5;
 	this.UP = 6;
 	this.DOWN = 7;
-	this.L = 8;
-	this.R = 9;
+	this.R = 8;
+	this.L = 9;
 
 	this.currentDown = 0x03FF;
 
