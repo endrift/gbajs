@@ -89,6 +89,10 @@ GameBoyAdvance.prototype.setRom = function(rom) {
 	this.mmu.loadRom(rom, true);
 };
 
+GameBoyAdvance.prototype.hasRom = function() {
+	return !!this.mmu.memory[this.mmu.REGION_CART0];
+};
+
 GameBoyAdvance.prototype.loadRomFromFile = function(romFile) {
 	var reader = new FileReader();
 	var self = this;
