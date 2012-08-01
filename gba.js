@@ -135,6 +135,9 @@ GameBoyAdvance.prototype.advanceFrame = function() {
 };
 
 GameBoyAdvance.prototype.runStable = function() {
+	if (this.interval) {
+		return; // Already running
+	}
 	var self = this;
 	var timer = 0;
 	var frames = 0;
@@ -156,6 +159,7 @@ GameBoyAdvance.prototype.runStable = function() {
 			} catch(exception) {
 				self.ERROR(exception);
 				clearInterval(self.interval);
+				this.interval = null;
 			}
 		};
 	} else {
@@ -165,6 +169,7 @@ GameBoyAdvance.prototype.runStable = function() {
 			} catch(exception) {
 				self.ERROR(exception);
 				clearInterval(self.interval);
+				this.interval = null;
 			}
 		};
 	}
