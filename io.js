@@ -209,6 +209,22 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
 	case this.BLDALPHA:
+	case this.DMA0SAD_LO:
+	case this.DMA0SAD_HI:
+	case this.DMA0DAD_LO:
+	case this.DMA0DAD_HI:
+	case this.DMA1SAD_LO:
+	case this.DMA1SAD_HI:
+	case this.DMA1DAD_LO:
+	case this.DMA1DAD_HI:
+	case this.DMA2SAD_LO:
+	case this.DMA2SAD_HI:
+	case this.DMA2DAD_LO:
+	case this.DMA2DAD_HI:
+	case this.DMA3SAD_LO:
+	case this.DMA3SAD_HI:
+	case this.DMA3DAD_LO:
+	case this.DMA3DAD_HI:
 		this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
 		return 0;
 	default:
