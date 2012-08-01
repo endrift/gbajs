@@ -149,7 +149,7 @@ Console.prototype.run = function() {
 	this.stillRunning = true;
 	var regs = document.getElementById('registers');
 	var mem = document.getElementById('memory');
-	var start = new Date().getTime();
+	var start = Date.now();
 	regs.setAttribute('class', 'disabled');
 	mem.setAttribute('class', 'disabled');
 	var self = this;
@@ -175,7 +175,7 @@ Console.prototype.run = function() {
 				}
 			} catch (exception) {
 				clearInterval(interval);
-				var time = (new Date().getTime() - start);
+				var time = (Date.now() - start);
 				self.log("Exception hit after " + self.cpu.cycles + " cycles in " +  time + " milliseconds! (" + Math.floor(self.cpu.cycles / time * 100000 / self.gba.irq.FREQUENCY) + "% speed)");
 				self.log(exception);
 				if (exception.stack) {
@@ -202,7 +202,7 @@ Console.prototype.runFrame = function() {
 	this.stillRunning = true;
 	var regs = document.getElementById('registers');
 	var mem = document.getElementById('memory');
-	var start = new Date().getTime();
+	var start = Date.now();
 	regs.setAttribute('class', 'disabled');
 	mem.setAttribute('class', 'disabled');
 	var self = this;
