@@ -592,6 +592,13 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.drawScanline = this.drawScanlineMode0;
 
 	this.drawLayers = [];
+
+	this.sharedMap = {
+		tile: 0,
+		hflip: false,
+		vflip: false,
+		palette: 0
+	};
 };
 
 GameBoyAdvanceVideo.prototype.setBacking = function(backing) {
@@ -917,12 +924,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg) {
 	var size = bg.size;
 	this.pushPixel = bg.pushPixel;
 	var index = bg.index;
-	var map = {
-		tile: 0,
-		hflip: false,
-		vflip: false,
-		palette: 0
-	};
+	var map = this.sharedMap;
 
 	var yBase = (localY << 3) & 0x7C0;
 	if (size == 2) {
