@@ -46,11 +46,13 @@ function GameBoyAdvance() {
 	this.keypad.registerKeyboardHandlers();
 	this.doStep = this.returnFalse;
 
+	this.seenFrame = false;
 	this.interval = null;
 	this.reportFPS = null;
 };
 
 GameBoyAdvance.prototype.setCanvas = function(canvas) {
+	var self = this;
 	if (canvas.offsetWidth != 240 || canvas.offsetHeight != 160) {
 		this.indirectCanvas = document.createElement("canvas");
 		this.indirectCanvas.setAttribute("height", "160"); 
@@ -58,12 +60,16 @@ GameBoyAdvance.prototype.setCanvas = function(canvas) {
 		this.targetCanvas = canvas;
 		this.setCanvasDirect(this.indirectCanvas);
 		var targetContext = canvas.getContext('2d');
-		var self = this;
 		this.video.drawCallback = function() {
 			targetContext.drawImage(self.indirectCanvas, 0, 0, canvas.offsetWidth, canvas.offsetHeight);
+			self.finishFrame();
 		}
 	} else {
 		this.setCanvasDirect(canvas);
+		var self = this;
+		this.video.drawCallback = function() {
+			self.finishFrame();
+		}
 	}
 };
 
@@ -111,24 +117,20 @@ GameBoyAdvance.prototype.step = function() {
 };
 
 GameBoyAdvance.prototype.returnFalse = function() {
-	this.returnFalse = function() { return false; };
+	return false;
 };
 
-GameBoyAdvance.prototype.waitVblank = function() {
-	if (this.video.inVblank == true) {
-		if (!this.seenVblank) {
-			this.seenVblank = true;
-			return false;
-		}
-	} else {
-		this.seenVblank = false;
-	}
-	return true;
+GameBoyAdvance.prototype.finishFrame = function() {
+	this.seenFrame = true;
+};
+
+GameBoyAdvance.prototype.waitFrame = function() {
+	return !this.seenFrame;
 };
 
 GameBoyAdvance.prototype.advanceFrame = function() {
-	this.seenVblank = true;
-	this.doStep = this.waitVblank;
+	this.seenFrame = false;
+	this.doStep = this.waitFrame;
 	this.step();
 };
 
