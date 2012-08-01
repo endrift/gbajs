@@ -51,6 +51,23 @@ function GameBoyAdvance() {
 };
 
 GameBoyAdvance.prototype.setCanvas = function(canvas) {
+	if (canvas.offsetWidth != 240 || canvas.offsetHeight != 160) {
+		this.indirectCanvas = document.createElement("canvas");
+		this.indirectCanvas.setAttribute("height", "160"); 
+		this.indirectCanvas.setAttribute("width", "240"); 
+		this.targetCanvas = canvas;
+		this.setCanvasDirect(this.indirectCanvas);
+		var targetContext = canvas.getContext('2d');
+		var self = this;
+		this.video.drawCallback = function() {
+			targetContext.drawImage(self.indirectCanvas, 0, 0, canvas.offsetWidth, canvas.offsetHeight);
+		}
+	} else {
+		this.setCanvasDirect(canvas);
+	}
+};
+
+GameBoyAdvance.prototype.setCanvasDirect = function(canvas) {
 	this.context = canvas.getContext('2d');
 	this.video.setBacking(this.context);
 };

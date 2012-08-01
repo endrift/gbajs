@@ -501,6 +501,8 @@ function GameBoyAdvanceVideo() {
 	this.VERTICAL_TOTAL_PIXELS = 228;
 
 	this.TOTAL_LENGTH = 280896;
+
+	this.drawCallback = function() {};
 };
 
 GameBoyAdvanceVideo.prototype.clear = function() {
@@ -972,4 +974,5 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function(backing) {
 
 GameBoyAdvanceVideo.prototype.finishDraw = function() {
 	this.context.putImageData(this.pixelData, 0, 0);
+	this.drawCallback();
 };
