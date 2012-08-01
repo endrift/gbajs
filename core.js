@@ -87,6 +87,7 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 			instruction = this.instruction;
 		} else {
 			instruction = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
+			this.instruction = instruction;
 		}
 		gprs[this.PC] += this.instructionWidth;
 		this.conditionPassed = true;
