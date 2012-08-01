@@ -178,7 +178,7 @@ GameBoyAdvance.prototype.setLogger = function(logger) {
 };
 
 GameBoyAdvance.prototype.ERROR = function(error) {
-	if (this.logLevel & this.LOG_WARN) {
+	if (this.logLevel & this.LOG_ERROR) {
 		this.log('[ERROR] ' + error);
 	}
 };
