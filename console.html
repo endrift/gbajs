@@ -19,6 +19,12 @@ function runTest(r) {
 	gbaCon.memory.refreshAll();
 }
 
+function loadRomFromFile(romFile) {
+	var reader = new FileReader();
+	reader.onload = function(e) { runTest(e.target.result); }
+	reader.readAsArrayBuffer(romFile);
+};
+
 var core = new GameBoyAdvance();
 var rom = null;
 
@@ -33,8 +39,7 @@ window.onload = function() {
 	gbaCon.log("Loading BIOS...");
 	loadRom('bios.bin', function(bios) {
 		core.mmu.loadBios(bios);
-		gbaCon.log("BIOS loaded! Loading ROM...");
-		loadRom('test.rom', runTest);
+		gbaCon.log("BIOS loaded!");
 	});
 };
 </script>
@@ -52,6 +57,11 @@ window.onload = function() {
 			<button onclick="gbaCon.runFrame()">Next frame</button>
 			<button onclick="gbaCon.run()">Run quickly</button>
 			<button onclick="gbaCon.pause()">Pause</button>
+		</section>
+		<section id="loading">
+			<button onclick="loadRom('test.rom', runTest)">Load default</button>
+			<button onclick="document.getElementById('upload').click()">Load custom</button>
+			<input type="file" id="upload" onchange="loadRomFromFile(this.files[0])" style="display: none">
 		</section>
 		<section id="registers">
 			<div>
