@@ -1,0 +1,35 @@
+<html>
+<head>
+<title>GBA.js</title>
+<script src="core.js"></script>
+<script src="mmu.js"></script>
+<script src="io.js"></script>
+<script src="audio.js"></script>
+<script src="video.js"></script>
+<script src="irq.js"></script>
+<script src="keypad.js"></script>
+<script src="gba.js"></script>
+<script src="xhr.js"></script>
+
+<script>
+var gba = new GameBoyAdvance();
+gba.setLogger(function(error) {
+	window.alert('Sorry! The game has crashed');
+});
+
+window.onload = function() {
+	var canvas = document.getElementById('screen');
+	gba.setCanvas(canvas);
+
+	loadRom('bios.bin', function(bios) {
+		gba.setBios(bios);
+	});
+}
+</script>
+</head>
+<body>
+<canvas id="screen" width="480" height="320"></canvas>
+<button onclick="gba.runStable()">Run</button>
+<input type="file" onchange="gba.loadRomFromFile(this.files[0])">
+</body>
+</html>

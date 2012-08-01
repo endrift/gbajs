@@ -41,6 +41,39 @@ function GameBoyAdvance() {
 
 	this.keypad.core = this;
 
+	this.reset();
+
+	this.keypad.registerKeyboardHandlers();
+	this.doStep = this.returnFalse;
+
+	this.interval = null;
+	this.reportFPS = null;
+};
+
+GameBoyAdvance.prototype.setCanvas = function(canvas) {
+	this.context = canvas.getContext('2d');
+	this.video.setBacking(this.context);
+};
+
+GameBoyAdvance.prototype.setBios = function(bios) {
+	this.mmu.loadBios(bios);
+};
+
+GameBoyAdvance.prototype.setRom = function(rom) {
+	// TODO: be able to reset the ROM live
+	//this.reset();
+
+	this.mmu.loadRom(rom, true);
+};
+
+GameBoyAdvance.prototype.loadRomFromFile = function(romFile) {
+	var reader = new FileReader();
+	var self = this;
+	reader.onload = function(e) { self.setRom(e.target.result); }
+	reader.readAsArrayBuffer(romFile);
+};
+
+GameBoyAdvance.prototype.reset = function() {
 	this.mmu.clear();
 	this.io.clear();
 	this.audio.clear();
@@ -51,21 +84,69 @@ function GameBoyAdvance() {
 	this.mmu.mmap(this.mmu.REGION_VRAM, this.video.vram);
 	this.mmu.mmap(this.mmu.REGION_OAM, this.video.oam);
 
-	this.keypad.registerKeyboardHandlers();
+	this.cpu.resetCPU(0x08000000);
 };
 
-GameBoyAdvance.prototype.setCanvas = function(canvas) {
-	this.context = canvas.getContext('2d');
-	this.video.setBacking(this.context);
+GameBoyAdvance.prototype.step = function() {
+	while (this.doStep()) {
+		this.cpu.step();
+	}
 };
 
-GameBoyAdvance.prototype.reset = function() {
-	this.mmu.clear();
-	this.io.clear();
-	this.audio.clear();
-	this.video.clear();
+GameBoyAdvance.prototype.returnFalse = function() {
+	this.returnFalse = function() { return false; };
+};
 
-	this.core.resetCPU(0x08000000);
+GameBoyAdvance.prototype.waitVblank = function() {
+	if (this.video.inVblank == true) {
+		if (!this.seenVblank) {
+			this.seenVblank = true;
+			return false;
+		}
+	} else {
+		this.seenVblank = false;
+	}
+	return true;
+};
+
+GameBoyAdvance.prototype.advanceFrame = function() {
+	this.seenVblank = true;
+	this.doStep = this.waitVblank;
+	this.step();
+};
+
+GameBoyAdvance.prototype.runStable = function() {
+	var self = this;
+	var timer = 0;
+	var frames = 0;
+	var runFunc;
+
+	if (this.reportFPS) {
+		runFunc = function() {
+			try {
+				var start = Date.now();
+				self.advanceFrame();
+				++frames;
+				timer += Date.now() - start;
+				if (frame > 600) {
+					self.reportFPS((frame * 1000) / timer);
+				}
+			} catch(exception) {
+				self.ERROR(exception);
+				clearInterval(self.interval);
+			}
+		};
+	} else {
+		runFunc = function() {
+			try {
+				self.advanceFrame();
+			} catch(exception) {
+				self.ERROR(exception);
+				clearInterval(self.interval);
+			}
+		};
+	}
+	this.interval = setInterval(runFunc, 1/60);
 };
 
 GameBoyAdvance.prototype.log = function(message) {};
@@ -76,7 +157,7 @@ GameBoyAdvance.prototype.setLogger = function(logger) {
 
 GameBoyAdvance.prototype.ERROR = function(error) {
 	if (this.logLevel & this.LOG_WARN) {
-		this.log('[ERROR] ' + warn);
+		this.log('[ERROR] ' + error);
 	}
 };
 
