@@ -331,10 +331,10 @@ GameBoyAdvanceMMU.prototype.scheduleDma = function(number, info) {
 		this.serviceDma(number, info);
 		break;
 	case this.DMA_TIMING_HBLANK:
-		this.scheduleHblankDma(number, info);
+		// Handled implicitly
 		break;
 	case this.DMA_TIMING_VBLANK:
-		this.scheduleVblankDma(number, info);
+		// Handled implicitly
 		break;
 	case this.DMA_TIMING_CUSTOM:
 		switch (number) {
@@ -353,11 +353,23 @@ GameBoyAdvanceMMU.prototype.scheduleDma = function(number, info) {
 };
 
 GameBoyAdvanceMMU.prototype.runHblankDmas = function() {
-	// TODO
+	var dma;
+	for (var i = 0; i < this.cpu.irq.dma.length; ++i) {
+		dma = this.cpu.irq.dma[i];
+		if (dma.enable && dma.timing == this.DMA_TIMING_HBLANK) {
+			this.serviceDma(i, dma);
+		}
+	}
 };
 
 GameBoyAdvanceMMU.prototype.runVblankDmas = function() {
-	// TODO
+	var dma;
+	for (var i = 0; i < this.cpu.irq.dma.length; ++i) {
+		dma = this.cpu.irq.dma[i];
+		if (dma.enable && dma.timing == this.DMA_TIMING_VBLANK) {
+			this.serviceDma(i, dma);
+		}
+	}
 };
 
 GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
@@ -411,6 +423,8 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		// Clear the enable bit in memory
 		var io = this.memory[this.REGION_IO];
 		io.registers[this.DMA_REGISTER[number]] &= 0x7FE0;
+	} else {
+		this.scheduleDma(number, info);
 	}
 };
 
