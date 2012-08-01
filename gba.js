@@ -139,16 +139,19 @@ GameBoyAdvance.prototype.runStable = function() {
 	var timer = 0;
 	var frames = 0;
 	var runFunc;
+	var start = Date.now();
 
 	if (this.reportFPS) {
 		runFunc = function() {
 			try {
-				var start = Date.now();
+				timer += Date.now() - start;
+				start = Date.now();
 				self.advanceFrame();
 				++frames;
-				timer += Date.now() - start;
-				if (frame > 600) {
-					self.reportFPS((frame * 1000) / timer);
+				if (frames == 20) {
+					self.reportFPS((frames * 1000) / timer);
+					frames = 0;
+					timer = 0;
 				}
 			} catch(exception) {
 				self.ERROR(exception);
@@ -165,7 +168,7 @@ GameBoyAdvance.prototype.runStable = function() {
 			}
 		};
 	}
-	this.interval = setInterval(runFunc, 1/60);
+	this.interval = setInterval(runFunc, 1000/60);
 };
 
 GameBoyAdvance.prototype.log = function(message) {};

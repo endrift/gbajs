@@ -21,6 +21,12 @@ window.onload = function() {
 	var canvas = document.getElementById('screen');
 	gba.setCanvas(canvas);
 
+	gba.logLevel = gba.LOG_ERROR;
+	gba.reportFPS = function(fps) {
+		var counter = document.getElementById('fps');
+		counter.textContent = Math.floor(fps);
+	};
+
 	loadRom('bios.bin', function(bios) {
 		gba.setBios(bios);
 	});
@@ -31,5 +37,6 @@ window.onload = function() {
 <canvas id="screen" width="480" height="320"></canvas>
 <button onclick="gba.runStable()">Run</button>
 <input type="file" onchange="gba.loadRomFromFile(this.files[0])">
+<p><span id="fps">0</span> frames per second</p>
 </body>
 </html>
