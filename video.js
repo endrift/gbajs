@@ -86,11 +86,11 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		switch (obj.mode) {
 		case 0x0000:
 			// Normal
-			obj.pushPixel = this.video.pushPixelOpaque;
+			obj.pushPixel = obj.multipalette ? this.video.pushPixelOpaque256 : this.video.pushPixelOpaque;
 			break;
 		case 0x0400:
 			// Semi-transparent
-			obj.pushPixel = this.video.pushPixelBlend;
+			obj.pushPixel = obj.multipalette ? this.video.pushPixelBlend256 : this.video.pushPixelBlend;
 			break;
 		case 0x0800:
 			// OBJ Window
@@ -770,14 +770,14 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 
 	var i;
 	for (i = 0; i < 4; ++i) {
-		this.bg[i].pushPixel = this.pushPixelOpaque;
+		this.bg[i].pushPixel = this.bg[i].multipalette ? this.pushPixelOpaque256 : this.pushPixelOpaque;
 	}
 	switch (this.blendMode) {
 	case 1:
 		// Alpha
 		for (i = 0; i < 4; ++i) {
 			if (this.target1[i]) {
-				this.bg[i].pushPixel = this.pushPixelBlend;
+				this.bg[i].pushPixel = this.bg[i].multipalette ? this.bg[i].pushPixelBlend256 : this.pushPixelBlend;
 			}
 		}
 	case 0:
@@ -867,7 +867,16 @@ GameBoyAdvanceVideo.prototype.pushPixelOpaque = function(layer, map, video, row,
 	// Index 0 is transparent
 	if (index) {
 		var pixel = video.palette.accessColor(layer, map.palette | index);
-		// TODO: 256-color mode
+		backing[offset] = pixel[0];
+		backing[offset + 1] = pixel[1];
+		backing[offset + 2] = pixel[2];
+	}
+};
+
+GameBoyAdvanceVideo.prototype.pushPixelOpaque256 = function(layer, map, video, row, x, offset, backing) {
+	var index = (row >> (x << 3)) & 0xFF;
+	if (index) {
+		var pixel = video.palette.accessColor(layer, index);
 		backing[offset] = pixel[0];
 		backing[offset + 1] = pixel[1];
 		backing[offset + 2] = pixel[2];
@@ -879,6 +888,18 @@ GameBoyAdvanceVideo.prototype.pushPixelBlend = function(layer, map, video, row, 
 	// Index 0 is transparent
 	if (index) {
 		var pixel = video.palette.accessColor(layer, map.palette | index);
+		// TODO: better detect which layer is below us
+		backing[offset] = backing[offset] * video.blendB + pixel[0] * video.blendA;
+		backing[offset + 1] = backing[offset + 1] * video.blendB + pixel[1] * video.blendA;
+		backing[offset + 2] = backing[offset + 2] * video.blendB + pixel[2] * video.blendA;
+	}
+};
+
+GameBoyAdvanceVideo.prototype.pushPixelBlend256 = function(layer, map, video, row, x, offset, backing) {
+	var index = (row >> (x << 3)) & 0xFF;
+	// Index 0 is transparent
+	if (index) {
+		var pixel = video.palette.accessColor(layer, index);
 		// TODO: better detect which layer is below us
 		backing[offset] = backing[offset] * video.blendB + pixel[0] * video.blendA;
 		backing[offset + 1] = backing[offset + 1] * video.blendB + pixel[1] * video.blendA;
@@ -924,9 +945,9 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg) {
 	var screenBase = bg.screenBase;
 	var charBase = bg.charBase;
 	var size = bg.size;
-	this.pushPixel = bg.pushPixel;
 	var index = bg.index;
 	var map = this.sharedMap;
+	var paletteShift = bg.multipalette ? 1 : 0;
 
 	var yBase = (localY << 3) & 0x7C0;
 	if (size == 2) {
@@ -937,23 +958,42 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg) {
 	}
 
 	this.accessMap(screenBase, size, xOff, yBase, map);
-	var tileRow = this.accessTile(charBase, map.tile, !map.vflip ? localYLo : 7 - localYLo);
+	var tileRow = this.accessTile(charBase, map.tile << paletteShift, (!map.vflip ? localYLo : 7 - localYLo) << paletteShift);
 	for (x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 		localX = x + xOff;
 		localXLo = localX & 0x7;
-		if (!localXLo) {
-			this.accessMap(screenBase, size, localX, yBase, map);
-			tileRow = this.accessTile(charBase, map.tile, !map.vflip ? localYLo : 7 - localYLo);
-			if (!tileRow) {
-				x += 7;
-				offset += 32;
-				continue;
+		if (!paletteShift) {
+			if (!localXLo) {
+				this.accessMap(screenBase, size, localX, yBase, map);
+				tileRow = this.accessTile(charBase, map.tile, !map.vflip ? localYLo : 7 - localYLo);
+				if (!tileRow) {
+					x += 7;
+					offset += 32;
+					continue;
+				}
+			}
+		} else {
+			if (!localXLo) {
+				this.accessMap(screenBase, size, localX, yBase, map);
+				tileRow = this.accessTile(charBase, map.tile << 1, (!map.vflip ? localYLo : 7 - localYLo) << 1);
+				if (!tileRow) {
+					x += 3;
+					offset += 16;
+					continue;
+				}
+			} else if (!(localXLo & 0x3)) {
+				tileRow = this.accessTile(charBase + 4, map.tile << 1, (!map.vflip ? localYLo : 7 - localYLo) << 1);
+				if (!tileRow) {
+					x += 3;
+					offset += 16;
+					continue;
+				}
 			}
 		}
 		if (map.hflip) {
 			localXLo = 7 - localXLo;
 		}
-		this.pushPixel(index, map, this, tileRow, localXLo, offset, backing);
+		bg.pushPixel(index, map, this, tileRow, localXLo, offset, backing);
 		offset += 4;
 	}
 };
