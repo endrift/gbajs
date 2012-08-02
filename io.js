@@ -174,7 +174,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.BG2CNT:
 	case this.BG3CNT:
 	case this.SOUND1CNT_LO:
-	case this.SOUND2CNT_LO:
+	case this.SOUND3CNT_LO:
 	case this.SOUNDCNT_LO:
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
@@ -197,6 +197,19 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		return this.registers[offset >> 1] | this.video.readDisplayStat();
 	case this.VCOUNT:
 		return this.video.vcount;
+
+	// Sound
+	case this.SOUND1CNT_HI:
+	case this.SOUND2CNT_LO:
+		return this.registers[offset >> 1] & 0xFFC0;
+		
+	case this.SOUND1CNT_X:
+	case this.SOUND2CNT_HI:
+	case this.SOUND3CNT_X:
+		return this.registers[offset >> 1] & 0x4000;
+
+	case this.SOUND3CNT_HI:
+		return this.registers[offset >> 1] & 0xE000;
 
 	case this.SOUND4CNT_LO:
 		return this.registers[offset >> 1] & 0xFF00;
