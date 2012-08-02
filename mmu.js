@@ -51,10 +51,6 @@ ROMView.prototype.store8 = function(offset, value) {};
 
 ROMView.prototype.store16 = function(offset, value) {};
 
-ROMView.prototype.storeU8 = function(offset, value) {};
-
-ROMView.prototype.storeU16 = function(offset, value) {};
-
 ROMView.prototype.store32 = function(offset, value) {};
 
 function BIOSView(rom, offset) {
@@ -97,6 +93,25 @@ BIOSView.prototype.load32 = function(offset) {
 	}
 	return this.view.getInt32(offset, true);
 };
+
+function DummyMemory() {
+};
+
+DummyMemory.prototype.load8 = function(offset) {};
+
+DummyMemory.prototype.load16 = function(offset) {};
+
+DummyMemory.prototype.loadU8 = function(offset) {};
+
+DummyMemory.prototype.loadU16 = function(offset) {};
+
+DummyMemory.prototype.load32 = function(offset) {};
+
+DummyMemory.prototype.store8 = function(offset, value) {};
+
+DummyMemory.prototype.store16 = function(offset, value) {};
+
+DummyMemory.prototype.store32 = function(offset, value) {};
 
 function GameBoyAdvanceMMU() {
 	this.REGION_BIOS = 0x0;
@@ -181,12 +196,12 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		null, // This is owned by GameBoyAdvancePalette
 		null, // This is owned by GameBoyAdvanceVRAM
 		null, // This is owned by GameBoyAdvanceOAM
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
+		new DummyMemory(),
+		new DummyMemory(),
+		new DummyMemory(),
+		new DummyMemory(),
+		new DummyMemory(),
+		new DummyMemory(),
 		null,
 		null // Unused
 	];
