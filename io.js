@@ -196,6 +196,11 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.VCOUNT:
 		return this.video.vcount;
 
+	case this.SOUND4CNT_LO:
+		return this.registers[offset >> 1] & 0xFF00;
+	case this.SOUND4CNT_HI:
+		return this.registers[offset >> 1] & 0x40FF;
+
 	// Timers
 	case this.TM0CNT_LO:
 		return this.cpu.irq.timerRead(0);
