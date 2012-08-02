@@ -90,7 +90,7 @@ GameBoyAdvance.prototype.setRom = function(rom) {
 };
 
 GameBoyAdvance.prototype.hasRom = function() {
-	return !!this.mmu.memory[this.mmu.REGION_CART0];
+	return !!this.mmu.memory[this.mmu.REGION_CART0].buffer;
 };
 
 GameBoyAdvance.prototype.loadRomFromFile = function(romFile) {
