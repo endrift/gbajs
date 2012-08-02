@@ -309,11 +309,11 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 	this.enabledIRQs = value;
 
 	if (this.enabledIRQs & this.MASK_SIO) {
-		this.core.WARN('Serial I/O interrupts not implemented');
+		this.core.STUB('Serial I/O interrupts not implemented');
 	}
 
 	if (this.enabledIRQs & this.MASK_KEYPAD) {
-		this.core.WARN('Keypad interrupts not implemented');
+		this.core.STUB('Keypad interrupts not implemented');
 	}
 
 	if (this.enable && this.enabledIRQs && this.interruptFlags) {
