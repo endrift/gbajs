@@ -2213,7 +2213,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// ADD(5)
 				op = function() {
 					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					gprs[rd] = gprs[cpu.PC] + immediate;
+					gprs[rd] = (gprs[cpu.PC] & 0xFFFFFFFC) + immediate;
 				};
 			}
 			op.writesPC = false;
