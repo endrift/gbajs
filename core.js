@@ -1934,7 +1934,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) != immediate &&
+				cpu.cpsrV = (gprs[rn] & 0x80000000) != (immediate & 0x80000000) &&
 							(gprs[rn] & 0x80000000) != (d & 0x80000000);
 				gprs[rn] = d;
 			};
