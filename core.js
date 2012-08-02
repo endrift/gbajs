@@ -1190,9 +1190,9 @@ ARMCore.prototype.compileArm = function(instruction) {
 								return;
 							}
 							var addr = address();
+							cpu.mmu.store16(addr, gprs[rd]);
 							cpu.mmu.wait32(addr);
 							cpu.mmu.wait32(gprs[cpu.PC]);
-							cpu.mmu.store16(addr, gprs[rd]);
 						};
 					}
 				}
@@ -1342,9 +1342,9 @@ ARMCore.prototype.compileArm = function(instruction) {
 							return;
 						}
 						var addr = address();
+						cpu.mmu.store8(addr, gprs[rd]);
 						cpu.mmu.wait32(addr);
 						cpu.mmu.wait32(gprs[cpu.PC]);
-						cpu.mmu.store8(addr, gprs[rd]);
 					};
 				} else {
 					// STR
@@ -1354,9 +1354,9 @@ ARMCore.prototype.compileArm = function(instruction) {
 							return;
 						}
 						var addr = address();
+						cpu.mmu.store32(addr, gprs[rd]);
 						cpu.mmu.wait32(addr);
 						cpu.mmu.wait32(gprs[cpu.PC]);
-						cpu.mmu.store32(addr, gprs[rd]);
 					};
 				}
 			}
@@ -1976,25 +1976,25 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		case 0x0000:
 			// STR(2)
 			op = function() {
+				cpu.mmu.store32(gprs[rn] + gprs[rm], gprs[rd]);
 				cpu.mmu.wait(gprs[cpu.PC]);
 				cpu.mmu.wait32(gprs[rn] + gprs[rm]);
-				cpu.mmu.store32(gprs[rn] + gprs[rm], gprs[rd]);
 			}
 			break;
 		case 0x0200:
 			// STRH(2)
 			op = function() {
+				cpu.mmu.store16(gprs[rn] + gprs[rm], gprs[rd]);
 				cpu.mmu.wait(gprs[cpu.PC]);
 				cpu.mmu.wait(gprs[rn] + gprs[rm]);
-				cpu.mmu.store16(gprs[rn] + gprs[rm], gprs[rd]);
 			}
 			break;
 		case 0x0400:
 			// STRB(2)
 			op = function() {
+				cpu.mmu.store8(gprs[rn] + gprs[rm], gprs[rd]);
 				cpu.mmu.wait(gprs[cpu.PC]);
 				cpu.mmu.wait(gprs[rn] + gprs[rm]);
-				cpu.mmu.store8(gprs[rn] + gprs[rm], gprs[rd]);
 			}
 			break;
 		case 0x0600:
@@ -2078,17 +2078,17 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// STRB(1)
 				op = function() {
 					var n = gprs[rn] + immediate;
+					cpu.mmu.store8(n, gprs[rd]);
 					cpu.mmu.wait(gprs[cpu.PC]);
 					cpu.mmu.wait(n);
-					cpu.mmu.store8(n, gprs[rd]);
 				};
 			} else {
 				// STR(1)
 				op = function() {
 					var n = gprs[rn] + immediate;
+					cpu.mmu.store32(n, gprs[rd]);
 					cpu.mmu.wait(gprs[cpu.PC]);
 					cpu.mmu.wait32(n);
-					cpu.mmu.store32(n, gprs[rd]);
 				}
 			}
 		}
@@ -2169,9 +2169,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// STRH(1)
 				op = function() {
 					var n = gprs[rn] + immediate;
+					cpu.mmu.store16(n, gprs[rd]);
 					cpu.mmu.wait(gprs[cpu.PC]);
 					cpu.mmu.wait(n);
-					cpu.mmu.store16(n, gprs[rd]);
 				};
 			}
 			op.writesPC = false;
@@ -2192,9 +2192,9 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			} else {
 				// STR(3)
 				op = function() {
+					cpu.mmu.store32(gprs[cpu.SP] + immediate, gprs[rd]);
 					cpu.mmu.wait(gprs[cpu.PC]);
 					cpu.mmu.wait32(gprs[cpu.SP] + immediate);
-					cpu.mmu.store32(gprs[cpu.SP] + immediate, gprs[rd]);
 				}
 			}
 			op.writesPC = false;
