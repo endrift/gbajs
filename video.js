@@ -780,7 +780,7 @@ GameBoyAdvanceVideo.prototype.writeBackgroundParamD = function(bg, value) {
 GameBoyAdvanceVideo.prototype.writeWin0H = function(value) {
 	this.win0Left = (value & 0xFF00) >> 8;
 	this.win0Right = Math.min(this.HORIZONTAL_PIXELS, value & 0x00FF);
-	if (this.win0Left >= this.win0Right) {
+	if (this.win0Left > this.win0Right) {
 		this.win0Right = this.HORIZONTAL_PIXELS;
 	}
 };
@@ -788,7 +788,7 @@ GameBoyAdvanceVideo.prototype.writeWin0H = function(value) {
 GameBoyAdvanceVideo.prototype.writeWin1H = function(value) {
 	this.win1Left = (value & 0xFF00) >> 8;
 	this.win1Right = Math.min(this.HORIZONTAL_PIXELS, value & 0x00FF);
-	if (this.win1Left >= this.win1Right) {
+	if (this.win1Left > this.win1Right) {
 		this.win1Right = this.HORIZONTAL_PIXELS;
 	}
 };
@@ -796,7 +796,7 @@ GameBoyAdvanceVideo.prototype.writeWin1H = function(value) {
 GameBoyAdvanceVideo.prototype.writeWin0V = function(value) {
 	this.win0Top = (value & 0xFF00) >> 8;
 	this.win0Bottom = Math.min(this.VERTICAL_PIXELS, value & 0x00FF);
-	if (this.win0Top >= this.win0Bottom) {
+	if (this.win0Top > this.win0Bottom) {
 		this.win0Bottom = this.VERTICAL_PIXELS;
 	}
 };
@@ -804,7 +804,7 @@ GameBoyAdvanceVideo.prototype.writeWin0V = function(value) {
 GameBoyAdvanceVideo.prototype.writeWin1V = function(value) {
 	this.win1Top = (value & 0xFF00) >> 8;
 	this.win1Bottom = Math.min(this.VERTICAL_PIXELS, value & 0x00FF);
-	if (this.win1Top >= this.win0Bottom) {
+	if (this.win1Top > this.win0Bottom) {
 		this.win1Bottom = this.VERTICAL_PIXELS;
 	}
 };
@@ -1081,6 +1081,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function(backing) {
 	var firstEnd;
 	var lastStart;
 	var lastEnd;
+	var y = this.vcount - 1;
 	// Draw lower priority first and then draw over them
 	for (var i = this.drawLayers.length; i--;) {
 		layer = this.drawLayers[i];
@@ -1088,23 +1089,27 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function(backing) {
 			if (!(this.win0 || this.win1)) {
 				this.drawScanlineBGMode0(backing, layer, 0, this.HORIZONTAL_PIXELS);
 			} else {
-				// TODO: test for y
 				firstEnd = this.HORIZONTAL_PIXELS;
 				lastStart = 0;
-				if (this.win0 && this.windows[0].enabled[layer.index]) {
-					firstEnd = Math.min(firstEnd, this.win0Left);
-					lastStart = Math.max(lastStart, this.win0Right);
-					this.drawScanlineBGMode0(backing, layer, this.win0Left, this.win0Right);
-				} else if (this.win1 && this.windows[1].enabled[layer.index]) {
+				if (this.win1 && y >= this.win1Top && y < this.win1Bottom) {
 					firstEnd = Math.min(firstEnd, this.win1Left);
 					lastStart = Math.max(lastStart, this.win1Right);
-					this.drawScanlineBGMode0(backing, layer, this.win1Left, this.win1Right);
+					if (this.windows[1].enabled[layer.index]) {
+						this.drawScanlineBGMode0(backing, layer, this.win1Left, this.win1Right);
+					}
+				}
+				if (this.win0 && y >= this.win0Top && y < this.win0Bottom) {
+					firstEnd = Math.min(firstEnd, this.win0Left);
+					lastStart = Math.max(lastStart, this.win0Right);
+					if (this.windows[0].enabled[layer.index]) {
+						this.drawScanlineBGMode0(backing, layer, this.win0Left, this.win0Right);
+					}
 				}
 				if (this.windows[2].enabled[layer.index]) {
 					// WINOUT
 					this.drawScanlineBGMode0(backing, layer, 0, firstEnd);
 					// TODO: middle region
-					this.drawScanlineBGMode0(backing, layer, lastStart, this.HORIZONTAL_P);
+					this.drawScanlineBGMode0(backing, layer, lastStart, this.HORIZONTAL_PIXELS);
 				}
 				// TODO: special
 				// TODO: objwin
