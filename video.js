@@ -366,20 +366,29 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff) {
 		tileOffset = (localY & 0x01F8) << 2;
 	}
 
+	var paletteShift = this.multipalette ? 1 : 0;
+
 	if (!this.hflip) {
 		localX = underflow;
 	} else {
 		localX = this.cachedWidth - underflow - 1;
 	}
-	tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (localX >> 3), localYLo);
+
+	tileRow = video.accessTile(this.TILE_OFFSET + (x & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), localYLo << paletteShift);
 	for (x = underflow; x < this.cachedWidth; ++x) {
 		if (!this.hflip) {
 			localX = x;
 		} else {
 			localX = this.cachedWidth - x - 1;
 		}
-		if (!(x & 0x7)) {
-			tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (localX >> 3), localYLo);
+		if (!paletteShift) {
+			if (!(x & 0x7)) {
+				tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (localX >> 3), localYLo);
+			}
+		} else {
+			if (!(x & 0x3)) {
+				tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4), this.tileBase + (tileOffset << 1) + ((localX & 0x01F8) >> 2), localYLo << 1);
+			}
 		}
 		this.pushPixel(4, this, video, tileRow, localX & 0x7, offset, backing);
 		offset += 4;
