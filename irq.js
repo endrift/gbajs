@@ -184,6 +184,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 
 GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 	switch (opcode) {
+	case 0x01:
+		// RegisterRamReset
+		this.core.STUB('Unimplemented RegisterRamReset');
+		break;
 	case 0x02:
 		// Halt
 		if (!this.enable) {
@@ -209,6 +213,14 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		var ie = this.io.loadU16(this.io.IE);
 		this.waitForIRQ();
 		this.io.store16(this.io.IE, ie);
+		break;
+	case 0x06:
+		// Div
+		var result = (this.cpu.gprs[0] | 0) / (this.cpu.gprs[1] | 0);
+		var mod = (this.cpu.gprs[0] | 0) % (this.cpu.gprs[1] | 0);
+		this.cpu.gprs[0] = result | 0;
+		this.cpu.gprs[1] = mod | 0;
+		this.cpu.gprs[3] = Math.abs(mod | 0);
 		break;
 	case 0x08:
 		// Sqrt

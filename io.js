@@ -280,6 +280,18 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 
 GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	switch (offset) {
+	case this.WININ:
+		this.video.writeWindow(0, value);
+		break;
+	case this.WININ | 1:
+		this.video.writeWindow(1, value);
+		break;
+	case this.WINOUT:
+		this.video.writeWindow(2, value);
+		break;
+	case this.WINOUT | 1:
+		this.video.writeWindow(3, value);
+		break;
 	case this.SOUND1CNT_HI | 1:
 	case this.SOUND2CNT_LO | 1:
 	case this.SOUND3CNT_HI:
