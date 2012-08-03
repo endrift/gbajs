@@ -359,7 +359,12 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff) {
 		localY = this.cachedHeight - y + yOff - 1;
 	}
 	var localYLo = localY & 0x7;
-	var tileOffset = (localY & 0x01F8) << 2;
+	var tileOffset;
+	if (video.objCharacterMapping) {
+		tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
+	} else {
+		tileOffset = (localY & 0x01F8) << 2;
+	}
 
 	if (!this.hflip) {
 		localX = underflow;
