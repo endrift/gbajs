@@ -99,9 +99,20 @@ function GameBoyAdvanceIO() {
 	this.TM3CNT_LO = 0x10C;
 	this.TM3CNT_HI = 0x10E;
 
-	// SIO
-	this.RCNT = 0x134;
+	// SIO (note: some of these are repeated)
+	this.SIODATA32 = 0x120;
+	this.SIOMULTI0 = 0x120;
+	this.SIOMULTI1 = 0x122;
+	this.SIOMULTI2 = 0x124;
+	this.SIOMULTI3 = 0x126;
 	this.SIOCNT = 0x128;
+	this.SIOMLT_SEND = 0x12A;
+	this.SIODATA8 = 0x12A;
+	this.RCNT = 0x134;
+	this.JOYCNT = 0x140;
+	this.JOY_RECV = 0x150;
+	this.JOY_TRANS = 0x154;
+	this.JOYSTAT = 0x158;
 
 	// Keypad
 	this.KEYINPUT = 0x130;
@@ -253,6 +264,14 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DMA3DAD_HI:
 		this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
 		return 0;
+
+	case this.SIOMULTI0:
+ 	case this.SIOMULTI1:
+ 	case this.SIOMULTI2:
+ 	case this.SIOMULTI3:
+ 	case this.SIODATA8:
+ 		this.core.STUB('Unimplemented SIO register read: 0x' + offset.toString(16));
+ 		return 0;
 	default:
 		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
 	}
@@ -527,6 +546,13 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 
 	// SIO
+	case this.SIOMULTI0:
+ 	case this.SIOMULTI1:
+ 	case this.SIOMULTI2:
+ 	case this.SIOMULTI3:
+ 	case this.SIODATA8:
+ 		this.STUB_REG('SIO', offset);
+ 		break;
 	case this.RCNT:
 		this.STUB_REG('RCNT', offset);
 		break;
