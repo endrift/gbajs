@@ -245,23 +245,55 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
 
+	case this.BG0HOFS:
+	case this.BG0VOFS:
+	case this.BG1HOFS:
+	case this.BG1VOFS:
+	case this.BG2HOFS:
+	case this.BG2VOFS:
+	case this.BG3HOFS:
+	case this.BG3VOFS:
+	case this.BG2PA:
+	case this.BG2PB:
+	case this.BG2PC:
+	case this.BG2PD:
+	case this.BG3PA:
+	case this.BG3PB:
+	case this.BG3PC:
+	case this.BG3PD:
+	case this.BG2X_LO:
+	case this.BG2X_HI:
+	case this.BG2Y_LO:
+	case this.BG2Y_HI:
+	case this.BG3X_LO:
+	case this.BG3X_HI:
+	case this.BG3Y_LO:
+	case this.BG3Y_HI:
+	case this.WIN0H:
+	case this.WIN1H:
+	case this.WIN0V:
+	case this.WIN1V:
 	case this.BLDALPHA:
 	case this.DMA0SAD_LO:
 	case this.DMA0SAD_HI:
 	case this.DMA0DAD_LO:
 	case this.DMA0DAD_HI:
+	case this.DMA0CNT_LO:
 	case this.DMA1SAD_LO:
 	case this.DMA1SAD_HI:
 	case this.DMA1DAD_LO:
 	case this.DMA1DAD_HI:
+	case this.DMA1CNT_LO:
 	case this.DMA2SAD_LO:
 	case this.DMA2SAD_HI:
 	case this.DMA2DAD_LO:
 	case this.DMA2DAD_HI:
+	case this.DMA2CNT_LO:
 	case this.DMA3SAD_LO:
 	case this.DMA3SAD_HI:
 	case this.DMA3DAD_LO:
 	case this.DMA3DAD_HI:
+	case this.DMA3CNT_LO:
 		this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
 		return 0;
 
