@@ -827,7 +827,7 @@ GameBoyAdvanceVideo.prototype.writeWin0V = function(value) {
 GameBoyAdvanceVideo.prototype.writeWin1V = function(value) {
 	this.win1Top = (value & 0xFF00) >> 8;
 	this.win1Bottom = Math.min(this.VERTICAL_PIXELS, value & 0x00FF);
-	if (this.win1Top > this.win0Bottom) {
+	if (this.win1Top > this.win1Bottom) {
 		this.win1Bottom = this.VERTICAL_PIXELS;
 	}
 };
@@ -876,12 +876,12 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 		// Alpha
 		for (i = 0; i < 4; ++i) {
 			if (this.target1[i]) {
-				this.bg[i].pushPixel = this.bg[i].multipalette ? this.bg[i].pushPixelBlend256 : this.pushPixelBlend;
+				this.bg[i].pushPixel = this.bg[i].multipalette ? this.pushPixelBlend256 : this.pushPixelBlend;
 			}
 		}
 	case 0:
 		// Normal
-		this.palette.makeNormalPalettes()
+		this.palette.makeNormalPalettes();
 		break;
 	case 2:
 		// Brighter
