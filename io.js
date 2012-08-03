@@ -423,6 +423,26 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.BG3PD:
 		this.video.writeBackgroundParamD(3, value);
 		break;
+	case this.WIN0H:
+		this.video.writeWin0H(value);
+		break;
+	case this.WIN1H:
+		this.video.writeWin1H(value);
+		break;
+	case this.WIN0V:
+		this.video.writeWin0V(value);
+		break;
+	case this.WIN1V:
+		this.video.writeWin1V(value);
+		break;
+	case this.WININ:
+		value &= 0x3F3F;
+		this.video.writeWinIn(value);
+		break;
+	case this.WINOUT:
+		value &= 0x3F3F;
+		this.video.writeWinOut(value);
+		break;
 	case this.BLDCNT:
 		value &= 0x4FFF;
 		this.video.writeBlendControl(value);
