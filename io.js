@@ -332,11 +332,15 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 		break;
 	default:
 		this.STUB_REG('8-bit I/O', offset);
+		break;
 	}
 
 	if (offset & 1) {
 		value <<= 8;
 		value |= (this.registers[offset >> 1] & 0x00FF);
+	} else {
+		value &= 0x00FF;
+		value |= (this.registers[offset >> 1] & 0xFF00);
 	}
 	this.registers[offset >> 1] = value;
 };
