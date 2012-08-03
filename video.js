@@ -223,6 +223,15 @@ GameBoyAdvancePalette.prototype.makeNormalPalettes = function() {
 	this.passthroughColors[5] = this.colors[0];
 };
 
+GameBoyAdvancePalette.prototype.makeSpecialPalette = function(layer) {
+	this.passthroughColors[layer.index] = this.adjustedColors[layer.bg ? 0 : 1];
+};
+
+GameBoyAdvancePalette.prototype.makeNormalPalette = function(layer) {
+	this.passthroughColors[layer.index] = this.colors[layer.bg ? 0 : 1];
+};
+
+
 GameBoyAdvancePalette.prototype.resetPaletteLayers = function(layers) {
 	if (layers & 0x01) {
 		this.passthroughColors[0] = this.adjustedColors[0];
@@ -885,6 +894,29 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 	}
 };
 
+GameBoyAdvanceVideo.prototype.setBlendEnabled = function(layer, enabled) {
+	layer.pushPixel = layer.multipalette ? this.pushPixelOpaque256 : this.pushPixelOpaque;
+	if (enabled) {
+		switch (this.blendMode) {
+		case 1:
+			// Alpha
+			layer.pushPixel = layer.multipalette ? this.pushPixelBlend256 : this.pushPixelBlend;
+		case 0:
+			// Normal
+			this.palette.makeNormalPalette(layer);
+			break;
+		case 2:
+			// Brighter
+		case 3:
+			// Darker
+			this.palette.makeSpecialPalette(layer);
+			break;
+		}
+	} else {
+		this.palette.makeNormalPalette(layer);
+	}
+};
+
 GameBoyAdvanceVideo.prototype.writeBlendAlpha = function(value) {
 	this.blendA = (value & 0x001F) / 16;
 	if (this.blendA > 1) {
@@ -1109,6 +1141,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function(backing) {
 					firstEnd = Math.min(firstEnd, this.win1Left);
 					lastStart = Math.max(lastStart, this.win1Right);
 					if (this.windows[1].enabled[layer.index]) {
+						this.setBlendEnabled(layer, this.windows[1].special && this.target1[layer.index]);
 						this.drawScanlineBGMode0(backing, layer, this.win1Left, this.win1Right);
 					}
 				}
@@ -1116,16 +1149,17 @@ GameBoyAdvanceVideo.prototype.drawScanlineMode0 = function(backing) {
 					firstEnd = Math.min(firstEnd, this.win0Left);
 					lastStart = Math.max(lastStart, this.win0Right);
 					if (this.windows[0].enabled[layer.index]) {
+						this.setBlendEnabled(layer, this.windows[0].special && this.target1[layer.index]);
 						this.drawScanlineBGMode0(backing, layer, this.win0Left, this.win0Right);
 					}
 				}
 				if (this.windows[2].enabled[layer.index]) {
 					// WINOUT
+					this.setBlendEnabled(layer, this.windows[2].special && this.target1[layer.index]);
 					this.drawScanlineBGMode0(backing, layer, 0, firstEnd);
 					// TODO: middle region
 					this.drawScanlineBGMode0(backing, layer, lastStart, this.HORIZONTAL_PIXELS);
 				}
-				// TODO: special
 				// TODO: objwin
 			}
 		} else {
