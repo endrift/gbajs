@@ -1226,14 +1226,14 @@ ARMCore.prototype.compileArm = function(instruction) {
 				// Register offset
 				var rm = instruction & 0x0000000F;
 				var shiftType = instruction & 0x00000060;
-				var shiftImmediate = instruction & 0x00000F80;
+				var shiftImmediate = (instruction & 0x00000F80) >> 7;
 				if (p) {
 					if (shiftType || shiftImmediate) {
 						var shiftOp = this.barrelShiftImmediate(shiftType, shiftImmediate, rm);
 						if (u) {
 							address = function() {
 								shiftOp();
-								var addr = gprs[rn] + self.shifterOperand;
+								var addr = gprs[rn] + cpu.shifterOperand;
 								if (w && (!condOp || condOp())) {
 									gprs[rn] = addr;
 								}
@@ -1242,7 +1242,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						} else {
 							address = function() {
 								shiftOp();
-								var addr = gprs[rn] - self.shifterOperand;
+								var addr = gprs[rn] - cpu.shifterOperand;
 								if (w && (!condOp || condOp())) {
 									gprs[rn] = addr;
 								}
@@ -1277,7 +1277,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 								var addr = gprs[rn];
 								if (w && (!condOp || condOp())) {
 									shiftOp();
-									gprs[rn] += shiftOp;
+									gprs[rn] += cpu.shifterOperand;
 								}
 								return addr;
 							}
@@ -1286,7 +1286,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 								var addr = gprs[rn];
 								if (w && (!condOp || condOp())) {
 									shiftOp();
-									gprs[rn] -= shiftOp;
+									gprs[rn] -= cpu.shifterOperand;
 								}
 								return addr;
 							}
