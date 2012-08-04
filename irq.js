@@ -230,6 +230,12 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		var root = Math.sqrt(this.cpu.gprs[0]);
 		this.cpu.gprs[0] = root | 0; // Coerce down to int
 		break;
+	case 0x0A:
+		// ArcTan2
+		var x = this.cpu.gprs[0] / 16384;
+		var y = this.cpu.gprs[1] / 16384;
+		this.cpu.gprs[0] = (Math.atan2(y, x) / (2 * Math.PI)) * 0x10000;
+		break;
 	case 0x0B:
 		// CpuSet
 		var source = this.cpu.gprs[0];
