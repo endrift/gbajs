@@ -185,6 +185,10 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	this.pollNextEvent();
 }
 
+GameBoyAdvanceInterruptHandler.prototype.swi32 = function(opcode) {
+	this.swi(opcode >> 16);
+};
+
 GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 	switch (opcode) {
 	case 0x01:
