@@ -327,22 +327,23 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			// [ sx   0  0 ]   [ cos(theta)  -sin(theta)  0 ]   [ 1  0  cx - ox ]   [ A B rx ]
 			// [  0  sy  0 ] * [ sin(theta)   cos(theta)  0 ] * [ 0  1  cy - oy ] = [ C D ry ]
 			// [  0   0  1 ]   [     0            0       1 ]   [ 0  0     1    ]   [ 0 0  1 ]
-			// TODO: is this correct?
 			ox = this.core.mmu.load32(offset) / 256;
 			oy = this.core.mmu.load32(offset + 4) / 256;
 			cx = this.core.mmu.load16(offset + 8);
 			cy = this.core.mmu.load16(offset + 10);
 			sx = this.core.mmu.load16(offset + 12) / 256;
 			sy = this.core.mmu.load16(offset + 14) / 256;
-			theta = (this.core.mmu.load16(offset + 16) >> 8) / 128 * Math.PI;
+			theta = (this.core.mmu.loadU16(offset + 16) >> 8) / 128 * Math.PI;
 			offset += 20;
-			// Set up rotation
+			// Rotation
 			a = d = Math.cos(theta);
 			b = c = Math.sin(theta);
+			// Scale
 			a *= sx;
 			b *= -sx;
 			c *= sy;
 			d *= sy;
+			// Translate
 			rx = ox - (a * cx + b * cy);
 			ry = oy - (c * cx + d * cy);
 			this.core.mmu.store16(destination, (a * 256) | 0);
@@ -352,6 +353,37 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			this.core.mmu.store32(destination + 8, (rx * 256) | 0);
 			this.core.mmu.store32(destination + 12, (ry * 256) | 0);
 			destination += 16;
+		}
+		break;
+	case 0x0F:
+		// ObjAffineSet
+		var i = this.cpu.gprs[2];
+		var sx, sy;
+		var theta;
+		var offset = this.cpu.gprs[0];
+		var destination = this.cpu.gprs[1]
+		var diff = this.cpu.gprs[3];
+		var a, b, c, d;
+		while (i--) {
+			// [ sx   0 ]   [ cos(theta)  -sin(theta) ]   [ A B ]
+			// [  0  sy ] * [ sin(theta)   cos(theta) ] = [ C D ]
+			sx = this.core.mmu.load16(offset) / 256;
+			sy = this.core.mmu.load16(offset + 2) / 256;
+			theta = (this.core.mmu.loadU16(offset + 4) >> 8) / 128 * Math.PI;
+			offset += 6;
+			// Rotation
+			a = d = Math.cos(theta);
+			b = c = Math.sin(theta);
+			// Scale
+			a *= sx;
+			b *= -sx;
+			c *= sy;
+			d *= sy;
+			this.core.mmu.store16(destination, (a * 256) | 0);
+			this.core.mmu.store16(destination + diff, (b * 256) | 0);
+			this.core.mmu.store16(destination + diff * 2, (c * 256) | 0);
+			this.core.mmu.store16(destination + diff * 3, (d * 256) | 0);
+			destination += diff * 4;
 		}
 		break;
 	case 0x11:
