@@ -1138,19 +1138,25 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode1 = function(backing, bg, start,
 	var y = video.vcount - 1;
 	var offset = (backing.y * video.HORIZONTAL_PIXELS + start) << 2;
 	var localX;
-	var localY = y;
+	var localY;
 	var screenBase = bg.screenBase;
 	var charBase = bg.charBase;
 	var size = bg.size;
 	var index = bg.index;
 	var map = video.sharedMap;
 	var color;
+	var det = 1 / (bg.dx * bg.dmy - bg.dmx * bg.dy);
 
-	var yBase = (localY << 2) & 0x7E0;
+	var yBase;
 
 	for (x = start; x < end; ++x) {
-		video.accessMapMode1(screenBase, size, x, yBase, map);
-		color = this.vram.loadU8(charBase + (map.tile << 6) + ((localY & 0x7) << 3) + (x & 0x7));
+		localX = bg.dx * x + bg.dmx * y + bg.refx;
+		localY = bg.dy * x + bg.dmy * y + bg.refy;
+		localX %= 256;
+		localY %= 256;
+		yBase = (localY << 2) & 0x7E0;
+		video.accessMapMode1(screenBase, size, localX, yBase, map);
+		color = this.vram.loadU8(charBase + (map.tile << 6) + ((localY & 0x7) << 3) + (localX & 0x7));
 		video.pushPixelOpaque256(0, map, video, color, 0, offset, backing);
 		offset += 4;
 	}
