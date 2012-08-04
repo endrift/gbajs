@@ -705,9 +705,11 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			this.nextEvent = this.lastHblank + this.HBLANK_LENGTH;
 			this.nextHblank = this.nextEvent + this.HDRAW_LENGTH;
 			this.nextHblankIRQ = this.nextHblank;
-			this.cpu.mmu.runHblankDmas();
-			if (this.hblankIRQ) {
-				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
+			if (this.vcount < this.VERTICAL_PIXELS) {
+				this.cpu.mmu.runHblankDmas();
+				if (this.hblankIRQ) {
+					this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
+				}
 			}
 		}
 	}
