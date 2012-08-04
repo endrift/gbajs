@@ -324,9 +324,9 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		var a, b, c, d;
 		var rx, ry;
 		while (i--) {
-			// [ 1/sx  0   0 ]   [ cos(theta)  sin(theta)  0 ]   [ 1  0  cx - ox ]   [ A B rx ]
-			// [  0  1/sy  0 ] * [ sin(theta)  cos(theta)  0 ] * [ 0  1  cy - oy ] = [ C D ry ]
-			// [  0    0   1 ]   [     0           0       1 ]   [ 0  0     1    ]   [ 0 0  1 ]
+			// [ sx   0  0 ]   [ cos(theta)  -sin(theta)  0 ]   [ 1  0  cx - ox ]   [ A B rx ]
+			// [  0  sy  0 ] * [ sin(theta)   cos(theta)  0 ] * [ 0  1  cy - oy ] = [ C D ry ]
+			// [  0   0  1 ]   [     0            0       1 ]   [ 0  0     1    ]   [ 0 0  1 ]
 			// TODO: is this correct?
 			ox = this.core.mmu.load32(offset) / 256;
 			oy = this.core.mmu.load32(offset + 4) / 256;
@@ -339,12 +339,12 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			// Set up rotation
 			a = d = Math.cos(theta);
 			b = c = Math.sin(theta);
-			a /= sx;
-			b /= sx;
-			c /= sy;
-			d /= sy;
-			rx = a * (cx - ox);
-			ry = d * (cy - oy);
+			a *= sx;
+			b *= -sx;
+			c *= sy;
+			d *= sy;
+			rx = ox - (a * cx + b * cy);
+			ry = oy - (c * cx + d * cy);
 			this.core.mmu.store16(destination, (a * 256) | 0);
 			this.core.mmu.store16(destination + 2, (b * 256) | 0);
 			this.core.mmu.store16(destination + 4, (c * 256) | 0);
