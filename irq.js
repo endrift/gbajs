@@ -291,6 +291,48 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			}
 		}
 		return;
+	case 0x0E:
+		// BgAffineSet
+		var i = this.cpu.gprs[2];
+		var ox, oy;
+		var cx, cy;
+		var sx, sy;
+		var theta;
+		var offset = this.cpu.gprs[0];
+		var destination = this.cpu.gprs[1];
+		var a, b, c, d;
+		var rx, ry;
+		while (i--) {
+			// [ 1/sx  0   0 ]   [ cos(theta)  sin(theta)  0 ]   [ 1  0  cx - ox ]   [ A B rx ]
+			// [  0  1/sy  0 ] * [ sin(theta)  cos(theta)  0 ] * [ 0  1  cy - oy ] = [ C D ry ]
+			// [  0    0   1 ]   [     0           0       1 ]   [ 0  0     1    ]   [ 0 0  1 ]
+			// TODO: is this correct?
+			ox = this.core.mmu.load32(offset) / 256;
+			oy = this.core.mmu.load32(offset + 4) / 256;
+			cx = this.core.mmu.load16(offset + 8);
+			cy = this.core.mmu.load16(offset + 10);
+			sx = this.core.mmu.load16(offset + 12) / 256;
+			sy = this.core.mmu.load16(offset + 14) / 256;
+			theta = (this.core.mmu.load16(offset + 16) >> 8) / 128 * Math.PI;
+			offset += 20;
+			// Set up rotation
+			a = d = Math.cos(theta);
+			b = c = Math.sin(theta);
+			a /= sx;
+			b /= sx;
+			c /= sy;
+			d /= sy;
+			rx = a * (cx - ox);
+			ry = d * (cy - oy);
+			this.core.mmu.store16(destination, (a * 256) | 0);
+			this.core.mmu.store16(destination + 2, (b * 256) | 0);
+			this.core.mmu.store16(destination + 4, (c * 256) | 0);
+			this.core.mmu.store16(destination + 6, (d * 256) | 0);
+			this.core.mmu.store32(destination + 8, (rx * 256) | 0);
+			this.core.mmu.store32(destination + 12, (ry * 256) | 0);
+			destination += 16;
+		}
+		break;
 	case 0x11:
 		// LZ77UnCompWram
 		this.lz77(this.cpu.gprs[0], this.cpu.gprs[1], 1);
