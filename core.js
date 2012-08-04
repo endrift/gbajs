@@ -357,6 +357,77 @@ ARMCore.prototype.generateCond = function(cond) {
 	}
 }
 
+ARMCore.prototype.barrelShiftImmediate = function(shiftType, immediate, rm) {
+	var cpu = this;
+	var gprs = this.gprs;
+	var shiftOp = this.badOp;
+	switch (shiftType) {
+	case 0x00000000:
+		// LSL
+		if (immediate) {
+			shiftOp = function() {
+				cpu.shifterOperand = gprs[rm] << immediate;
+				cpu.shifterCarryOut = gprs[rm] & (1 << (32 - immediate));
+			};
+		} else {
+			// This boils down to no shift
+			shiftOp = function() {
+				cpu.shifterOperand = gprs[rm];
+				cpu.shifterCarryOut = cpu.cpsrC;
+			};
+		}
+		break;
+	case 0x00000020:
+		// LSR
+		if (immediate) {
+			shiftOp = function() {
+				cpu.shifterOperand = gprs[rm] >>> immediate;
+				cpu.shifterCarryOut = gprs[rm] & (1 << (immediate - 1));
+			};
+		} else {
+			shiftOp = function() {
+				cpu.shifterOperand = 0;
+				cpu.shifterCarryOut = gprs[rm] & 0x80000000;
+			};
+		}
+		break;
+	case 0x00000040:
+		// ASR
+		if (immediate) {
+			shiftOp = function() {
+				cpu.shifterOperand = gprs[rm] >> immediate;
+				cpu.shifterCarryOut = gprs[rm] & (1 << (immediate - 1));
+			};
+		} else {
+			shiftOp = function() {
+				cpu.shifterCarryOut = gprs[rm] & 0x80000000;
+				if (cpu.shifterCarryOut) {
+					cpu.shifterOperand = 0xFFFFFFFF;
+				} else {
+					cpu.shifterOperand = 0;
+				}
+			};
+		}
+		break;
+	case 0x00000060:
+		// ROR
+		if (immediate) {
+			shiftOp = function() {
+				cpu.shifterOperand = (gprs[rm] >>> immediate) | (gprs[rm] << (32 - immediate));
+				cpu.shifterCarryOut = gprs[rm] & (1 << (immediate - 1));
+			};
+		} else {
+			// RRX
+			shiftOp = function() {
+				cpu.shifterOperand = (!!cpu.cpsrC << 31) | (gprs[rm] >>> 1);
+				cpu.shifterCarryOut =  gprs[rm] & 0x00000001;
+			};
+		}
+		break;
+	}
+	return shiftOp;
+}
+
 ARMCore.prototype.compileArm = function(instruction) {
 	var cond = (instruction & 0xF0000000) >>> 28;
 	var op = this.badOp(instruction);
@@ -550,70 +621,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				}
 			} else {
 				var immediate = (instruction & 0x00000F80) >> 7;
-				switch (shiftType) {
-				case 0x00000000:
-					// LSL
-					if (immediate) {
-						shiftOp = function() {
-							cpu.shifterOperand = gprs[rm] << immediate;
-							cpu.shifterCarryOut = gprs[rm] & (1 << (32 - immediate));
-						};
-					} else {
-						// This boils down to no shift
-						shiftOp = function() {
-							cpu.shifterOperand = gprs[rm];
-							cpu.shifterCarryOut = cpu.cpsrC;
-						};
-					}
-					break;
-				case 0x00000020:
-					// LSR
-					if (immediate) {
-						shiftOp = function() {
-							cpu.shifterOperand = gprs[rm] >>> immediate;
-							cpu.shifterCarryOut = gprs[rm] & (1 << (immediate - 1));
-						};
-					} else {
-						shiftOp = function() {
-							cpu.shifterOperand = 0;
-							cpu.shifterCarryOut = gprs[rm] & 0x80000000;
-						};
-					}
-					break;
-				case 0x00000040:
-					// ASR
-					if (immediate) {
-						shiftOp = function() {
-							cpu.shifterOperand = gprs[rm] >> immediate;
-							cpu.shifterCarryOut = gprs[rm] & (1 << (immediate - 1));
-						};
-					} else {
-						shiftOp = function() {
-							cpu.shifterCarryOut = gprs[rm] & 0x80000000;
-							if (cpu.shifterCarryOut) {
-								cpu.shifterOperand = 0xFFFFFFFF;
-							} else {
-								cpu.shifterOperand = 0;
-							}
-						};
-					}
-					break;
-				case 0x00000060:
-					// ROR
-					if (immediate) {
-						shiftOp = function() {
-							cpu.shifterOperand = (gprs[rm] >>> immediate) | (gprs[rm] << (32 - immediate));
-							cpu.shifterCarryOut = gprs[rm] & (1 << (immediate - 1));
-						};
-					} else {
-						// RRX
-						shiftOp = function() {
-							cpu.shifterOperand = (!!cpu.cpsrC << 31) | (gprs[rm] >>> 1);
-							cpu.shifterCarryOut =  gprs[rm] & 0x00000001;
-						};
-					}
-					break;
-				}
+				shiftOp = this.barrelShiftImmediate(shiftType, immediate, rm);
 			}
 
 			switch (opcode) {
@@ -1221,6 +1229,26 @@ ARMCore.prototype.compileArm = function(instruction) {
 				var shiftImmediate = instruction & 0x00000F80;
 				if (p) {
 					if (shiftType || shiftImmediate) {
+						var shiftOp = this.barrelShiftImmediate(shiftType, shiftImmediate, rm);
+						if (u) {
+							address = function() {
+								shiftOp();
+								var addr = gprs[rn] + self.shifterOperand;
+								if (w && (!condOp || condOp())) {
+									gprs[rn] = addr;
+								}
+								return addr;
+							}
+						} else {
+							address = function() {
+								shiftOp();
+								var addr = gprs[rn] - self.shifterOperand;
+								if (w && (!condOp || condOp())) {
+									gprs[rn] = addr;
+								}
+								return addr;
+							}
+						}
 					} else {
 						if (u) {
 							address = function() {
@@ -1243,6 +1271,26 @@ ARMCore.prototype.compileArm = function(instruction) {
 					}
 				} else {
 					if (shiftType || shiftImmediate) {
+						var shiftOp = this.barrelShiftImmediate(shiftType, shiftImmediate, rm);
+						if (u) {
+							address = function() {
+								var addr = gprs[rn];
+								if (w && (!condOp || condOp())) {
+									shiftOp();
+									gprs[rn] += shiftOp;
+								}
+								return addr;
+							}
+						} else {
+							address = function() {
+								var addr = gprs[rn];
+								if (w && (!condOp || condOp())) {
+									shiftOp();
+									gprs[rn] -= shiftOp;
+								}
+								return addr;
+							}
+						}
 					} else {
 						if (u) {
 							address = function() {
