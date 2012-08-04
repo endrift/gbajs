@@ -43,6 +43,9 @@ function GameBoyAdvanceInterruptHandler() {
 			source: 0,
 			dest: 0,
 			count: 0,
+			nextSource: 0,
+			nextDest: 0,
+			nextCount: 0,
 			srcControl: 0,
 			dstControl: 0,
 			repeat: 0,
@@ -513,6 +516,9 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 	}
 
 	if (currentDma.enable) {
+		currentDma.nextSource = currentDma.source;
+		currentDma.nextDest = currentDma.dest;
+		currentDma.nextCount = currentDma.count;
 		this.cpu.mmu.scheduleDma(dma, currentDma);
 	}
 };

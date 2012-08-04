@@ -162,8 +162,9 @@ function GameBoyAdvanceMMU() {
 	this.DMA_INCREMENT = 0;
 	this.DMA_DECREMENT = 1;
 	this.DMA_FIXED = 2;
+	this.DMA_INCREMENT_RELOAD = 3;
 
-	this.DMA_OFFSET = [ 1, -1, 0 ];
+	this.DMA_OFFSET = [ 1, -1, 0, 1 ];
 
 	this.WAITSTATES = [ 0, 0, 2, 0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4 ];
 	this.WAITSTATES_32 = [ 0, 0, 5, 0, 0, 1, 0, 1, 7, 0, 9, 0, 13, 0, 8 ];
@@ -396,11 +397,11 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var width = info.width;
 	var sourceOffset = this.DMA_OFFSET[info.srcControl] * width;
 	var destOffset = this.DMA_OFFSET[info.dstControl] * width;
-	var wordsRemaining = info.count;
-	var source = info.source & this.OFFSET_MASK;
-	var dest = info.dest & this.OFFSET_MASK;
-	var sourceRegion = info.source >> this.BASE_OFFSET;
-	var destRegion = info.dest >> this.BASE_OFFSET;
+	var wordsRemaining = info.nextCount;
+	var source = info.nextSource & this.OFFSET_MASK;
+	var dest = info.nextDest & this.OFFSET_MASK;
+	var sourceRegion = info.nextSource >> this.BASE_OFFSET;
+	var destRegion = info.nextDest >> this.BASE_OFFSET;
 	var sourceBlock = this.memory[sourceRegion];
 	var destBlock = this.memory[destRegion];
 	var word;
@@ -432,6 +433,14 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		                                               : this.waitstatesSeq[sourceRegion] + this.waitstatesSeq[destRegion]);
 	}
 
+	// FIXME: Games just seem to want to trample their RAM by incrementing these addresses during
+	// sound FIFO DMAs...investigate further
+	if (!(info.timing == this.DMA_TIMING_CUSTOM && (number == 1 || number == 2))) {
+		info.nextSource = source | (sourceRegion << this.BASE_OFFSET);
+		info.nextDest = dest | (destRegion << this.BASE_OFFSET);
+		info.nextCount = wordsRemaining;
+	}
+
 	if (!info.repeat) {
 		info.enable = false;
 
@@ -439,6 +448,10 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		var io = this.memory[this.REGION_IO];
 		io.registers[this.DMA_REGISTER[number]] &= 0x7FE0;
 	} else {
+		info.nextCount = info.count;
+		if (info.dstControl == this.DMA_INCREMENT_RELOAD) {
+			info.nextDest = info.dest;
+		}
 		this.scheduleDma(number, info);
 	}
 };
