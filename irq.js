@@ -229,6 +229,14 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		this.cpu.gprs[1] = mod | 0;
 		this.cpu.gprs[3] = Math.abs(mod | 0);
 		break;
+	case 0x07:
+		// DivArm
+		var result = (this.cpu.gprs[1] | 0) / (this.cpu.gprs[0] | 0);
+		var mod = (this.cpu.gprs[1] | 0) % (this.cpu.gprs[0] | 0);
+		this.cpu.gprs[0] = result | 0;
+		this.cpu.gprs[1] = mod | 0;
+		this.cpu.gprs[3] = Math.abs(mod | 0);
+		break;
 	case 0x08:
 		// Sqrt
 		var root = Math.sqrt(this.cpu.gprs[0]);
