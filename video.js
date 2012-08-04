@@ -175,6 +175,10 @@ GameBoyAdvancePalette.prototype.load16 = function(offset) {
 	return (this.loadU16(offset) << 16) >> 16;
 };
 
+GameBoyAdvancePalette.prototype.load32 = function(offset) {
+	return this.loadU16(offset) | (this.loadU16(offset + 2) << 16);
+};
+
 GameBoyAdvancePalette.prototype.store16 = function(offset, value) {
 	var type = (offset & 0x200) >> 9;
 	var index = (offset & 0x1FF) >> 1;
