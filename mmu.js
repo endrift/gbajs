@@ -1,6 +1,6 @@
 function MemoryView(memory, offset) {
 	this.buffer = memory;
-	this.view = new DataView(this.buffer, !!offset);
+	this.view = new DataView(this.buffer, offset);
 };
 
 MemoryView.prototype.load8 = function(offset) {
