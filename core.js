@@ -1092,7 +1092,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						if (u) {
 							address = function() {
 								var addr = gprs[rn];
-								if (w && (!condOp || condOp())) {
+								if (!condOp || condOp()) {
 									gprs[rn] += immediate;
 								}
 								return addr;
@@ -1100,7 +1100,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						} else {
 							address = function() {
 								var addr = gprs[rn];
-								if (w && (!condOp || condOp())) {
+								if (!condOp || condOp()) {
 									gprs[rn] -= immediate;
 								}
 								return addr;
@@ -1131,7 +1131,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						if (u) {
 							address = function() {
 								var addr = gprs[rn];
-								if (w && (!condOp || condOp())) {
+								if (!condOp || condOp()) {
 									gprs[rn] += gprs[rm];
 								}
 								return addr;
@@ -1139,7 +1139,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						} else {
 							address = function() {
 								var addr = gprs[rn];
-								if (w && (!condOp || condOp())) {
+								if (!condOp || condOp()) {
 									gprs[rn] -= gprs[rm];
 								}
 								return addr;
