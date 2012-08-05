@@ -275,19 +275,8 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 					this.cpu.mmu.store32(dest + (i << 2), word);
 				}
 			} else {
-				var i = 0;
-				var word;
-				if (source & 0x00000002) {
-					word = this.cpu.mmu.load16(source);
-					this.cpu.mmu.store16(dest, word);
-					++i;
-				}
-				for (; i + 1 < count; i += 2) {
-					word = this.cpu.mmu.load32(source + (i << 1));
-					this.cpu.mmu.store32(dest + (i << 1), word);
-				}
-				if (i < count) {
-					word = this.cpu.mmu.load16(source + (i << 1));
+				for (var i = 0; i < count; ++i) {
+					var word = this.cpu.mmu.load16(source + (i << 1));
 					this.cpu.mmu.store16(dest + (i << 1), word);
 				}
 			}
