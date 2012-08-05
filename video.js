@@ -52,6 +52,15 @@ function GameBoyAdvanceOAM(size) {
 	for (var i = 0; i < 128; ++i) {
 		this.objs[i] = new GameBoyAdvanceOBJ(this, i);
 	}
+	this.scalerot = new Array(32);
+	for (var i = 0; i < 32; ++i) {
+		this.scalerot[i] = {
+			a: 1,
+			b: 0,
+			c: 0,
+			d: 1
+		};
+	}
 };
 
 GameBoyAdvanceOAM.prototype = Object.create(MemoryAligned16.prototype);
@@ -59,6 +68,7 @@ GameBoyAdvanceOAM.prototype = Object.create(MemoryAligned16.prototype);
 GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 	var index = (offset & 0x3F8) >> 3;
 	var obj = this.objs[index];
+	var scalerot = this.scalerot[index >> 2];
 	var layer = obj.priority;
 	var disable = obj.disable;
 	var y = obj.y;
@@ -68,6 +78,7 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.y = value & 0x00FF;
 		obj.scalerot = value & 0x0100;
 		if (obj.scalerot) {
+			obj.scalerotOam = this.scalerot[obj.scalerotParam];
 			obj.doublesize = value & 0x0200;
 			obj.disable = 0;
 			obj.hflip = 0;
@@ -110,11 +121,14 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.x = value & 0x01FF;
 		if (obj.scalerot) {
 			obj.scalerotParam = (value & 0x3E00) >> 9;
+			obj.scalerotOam = this.scalerot[obj.scalerotParam];
 			obj.hflip = 0;
 			obj.vflip = 0;
+			obj.drawScanline = obj.drawScanlineAffine;
 		} else {
 			obj.hflip = value & 0x1000;
 			obj.vflip = value & 0x2000;
+			obj.drawScanline = obj.drawScanlineNormal;
 		}
 		obj.size = (value & 0xC000) >> 14;
 
@@ -132,9 +146,22 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		break;
 	case 6:
 		// Scaling/rotation parameter
+		switch (index & 0x3) {
+		case 0:
+			scalerot.a = (value << 16) / 0x1000000;
+			break;
+		case 1:
+			scalerot.b = (value << 16) / 0x1000000;
+			break;
+		case 2:
+			scalerot.c = (value << 16) / 0x1000000;
+			break;
+		case 3:
+			scalerot.d = (value << 16) / 0x1000000;
+			break;
+		}
 		break;
 	}
-
 
 	MemoryAligned16.prototype.store16.call(this, offset, value);
 };
@@ -234,7 +261,6 @@ GameBoyAdvancePalette.prototype.makeSpecialPalette = function(layer) {
 GameBoyAdvancePalette.prototype.makeNormalPalette = function(layer) {
 	this.passthroughColors[layer.index] = this.colors[layer.bg ? 0 : 1];
 };
-
 
 GameBoyAdvancePalette.prototype.resetPaletteLayers = function(layers) {
 	if (layers & 0x01) {
@@ -408,6 +434,50 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff) {
 	}
 };
 
+GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff) {
+	var video = this.oam.video;
+	var x;
+	var underflow;
+	var offset;
+	if (this.x < video.HORIZONTAL_PIXELS) {
+		underflow = 0;
+		offset = (backing.y * video.HORIZONTAL_PIXELS + this.x) * 4;
+	} else {
+		underflow = 512 - this.x;
+		offset = (backing.y * video.HORIZONTAL_PIXELS) * 4;
+	}
+
+	var localX;
+	var localY;
+	var yDiff = y - yOff;
+	var tileOffset;
+
+	var paletteShift = this.multipalette ? 1 : 0;
+	//var totalWidth = this.totalWidth;
+	//if (totalWidth > video.HORIZONTAL_PIXELS) {
+		totalWidth = video.HORIZONTAL_PIXELS;
+	//}
+
+	for (x = underflow; x < totalWidth; ++x) {
+		localX = this.scalerotOam.a * ((x - this.cachedWidth) >> 0) + this.scalerotOam.b * ((yDiff - this.cachedHeight) >> 0) + (this.cachedWidth >> 1);
+		localY = this.scalerotOam.c * ((x - this.cachedWidth) >> 0) + this.scalerotOam.d * ((yDiff - this.cachedHeight) >> 0) + (this.cachedHeight >> 1);
+
+		if (localX < 0 || localX >= this.cachedWidth || localY < 0 || localY >= this.cachedHeight) {
+			offset += 4;
+			continue;
+		}
+
+		if (video.objCharacterMapping) {
+			tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
+		} else {
+			tileOffset = (localY & 0x01F8) << 2;
+		}
+		tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), (localY & 0x7) << paletteShift);
+		this.pushPixel(4, this, video, tileRow, localX & 0x7, offset, backing);
+		offset += 4;
+	}
+};
+
 GameBoyAdvanceOBJ.prototype.recalcSize = function() {
 	// TODO: scale/rotation
 	switch (this.shape) {
@@ -460,7 +530,6 @@ GameBoyAdvanceOBJ.prototype.recalcSize = function() {
 	default:
 		// Bad!
 	}
-
 };
 
 function GameBoyAdvanceOBJLayer(i) {
@@ -482,7 +551,14 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, video) {
 		} else {
 			wrappedY = obj.y - 256;
 		}
-		if (wrappedY <= y && wrappedY + obj.cachedHeight > y) {
+		var totalHeight;
+		if (!obj.scalerot) {
+			totalHeight = obj.cachedHeight;
+		} else {
+			// TODO: fix clipping
+			totalHeight = obj.cachedHeight << 1;
+		}
+		if (wrappedY <= y && (wrappedY + totalHeight) > y) {
 			this.objs[i].drawScanline(backing, y, wrappedY);
 		}
 	}
