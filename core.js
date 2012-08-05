@@ -1030,6 +1030,22 @@ ARMCore.prototype.compileArm = function(instruction) {
 					break;
 				case 0x00A00000:
 					// UMLAL
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						cpu.cycles += 6; // TODO: better timing
+						var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
+						var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
+						var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
+						gprs[rn] += mid & 0xFFFFFFFF;
+						gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) >>> 0;
+						if (s) {
+							cpu.cpsrN = gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
+						}
+					};
 					break;
 				case 0x00C00000:
 					// SMULL
@@ -1051,6 +1067,22 @@ ARMCore.prototype.compileArm = function(instruction) {
 					break;
 				case 0x00E00000:
 					// SMLAL
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						cpu.cycles += 6; // TODO: better timing
+						var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
+						var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
+						var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
+						gprs[rn] += mid & 0xFFFFFFFF;
+						gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) >>> 0;
+						if (s) {
+							cpu.cpsrN = gprs[rd] & 0x80000000;
+							cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
+						}
+					};
 					break;
 				}
 				op.touchesPC = rd == this.PC;
