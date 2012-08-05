@@ -540,7 +540,7 @@ function GameBoyAdvanceOBJLayer(i) {
 };
 
 GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, video) {
-	var y = video.vcount - 1;
+	var y = video.vcount;
 	var wrappedY;
 	var obj;
 	// Draw in reverse: OBJ0 is higher priority than OBJ1, etc
@@ -760,9 +760,8 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 		if (this.inHblank) {
 			// End Hblank
 			this.inHblank = false;
-			++this.vcount;
-			this.pixelData.data.y = this.vcount - 1; // Used inside of drawScanline
-			switch (this.vcount) {
+			this.pixelData.data.y = this.vcount; // Used inside of drawScanline
+			switch (this.vcount + 1) {
 			case this.VERTICAL_PIXELS:
 				this.inVblank = true;
 				this.drawScanline(this.platformBacking); // Draw final scanline
@@ -777,7 +776,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 				this.inVblank = false;
 				break;
 			case this.VERTICAL_TOTAL_PIXELS:
-				this.vcount = 0;
+				this.vcount = -1;
 				break;
 			default:
 				if (!this.inVblank) {
@@ -785,6 +784,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 				}
 				break;
 			}
+			++this.vcount;
 			this.nextEvent = this.nextHblank;
 		} else {
 			// Begin Hblank
@@ -1144,7 +1144,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBackdrop = function(backing) {
 GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start, end) {
 	var video = this.video;
 	var x;
-	var y = video.vcount - 1;
+	var y = video.vcount;
 	var offset = (backing.y * video.HORIZONTAL_PIXELS + start) << 2;
 	var xOff = bg.x;
 	var yOff = bg.y;
@@ -1211,7 +1211,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 GameBoyAdvanceVideo.prototype.drawScanlineBGMode1 = function(backing, bg, start, end) {
 	var video = this.video;
 	var x;
-	var y = video.vcount - 1;
+	var y = video.vcount;
 	var offset = (backing.y * video.HORIZONTAL_PIXELS + start) << 2;
 	var localX;
 	var localY;
@@ -1249,7 +1249,7 @@ GameBoyAdvanceVideo.prototype.drawScanline = function(backing) {
 	var firstEnd;
 	var lastStart;
 	var lastEnd;
-	var y = this.vcount - 1;
+	var y = this.vcount;
 	// Draw lower priority first and then draw over them
 	for (var i = this.drawLayers.length; i--;) {
 		layer = this.drawLayers[i];
