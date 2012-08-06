@@ -79,7 +79,7 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.scalerot = value & 0x0100;
 		if (obj.scalerot) {
 			obj.scalerotOam = this.scalerot[obj.scalerotParam];
-			obj.doublesize = value & 0x0200;
+			obj.doublesize = !!(value & 0x0200);
 			obj.disable = 0;
 			obj.hflip = 0;
 			obj.vflip = 0;
@@ -453,14 +453,16 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff) {
 	var tileOffset;
 
 	var paletteShift = this.multipalette ? 1 : 0;
-	//var totalWidth = this.totalWidth;
-	//if (totalWidth > video.HORIZONTAL_PIXELS) {
+	var totalWidth = this.cachedWidth << this.doublesize;
+	var totalHeight = this.cachedHeight << this.doublesize;
+	var drawWidth = totalWidth;
+	if (drawWidth > video.HORIZONTAL_PIXELS) {
 		totalWidth = video.HORIZONTAL_PIXELS;
-	//}
+	}
 
-	for (x = underflow; x < totalWidth; ++x) {
-		localX = this.scalerotOam.a * ((x - this.cachedWidth) >> 0) + this.scalerotOam.b * ((yDiff - this.cachedHeight) >> 0) + (this.cachedWidth >> 1);
-		localY = this.scalerotOam.c * ((x - this.cachedWidth) >> 0) + this.scalerotOam.d * ((yDiff - this.cachedHeight) >> 0) + (this.cachedHeight >> 1);
+	for (x = underflow; x < drawWidth; ++x) {
+		localX = this.scalerotOam.a * (x - (totalWidth >> 1)) + this.scalerotOam.b * (yDiff - (totalHeight >> 1)) + (this.cachedWidth >> 1);
+		localY = this.scalerotOam.c * (x - (totalWidth >> 1)) + this.scalerotOam.d * (yDiff - (totalHeight >> 1)) + (this.cachedHeight >> 1);
 
 		if (localX < 0 || localX >= this.cachedWidth || localY < 0 || localY >= this.cachedHeight) {
 			offset += 4;
@@ -555,8 +557,7 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, video) {
 		if (!obj.scalerot) {
 			totalHeight = obj.cachedHeight;
 		} else {
-			// TODO: fix clipping
-			totalHeight = obj.cachedHeight << 1;
+			totalHeight = obj.cachedHeight << obj.doublesize;
 		}
 		if (wrappedY <= y && (wrappedY + totalHeight) > y) {
 			this.objs[i].drawScanline(backing, y, wrappedY);
