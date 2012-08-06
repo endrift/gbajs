@@ -624,7 +624,7 @@ GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize)
 	var block;
 	var disp;
 	var bytes;
-	while (remaining) {
+	while (remaining > 0) {
 		if (blocksRemaining) {
 			if (blockheader & 0x80) {
 				// Compressed
@@ -632,8 +632,8 @@ GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize)
 				sPointer += 2;
 				disp = dPointer - (((block & 0x000F) << 8) | ((block & 0xFF00) >> 8)) - 1;
 				bytes = ((block & 0x00F0) >> 4) + 3;
-				remaining -= bytes;
-				while (bytes--) {
+				while (bytes-- && remaining) {
+					--remaining;
 					this.cpu.mmu.store8(dPointer++, this.cpu.mmu.loadU8(disp++));
 				}
 			} else {
