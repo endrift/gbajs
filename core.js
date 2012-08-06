@@ -1501,6 +1501,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 					}
 					++cpu.cycles;
 				};
+				op.writesPC = rs & (1 << 15);
 			} else {
 				// STM
 				op = function() {
@@ -1526,7 +1527,8 @@ ARMCore.prototype.compileArm = function(instruction) {
 						}
 					}
 					cpu.mmu.wait32(gprs[cpu.PC]);
-				}
+				};
+				op.writesPC = false;
 			}
 			break;
 		case 0x0A000000:
