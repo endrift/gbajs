@@ -14,8 +14,8 @@
 <link href="console.css" rel="stylesheet">
 <script>
 function runTest(r) {
-	rom = core.setRom(r);
-	gbaCon.log("ROM loaded: " + rom.title + " [" + rom.code + "] (" + r.byteLength + " bytes)");
+	core.setRom(r);
+	gbaCon.log("ROM loaded: " + core.rom.title + " [" + core.rom.code + "] (" + r.byteLength + " bytes)");
 	gbaCon.memory.refreshAll();
 }
 
