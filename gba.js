@@ -6,6 +6,8 @@ function GameBoyAdvance() {
 
 	this.logLevel = this.LOG_ERROR | this.LOG_WARN;
 
+	this.rom = null;
+
 	this.cpu = new ARMCore();
 	this.mmu = new GameBoyAdvanceMMU()
 	this.irq = new GameBoyAdvanceInterruptHandler();
@@ -86,11 +88,11 @@ GameBoyAdvance.prototype.setRom = function(rom) {
 	// TODO: be able to reset the ROM live
 	//this.reset();
 
-	this.mmu.loadRom(rom, true);
+	this.rom = this.mmu.loadRom(rom, true);
 };
 
 GameBoyAdvance.prototype.hasRom = function() {
-	return !!this.mmu.memory[this.mmu.REGION_CART0].buffer;
+	return !!this.rom;
 };
 
 GameBoyAdvance.prototype.loadRomFromFile = function(romFile) {
@@ -178,6 +180,42 @@ GameBoyAdvance.prototype.runStable = function() {
 		};
 	}
 	this.interval = setInterval(runFunc, 1000/60);
+};
+
+GameBoyAdvance.prototype.setSavedata = function(data) {
+	this.mmu.memory[this.mmu.REGION_CART_SRAM] = new MemoryView(data);
+};
+
+GameBoyAdvance.prototype.loadSavedataFromFile = function(saveFile) {
+	var reader = new FileReader();
+	var self = this;
+	reader.onload = function(e) { self.setSavedata(e.target.result); }
+	reader.readAsArrayBuffer(saveFile);
+};
+
+GameBoyAdvance.prototype.downloadSavedata = function() {
+	var sram = this.mmu.memory[this.mmu.REGION_CART_SRAM];
+	if (!sram) {
+		this.WARN("No save data available");
+		return;
+	}
+	var savedata = ['data:application/octet-stream;base64,'];
+	var word;
+	var wordstring = [];
+	var triplet;
+	for (var i = 0; i < this.mmu.SIZE_CART_SRAM; i += 4) {
+		word = sram.load32(i);
+		wordstring.push(String.fromCharCode(word & 0xFF));
+		wordstring.push(String.fromCharCode((word >> 8) & 0xFF));
+		wordstring.push(String.fromCharCode((word >> 16) & 0xFF));
+		wordstring.push(String.fromCharCode((word >> 24) & 0xFF));
+		while (wordstring.length >= 3) {
+			triplet = wordstring.splice(0, 3);
+			savedata.push(btoa(triplet.join('')));
+		}
+	};
+	var data = savedata.join('');
+	window.open(data, this.rom.code + '.sav');
 };
 
 GameBoyAdvance.prototype.log = function(message) {};

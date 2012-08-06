@@ -14,7 +14,7 @@
 <link href="console.css" rel="stylesheet">
 <script>
 function runTest(r) {
-	rom = core.mmu.loadRom(r, true);
+	rom = core.setRom(r);
 	gbaCon.log("ROM loaded: " + rom.title + " [" + rom.code + "] (" + r.byteLength + " bytes)");
 	gbaCon.memory.refreshAll();
 }
@@ -38,8 +38,9 @@ window.onload = function() {
 	gbaCon.log("Logging begun!");
 	gbaCon.log("Loading BIOS...");
 	loadRom('bios.bin', function(bios) {
-		core.mmu.loadBios(bios);
+		core.setBios(bios);
 		gbaCon.log("BIOS loaded!");
+		gbaCon.memory.refreshAll();
 	});
 };
 </script>
@@ -60,8 +61,13 @@ window.onload = function() {
 		</section>
 		<section id="loading">
 			<button onclick="loadRom('test.rom', runTest)">Load default</button>
-			<button onclick="document.getElementById('upload').click()">Load custom</button>
-			<input type="file" id="upload" onchange="loadRomFromFile(this.files[0])" style="display: none">
+			<button onclick="document.getElementById('uploadRom').click()">Load custom</button>
+			<input type="file" id="uploadRom" onchange="loadRomFromFile(this.files[0])" style="display: none">
+		</section>
+		<section id="saving">
+			<button onclick="document.getElementById('uploadSave').click()">Load savedata</button>
+			<input type="file" id="uploadSave" onchange="core.loadSavedataFromFile(this.files[0])" style="display: none">
+			<button onclick="core.downloadSavedata()">Download savedata</button>
 		</section>
 		<section id="registers">
 			<div>
