@@ -1012,7 +1012,7 @@ GameBoyAdvanceVideo.prototype.writeBlendY = function(value) {
 };
 
 GameBoyAdvanceVideo.prototype.resetLayers = function() {
-	this.drawLayers = this.objLayers.slice(0);
+	this.drawLayers = this.obj ? this.objLayers.slice(0) : [];
 	if (this.backgroundMode < 2) {
 		if (this.bg0) {
 			this.drawLayers.push(this.bg[0]);
