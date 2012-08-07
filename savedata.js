@@ -4,7 +4,7 @@ function SRAMSavedata(size) {
 	this.writePending = false;
 };
 
-SRAMSavedata,prototype = Object.create(MemoryView.prototype);
+SRAMSavedata.prototype = Object.create(MemoryView.prototype);
 
 SRAMSavedata.prototype.store8 = function(offset, value) {
 	this.view.setInt8(offset, value);

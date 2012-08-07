@@ -574,3 +574,11 @@ GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
 	this.waitstatesSeq32[this.REGION_CART1] = 2 * this.waitstatesSeq[this.REGION_CART1] + 1;
 	this.waitstatesSeq32[this.REGION_CART2] = 2 * this.waitstatesSeq[this.REGION_CART2] + 1;
 };
+
+GameBoyAdvanceMMU.prototype.saveNeedsFlush = function() {
+	return this.memory[this.REGION_CART_SRAM].writePending;
+};
+
+GameBoyAdvanceMMU.prototype.flushSave = function() {
+	this.memory[this.REGION_CART_SRAM].writePending = false;
+};

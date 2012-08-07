@@ -51,6 +51,8 @@ function GameBoyAdvance() {
 	this.doStep = this.returnFalse;
 
 	this.seenFrame = false;
+	this.seenSave = false;
+
 	this.interval = null;
 	this.reportFPS = null;
 };
@@ -141,6 +143,17 @@ GameBoyAdvance.prototype.advanceFrame = function() {
 	this.seenFrame = false;
 	this.doStep = this.waitFrame;
 	this.step();
+	if (this.seenSave) {
+		if (!this.mmu.saveNeedsFlush()) {
+			this.storeSavedata();
+			this.seenSave = false;
+		} else {
+			this.mmu.flushSave();
+		}
+	} else if (this.mmu.saveNeedsFlush()) {
+		this.seenSave = true;
+		this.mmu.flushSave();
+	}
 };
 
 GameBoyAdvance.prototype.runStable = function() {
