@@ -228,6 +228,9 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		return this.registers[offset >> 1] & 0xFF00;
 	case this.SOUND4CNT_HI:
 		return this.registers[offset >> 1] & 0x40FF;
+	case this.SOUNDCNT_X:
+		this.core.STUB('Unimplemented sound register read: SOUNDCNT_X');
+		return this.registers[offset >> 1] | 0x0000;
 
 	// Timers
 	case this.TM0CNT_LO:
