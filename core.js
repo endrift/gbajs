@@ -1740,11 +1740,12 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// NEG
 			op = function() {
 				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				gprs[rd] = -gprs[rm];
-				cpu.cpsrN = gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
-				cpu.cpsrC = 0 >= (gprs[rd] >>> 0);
-				cpu.cpsrV = (gprs[rm] & 0x80000000) && (gprs[rd] & 0x80000000);
+				var d = -gprs[rm];
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
+				cpu.cpsrC = 0 >= (d >>> 0);
+				cpu.cpsrV = (gprs[rm] & 0x80000000) && (d & 0x80000000);
+				gprs[rd] = d;
 			};
 			break;
 		case 0x0280:
