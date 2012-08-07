@@ -351,8 +351,10 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 				break;
 			}
 		}
-	} else {
-		this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
+		if (!this.memory[this.REGION_CART_SRAM]) {
+			// Assume we have SRAM
+			this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
+		}
 	}
 
 	this.cart = cart;
