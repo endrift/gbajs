@@ -183,7 +183,7 @@ GameBoyAdvance.prototype.runStable = function() {
 };
 
 GameBoyAdvance.prototype.setSavedata = function(data) {
-	this.mmu.memory[this.mmu.REGION_CART_SRAM] = new MemoryView(data);
+	this.mmu.loadSavedata(data);
 };
 
 GameBoyAdvance.prototype.loadSavedataFromFile = function(saveFile) {
@@ -200,20 +200,20 @@ GameBoyAdvance.prototype.downloadSavedata = function() {
 		return;
 	}
 	var savedata = ['data:application/octet-stream;base64,'];
-	var word;
+	var b;
 	var wordstring = [];
 	var triplet;
-	for (var i = 0; i < this.mmu.SIZE_CART_SRAM; i += 4) {
-		word = sram.load32(i);
-		wordstring.push(String.fromCharCode(word & 0xFF));
-		wordstring.push(String.fromCharCode((word >> 8) & 0xFF));
-		wordstring.push(String.fromCharCode((word >> 16) & 0xFF));
-		wordstring.push(String.fromCharCode((word >> 24) & 0xFF));
+	for (var i = 0; i < sram.view.byteLength; ++i) {
+		b = sram.view.getUint8(i, true);
+		wordstring.push(String.fromCharCode(b));
 		while (wordstring.length >= 3) {
 			triplet = wordstring.splice(0, 3);
 			savedata.push(btoa(triplet.join('')));
 		}
 	};
+	if (wordstring.length) {
+		savedata.push(btoa(wordstring.join('')));
+	}
 	var data = savedata.join('');
 	window.open(data, this.rom.code + '.sav');
 };

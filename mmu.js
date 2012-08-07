@@ -35,13 +35,18 @@ MemoryView.prototype.store32 = function(offset, value) {
 	this.view.setInt32(offset, value, true);
 };
 
+MemoryView.prototype.replaceData = function(memory, offset) {
+	this.buffer = memory;
+	this.view = new DataView(this.buffer, typeof(offset) === "number" ? offset : 0);
+};
+
 function MemoryBlock(size) {
 	MemoryView.call(this, new ArrayBuffer(size));
 };
 
 MemoryBlock.prototype = Object.create(MemoryView.prototype);
 
-var ROMView = function(rom, offset) {
+function ROMView(rom, offset) {
 	MemoryView.call(this, rom, offset);
 };
 
@@ -152,7 +157,9 @@ function GameBoyAdvanceMMU() {
 	this.SIZE_CART0 = 0x02000000;
 	this.SIZE_CART1 = 0x02000000;
 	this.SIZE_CART2 = 0x02000000;
-	this.SIZE_CART_SRAM = 0x00010000;
+	this.SIZE_CART_SRAM = 0x00008000;
+	this.SIZE_CART_FLASH512 = 0x00010000;
+	this.SIZE_CART_FLASH1M = 0x00020000;
 
 	this.DMA_TIMING_NOW = 0;
 	this.DMA_TIMING_VBLANK = 1;
@@ -214,6 +221,8 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.waitstates32 = this.WAITSTATES_32.slice(0);
 	this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
 
+	this.cart = null;
+
 	this.DMA_REGISTER = [
 		this.cpu.irq.io.DMA0CNT_HI >> 1,
 		this.cpu.irq.io.DMA1CNT_HI >> 1,
@@ -232,6 +241,7 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 		code: null,
 		maker: null,
 		memory: rom,
+		saveType: null,
 	};
 
 	var lo = new ROMView(rom);
@@ -245,8 +255,6 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 		this.memory[this.REGION_CART1 + 1] = hi;
 		this.memory[this.REGION_CART2 + 1] = hi;
 	}
-
-	this.memory[this.REGION_CART_SRAM] = new MemoryBlock(this.SIZE_CART_SRAM);
 
 	if (process) {
 		var name = '';
@@ -278,9 +286,81 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 			maker += String.fromCharCode(c);
 		}
 		cart.maker = maker;
+
+		// Find savedata type
+		var state = '';
+		var next;
+		var terminal = false;
+		for (var i = 0xE4; i < rom.byteLength && !terminal; ++i) {
+			next = String.fromCharCode(lo.loadU8(i));
+			state += next;
+			switch (state) {
+			case 'F':
+			case 'FL':
+			case 'FLA':
+			case 'FLAS':
+			case 'FLASH':
+			case 'FLASH_':
+			case 'FLASH5':
+			case 'FLASH51':
+			case 'FLASH512':
+			case 'FLASH512_':
+			case 'FLASH1':
+			case 'FLASH1M':
+			case 'FLASH1M_':
+			case 'S':
+			case 'SR':
+			case 'SRA':
+			case 'SRAM':
+			case 'SRAM_':
+			case 'E':
+			case 'EE':
+			case 'EEP':
+			case 'EEPR':
+			case 'EEPRO':
+			case 'EEPROM':
+			case 'EEPROM_':
+				break;
+			case 'FLASH_V':
+			case 'FLASH512_V':
+			case 'FLASH1M_V':
+			case 'SRAM_V':
+			case 'EEPROM_V':
+				terminal = true;
+				break;
+			default:
+				state = next;
+				break;
+			}
+		}
+		if (terminal) {
+			cart.saveType = state;
+			switch (state) {
+			case 'FLASH_V':
+			case 'FLASH512_V':
+				this.memory[this.REGION_CART_SRAM] = new FlashSavedata(this.SIZE_CART_FLASH512);
+				break;
+			case 'FLASH1M_V':
+				this.memory[this.REGION_CART_SRAM] = new FlashSavedata(this.SIZE_CART_FLASH1M);
+				break;
+			case 'SRAM_V':
+				this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
+				break;
+			case 'EEPROM_V':
+				this.core.STUB('EEPROM saving is not yet implemented');
+				break;
+			}
+		}
+	} else {
+		this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
 	}
 
+	this.cart = cart;
 	return cart;
+};
+
+GameBoyAdvanceMMU.prototype.loadSavedata = function(save) {
+	this.memory[this.REGION_CART_SRAM].replaceData(save);
 };
 
 GameBoyAdvanceMMU.prototype.load8 = function(offset) {
