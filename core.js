@@ -1058,7 +1058,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
 						var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
 						gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
-						gprs[rd] = (hi * SHIFT_32 + lo * SHIFT_32) >>> 0;
+						gprs[rd] = Math.floor(hi * SHIFT_32 + lo * SHIFT_32);
 						if (s) {
 							cpu.cpsrN = gprs[rd] & 0x80000000;
 							cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
@@ -1077,7 +1077,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
 						var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
 						gprs[rn] += mid & 0xFFFFFFFF;
-						gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) >>> 0;
+						gprs[rd] += Math.floor(hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32);
 						if (s) {
 							cpu.cpsrN = gprs[rd] & 0x80000000;
 							cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
