@@ -224,10 +224,10 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.cart = null;
 
 	this.DMA_REGISTER = [
-		this.cpu.irq.io.DMA0CNT_HI >> 1,
-		this.cpu.irq.io.DMA1CNT_HI >> 1,
-		this.cpu.irq.io.DMA2CNT_HI >> 1,
-		this.cpu.irq.io.DMA3CNT_HI >> 1
+		this.core.io.DMA0CNT_HI >> 1,
+		this.core.io.DMA1CNT_HI >> 1,
+		this.core.io.DMA2CNT_HI >> 1,
+		this.core.io.DMA3CNT_HI >> 1
 	];
 };
 
