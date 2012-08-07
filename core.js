@@ -944,7 +944,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 						} else {
 							cpu.cpsrN = gprs[rd] & 0x80000000;
 							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
-							cpu.cpsrC = aluOut > cpu.shifterCarryOut;
+							cpu.cpsrC = cpu.shifterCarryOut;
 						}
 					}
 				};
