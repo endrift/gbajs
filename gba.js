@@ -4,6 +4,8 @@ function GameBoyAdvance() {
 	this.LOG_STUB = 4;
 	this.LOG_INFO = 8;
 
+	this.SYS_ID = 'com.endrift.gbajs';
+
 	this.logLevel = this.LOG_ERROR | this.LOG_WARN;
 
 	this.rom = null;
@@ -89,6 +91,7 @@ GameBoyAdvance.prototype.setRom = function(rom) {
 	//this.reset();
 
 	this.rom = this.mmu.loadRom(rom, true);
+	this.retrieveSavedata();
 };
 
 GameBoyAdvance.prototype.hasRom = function() {
@@ -193,13 +196,40 @@ GameBoyAdvance.prototype.loadSavedataFromFile = function(saveFile) {
 	reader.readAsArrayBuffer(saveFile);
 };
 
-GameBoyAdvance.prototype.downloadSavedata = function() {
+GameBoyAdvance.prototype.decodeSavedata = function(string) {
+	var length = (string.length * 3 / 4);
+	if (string[string.length - 2] == '=') {
+		length -= 2;
+	} else if (string[string.length - 1] == '=') {
+		length -= 1;
+	}
+	var buffer = new ArrayBuffer(length);
+	var view = new Uint8Array(buffer);
+	var bits = string.match(/..../g);
+	for (var i = 0; i + 2 < length; i += 3) {
+		var s = atob(bits.shift());
+		view[i] = s.charCodeAt(0);
+		view[i + 1] = s.charCodeAt(1);
+		view[i + 2] = s.charCodeAt(2);
+	}
+	if (i < length) {
+		var s = atob(bits.shift());
+		view[i++] = s.charCodeAt(0);
+		if (s.length > 1) {
+			view[i++] = s.charCodeAt(1);
+		}
+	}
+
+	this.setSavedata(buffer);
+};
+
+GameBoyAdvance.prototype.encodeSavedata = function() {
 	var sram = this.mmu.memory[this.mmu.REGION_CART_SRAM];
 	if (!sram) {
 		this.WARN("No save data available");
-		return;
+		return null;
 	}
-	var savedata = ['data:application/octet-stream;base64,'];
+	var savedata = [];
 	var b;
 	var wordstring = [];
 	var triplet;
@@ -214,8 +244,27 @@ GameBoyAdvance.prototype.downloadSavedata = function() {
 	if (wordstring.length) {
 		savedata.push(btoa(wordstring.join('')));
 	}
-	var data = savedata.join('');
-	window.open(data, this.rom.code + '.sav');
+	return savedata.join('');
+};
+
+GameBoyAdvance.prototype.downloadSavedata = function() {
+	var data = this.encodeSavedata();
+	window.open('data:application/octet-stream;base64,' + data, this.rom.code + '.sav');
+};
+
+GameBoyAdvance.prototype.storeSavedata = function() {
+	var storage = window.localStorage;
+	storage[this.SYS_ID + '.' + this.mmu.cart.code] = this.encodeSavedata();
+};
+
+GameBoyAdvance.prototype.retrieveSavedata = function() {
+	var storage = window.localStorage;
+	var data = storage[this.SYS_ID + '.' + this.mmu.cart.code];
+	if (data) {
+		this.decodeSavedata(data);
+		return true;
+	}
+	return false;
 };
 
 GameBoyAdvance.prototype.log = function(message) {};

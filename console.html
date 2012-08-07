@@ -69,6 +69,7 @@ window.onload = function() {
 			<button onclick="document.getElementById('uploadSave').click()">Load savedata</button>
 			<input type="file" id="uploadSave" onchange="core.loadSavedataFromFile(this.files[0])" style="display: none">
 			<button onclick="core.downloadSavedata()">Download savedata</button>
+			<button onclick="core.storeSavedata()">Store savedata</button>
 		</section>
 		<section id="registers">
 			<div>
