@@ -242,6 +242,9 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.TM3CNT_LO:
 		return this.cpu.irq.timerRead(3);
 
+	case this.RCNT:
+		this.core.STUB('Reading from unimplemented RCNT');
+		return 0;
 	case this.SIOCNT:
 		this.core.STUB('Reading from unimplemented SIOCNT');
 		return 0;
@@ -249,6 +252,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
 	case this.KEYCNT:
+		this.core.STUB('Unimplemented I/O register read: KEYCNT');
 		return 0;
 
 	case this.JOYCNT:
