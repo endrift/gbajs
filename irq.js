@@ -63,6 +63,7 @@ function GameBoyAdvanceInterruptHandler() {
 	for (var i = 0; i < 4; ++i) {
 		this.timers.push({
 			reload: 0,
+			oldReload: 0,
 			prescaleBits: 0,
 			countUp: 0,
 			doIrq: 0,
@@ -90,6 +91,7 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM0CNT_LO >> 1] = timer.reload;
+				timer.oldReload = timer.reload;
 
 				if (timer.doIrq) {
 					this.raiseIRQ(this.IRQ_TIMER0);
@@ -104,6 +106,13 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 						this.cpu.mmu.serviceDma(this.audio.dmaB, this.dma[this.audio.dmaB]);
 					}
 				}
+
+				timer = this.timers[1];
+				if (timer.countUp) {
+					if (++this.io.registers[this.io.TM1CNT_LO >> 1] == 0x10000) {
+						timer.nextEvent = this.cpu.cycles;
+					}
+				}
 			}
 		}
 
@@ -113,9 +122,14 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM1CNT_LO >> 1] = timer.reload;
+				timer.oldReload = timer.reload;
 
 				if (timer.doIrq) {
 					this.raiseIRQ(this.IRQ_TIMER1);
+				}
+
+				if (timer.countUp) {
+					timer.nextEvent = 0;
 				}
 
 				if (this.audio.enabled) {
@@ -127,6 +141,13 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 						this.cpu.mmu.serviceDma(this.audio.dmaB, this.dma[this.audio.dmaB]);
 					}
 				}
+
+				timer = this.timers[2];
+				if (timer.countUp) {
+					if (++this.io.registers[this.io.TM2CNT_LO >> 1] == 0x10000) {
+						timer.nextEvent = this.cpu.cycles;
+					}
+				}
 			}
 		}
 
@@ -136,9 +157,21 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM2CNT_LO >> 1] = timer.reload;
+				timer.oldReload = timer.reload;
 
 				if (timer.doIrq) {
 					this.raiseIRQ(this.IRQ_TIMER2);
+				}
+
+				if (timer.countUp) {
+					timer.nextEvent = 0;
+				}
+
+				timer = this.timers[3];
+				if (timer.countUp) {
+					if (++this.io.registers[this.io.TM3CNT_LO >> 1] == 0x10000) {
+						timer.nextEvent = this.cpu.cycles;
+					}
 				}
 			}
 		}
@@ -149,9 +182,14 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
 				this.io.registers[this.io.TM3CNT_LO >> 1] = timer.reload;
+				timer.oldReload = timer.reload;
 
 				if (timer.doIrq) {
 					this.raiseIRQ(this.IRQ_TIMER3);
+				}
+
+				if (timer.countUp) {
+					timer.nextEvent = 0;
 				}
 			}
 		}
@@ -428,23 +466,23 @@ GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
 	if (this.timersEnabled) {
 		timer = this.timers[0];
 		test = timer.nextEvent;
-		if (timer.enable && (!this.nextEvent || test < this.nextEvent)) {
+		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
 			this.nextEvent = test;
 		}
 
 		timer = this.timers[1];
 		test = timer.nextEvent;
-		if (timer.enable && (!this.nextEvent || test < this.nextEvent)) {
+		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
 			this.nextEvent = test;
 		}
 		timer = this.timers[2];
 		test = timer.nextEvent;
-		if (timer.enable && (!this.nextEvent || test < this.nextEvent)) {
+		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
 			this.nextEvent = test;
 		}
 		timer = this.timers[3];
 		test = timer.nextEvent;
-		if (timer.enable && (!this.nextEvent || test < this.nextEvent)) {
+		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
 			this.nextEvent = test;
 		}
 	}
@@ -567,6 +605,7 @@ GameBoyAdvanceInterruptHandler.prototype.timerSetReload = function(timer, reload
 
 GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, control) {
 	var currentTimer = this.timers[timer];
+	var oldPrescale = currentTimer.prescaleBits;
 	switch (control & 0x0003) {
 	case 0x0000:
 		currentTimer.prescaleBits = 0;
@@ -581,18 +620,28 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 		currentTimer.prescaleBits = 10;
 		break;
 	}
-	currentTimer.countUp = control & 0x0004;
+	currentTimer.countUp = 0; //control & 0x0004;
 	currentTimer.doIrq = control & 0x0040;
 	currentTimer.overflowInterval = (0x10000 - currentTimer.reload) << currentTimer.prescaleBits;
 	var wasEnabled = currentTimer.enable;
 	currentTimer.enable = ((control & 0x0080) >> 7) << timer;
 	if (!wasEnabled && currentTimer.enable) {
-		currentTimer.lastEvent = this.cpu.cycles;
-		currentTimer.nextEvent = this.cpu.cycles + currentTimer.overflowInterval;
+		if (!currentTimer.countUp) {
+			currentTimer.lastEvent = this.cpu.cycles;
+			currentTimer.nextEvent = this.cpu.cycles + currentTimer.overflowInterval;
+		} else {
+			currentTimer.nextEvent = 0;
+		}
 		this.io.registers[(this.io.TM0CNT_LO + (timer << 2)) >> 1] = currentTimer.reload;
 		++this.timersEnabled;
 	} else if (wasEnabled && !currentTimer.enable) {
+		if (!currentTimer.countUp) {
+			this.io.registers[(this.io.TM0CNT_LO + (timer << 2)) >> 1] = currentTimer.oldReload + (this.cpu.cycles - currentTimer.lastEvent) >> oldPrescale;
+		}
 		--this.timersEnabled;
+	} else if (currentTimer.prescaleBits != oldPrescale && !currentTimer.countUp) {
+		// FIXME: this might be before present
+		currentTimer.nextEvent = currentTimer.lastEvent + currentTimer.overflowInterval;
 	}
 
 	// We've changed the timers somehow...we need to reset the next event
@@ -606,9 +655,9 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 GameBoyAdvanceInterruptHandler.prototype.timerRead = function(timer) {
 	var currentTimer = this.timers[timer];
 	if (currentTimer.enable) {
-		return currentTimer.reload + (this.cpu.cycles - currentTimer.lastEvent) >> currentTimer.prescaleBits;
+		return currentTimer.oldReload + (this.cpu.cycles - currentTimer.lastEvent) >> currentTimer.prescaleBits;
 	} else {
-		return currentTimer.reload;
+		return this.io.registers[(this.io.TM0CNT_LO + (timer << 2)) >> 1];
 	}
 };
 
