@@ -73,7 +73,6 @@ function GameBoyAdvanceInterruptHandler() {
 		});
 	}
 
-	this.nextInterrupt = 0;
 	this.nextEvent = 0;
 };
 
@@ -479,7 +478,7 @@ GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
 
 GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
 	var timer;
-	var irqPending = this.video.hblankIRQ || this.video.vblankIRQ;
+	var irqPending = this.video.hblankIRQ || this.video.vblankIRQ || this.video.vcounterIRQ;
 	if (this.timersEnabled) {
 		timer = this.timers[0];
 		irqPending = irqPending || timer.doIrq;

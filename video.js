@@ -786,6 +786,10 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 				break;
 			}
 			++this.vcount;
+			if (this.vcount == this.vcountSetting && this.vcounterIRQ) {
+				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VCOUNTER);
+				this.nextVcounterIRQ += this.TOTAL_LENGTH;
+			}
 			this.nextEvent = this.nextHblank;
 		} else {
 			// Begin Hblank
@@ -827,6 +831,14 @@ GameBoyAdvanceVideo.prototype.writeDisplayStat = function(value) {
 	this.hblankIRQ = value & 0x0010;
 	this.vcounterIRQ = value & 0x0020;
 	this.vcountSetting = (value & 0xFF00) >> 8;
+
+	if (this.vcounterIRQ) {
+		// FIXME: this can be too late if we're in the middle of an Hblank
+		this.nextVcounterIRQ = this.nextHblank + this.HBLANK_LENGTH + (this.vcountSetting - this.vcount) * this.HORIZONTAL_LENGTH;
+		if (this.nextVcounterIRQ < this.nextEvent) {
+			this.nextVcounterIRQ += this.TOTAL_LENGTH;
+		}
+	}
 };
 
 GameBoyAdvanceVideo.prototype.readDisplayStat = function() {
