@@ -223,6 +223,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
 
 	this.cart = null;
+	this.save = null;
 
 	this.DMA_REGISTER = [
 		this.core.io.DMA0CNT_HI >> 1,
@@ -339,22 +340,22 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 			switch (state) {
 			case 'FLASH_V':
 			case 'FLASH512_V':
-				this.memory[this.REGION_CART_SRAM] = new FlashSavedata(this.SIZE_CART_FLASH512);
+				this.save = this.memory[this.REGION_CART_SRAM] = new FlashSavedata(this.SIZE_CART_FLASH512);
 				break;
 			case 'FLASH1M_V':
-				this.memory[this.REGION_CART_SRAM] = new FlashSavedata(this.SIZE_CART_FLASH1M);
+				this.save = this.memory[this.REGION_CART_SRAM] = new FlashSavedata(this.SIZE_CART_FLASH1M);
 				break;
 			case 'SRAM_V':
-				this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
+				this.save = this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
 				break;
 			case 'EEPROM_V':
-				this.memory[this.REGION_CART2 + 1] = new EEPROMSavedata(this.SIZE_CART_EEPROM, this);
+				this.save = this.memory[this.REGION_CART2 + 1] = new EEPROMSavedata(this.SIZE_CART_EEPROM, this);
 				break;
 			}
 		}
-		if (!this.memory[this.REGION_CART_SRAM]) {
+		if (!this.save) {
 			// Assume we have SRAM
-			this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
+			this.save = this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
 		}
 	}
 
@@ -363,7 +364,7 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 };
 
 GameBoyAdvanceMMU.prototype.loadSavedata = function(save) {
-	this.memory[this.REGION_CART_SRAM].replaceData(save);
+	this.save.replaceData(save);
 };
 
 GameBoyAdvanceMMU.prototype.load8 = function(offset) {
@@ -579,9 +580,9 @@ GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
 };
 
 GameBoyAdvanceMMU.prototype.saveNeedsFlush = function() {
-	return this.memory[this.REGION_CART_SRAM].writePending;
+	return this.save.writePending;
 };
 
 GameBoyAdvanceMMU.prototype.flushSave = function() {
-	this.memory[this.REGION_CART_SRAM].writePending = false;
+	this.save.writePending = false;
 };

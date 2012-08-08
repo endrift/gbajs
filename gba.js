@@ -237,7 +237,7 @@ GameBoyAdvance.prototype.decodeSavedata = function(string) {
 };
 
 GameBoyAdvance.prototype.encodeSavedata = function() {
-	var sram = this.mmu.memory[this.mmu.REGION_CART_SRAM];
+	var sram = this.mmu.save;
 	if (!sram) {
 		this.WARN("No save data available");
 		return null;

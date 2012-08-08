@@ -202,6 +202,7 @@ function EEPROMSavedata(size, mmu) {
 
 	this.realSize = 0;
 	this.addressBits = 0;
+	this.writePending = false;
 
 	this.dma = mmu.core.irq.dma[3];
 
@@ -225,7 +226,7 @@ EEPROMSavedata.prototype.loadU8 = function(offset) {
 };
 
 EEPROMSavedata.prototype.loadU16 = function(offset) {
-	if (this.command != this.COMMAND_READ) {
+	if (this.command != this.COMMAND_READ || !this.dma.enable) {
 		return 1;
 	}
 	--this.readBitsRemaining;
@@ -284,6 +285,7 @@ EEPROMSavedata.prototype.store16 = function(offset, value) {
 			this.writeAddress |= (value & 0x1) << 6;
 		} else if (this.commandBitsRemaining <= 0) {
 			this.command = this.COMMAND_NULL;
+			this.writePending = true;
 		} else {
 			var current = this.view.getUint8(this.writeAddress >> 3);
 			current &= ~(1 << (0x7 - (this.writeAddress & 0x7)));
@@ -309,4 +311,8 @@ EEPROMSavedata.prototype.store16 = function(offset, value) {
 
 EEPROMSavedata.prototype.store32 = function(offset, value) {
 	throw new Error("Unsupported 32-bit access!");
+};
+
+EEPROMSavedata.prototype.replaceData = function(memory) {
+	MemoryView.prototype.replaceData.call(this, memory, 0);
 };
