@@ -160,6 +160,7 @@ function GameBoyAdvanceMMU() {
 	this.SIZE_CART_SRAM = 0x00008000;
 	this.SIZE_CART_FLASH512 = 0x00010000;
 	this.SIZE_CART_FLASH1M = 0x00020000;
+	this.SIZE_CART_EEPROM = 0x00002000;
 
 	this.DMA_TIMING_NOW = 0;
 	this.DMA_TIMING_VBLANK = 1;
@@ -347,7 +348,7 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 				this.memory[this.REGION_CART_SRAM] = new SRAMSavedata(this.SIZE_CART_SRAM);
 				break;
 			case 'EEPROM_V':
-				this.core.STUB('EEPROM saving is not yet implemented');
+				this.memory[this.REGION_CART2 + 1] = new EEPROMSavedata(this.SIZE_CART_EEPROM, this);
 				break;
 			}
 		}

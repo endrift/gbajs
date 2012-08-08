@@ -188,4 +188,125 @@ FlashSavedata.prototype.replaceData = function(memory) {
 		this.bank1 = null;
 	}
 	this.bank = bank ? this.bank1 : this.bank0;
-}
+};
+
+function EEPROMSavedata(size, mmu) {
+	MemoryView.call(this, new ArrayBuffer(size), 0);
+
+	this.writeAddress = 0;
+	this.readBitsRemaining = 0;
+	this.readAddress = 0;
+
+	this.command = 0;
+	this.commandBitsRemaining = 0;
+
+	this.realSize = 0;
+	this.addressBits = 0;
+
+	this.dma = mmu.core.irq.dma[3];
+
+	this.COMMAND_NULL = 0;
+	this.COMMAND_PENDING = 1;
+	this.COMMAND_WRITE = 2;
+	this.COMMAND_READ_PENDING = 3;
+	this.COMMAND_READ = 4;
+};
+
+EEPROMSavedata.prototype.load8 = function(offset) {
+	throw new Error("Unsupported 8-bit access!");
+};
+
+EEPROMSavedata.prototype.load16 = function(offset) {
+	return this.loadU16(offset);
+};
+
+EEPROMSavedata.prototype.loadU8 = function(offset) {
+	throw new Error("Unsupported 8-bit access!");
+};
+
+EEPROMSavedata.prototype.loadU16 = function(offset) {
+	if (this.command != this.COMMAND_READ) {
+		return 1;
+	}
+	--this.readBitsRemaining;
+	if (this.readBitsRemaining < 64) {
+		var step = 63 - this.readBitsRemaining;
+		var data = this.view.getUint8((this.readAddress + step) >> 3, false) >> (0x7 - (step & 0x7));
+		if (!this.readBitsRemaining) {
+			this.command = this.COMMAND_NULL;
+		}
+		return data & 0x1;
+	}
+	return 0;
+};
+
+EEPROMSavedata.prototype.load32 = function(offset) {
+	throw new Error("Unsupported 32-bit access!");
+};
+
+EEPROMSavedata.prototype.store8 = function(offset, value) {
+	throw new Error("Unsupported 8-bit access!");
+};
+
+EEPROMSavedata.prototype.store16 = function(offset, value) {
+	switch (this.command) {
+	// Read header
+	case this.COMMAND_NULL:
+	default:
+		this.command = value & 0x1;
+		break;
+	case this.COMMAND_PENDING:
+		this.command <<= 1;
+		this.command |= value & 0x1;
+		if (this.command == this.COMMAND_WRITE) {
+			if (!this.realSize) {
+				var bits = this.dma.count - 67;
+				this.realSize = 8 << bits;
+				this.addressBits = bits;
+			}
+			this.commandBitsRemaining = this.addressBits + 64 + 1;
+			this.writeAddress = 0;
+		} else {
+			if (!this.realSize) {
+				var bits = this.dma.count - 3;
+				this.realSize = 8 << bits;
+				this.addressBits = bits;
+			}
+			this.commandBitsRemaining = this.addressBits + 1;
+			this.readAddress = 0;
+		}
+		break;
+	// Do commands
+	case this.COMMAND_WRITE:
+		// Write
+		if (--this.commandBitsRemaining > 64) {
+			this.writeAddress <<= 1;
+			this.writeAddress |= (value & 0x1) << 6;
+		} else if (this.commandBitsRemaining <= 0) {
+			this.command = this.COMMAND_NULL;
+		} else {
+			var current = this.view.getUint8(this.writeAddress >> 3);
+			current &= ~(1 << (0x7 - (this.writeAddress & 0x7)));
+			current |= (value & 0x1) << (0x7 - (this.writeAddress & 0x7));
+			this.view.setUint8(this.writeAddress >> 3, current);
+			++this.writeAddress;
+		}
+		break;
+	case this.COMMAND_READ_PENDING:
+		// Read
+		if (--this.commandBitsRemaining > 0) {
+			this.readAddress <<= 1;
+			if (value & 0x1) {
+				this.readAddress |= 0x40;
+			}
+		} else {
+			this.readBitsRemaining = 68;
+			this.command = this.COMMAND_READ;
+		}
+		break;
+	}
+};
+
+EEPROMSavedata.prototype.store32 = function(offset, value) {
+	throw new Error("Unsupported 32-bit access!");
+};
