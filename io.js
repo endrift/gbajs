@@ -248,6 +248,11 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
+	case this.KEYCNT:
+		return 0;
+
+	case this.JOYCNT:
+		return 0;
 
 	case this.BG0HOFS:
 	case this.BG0VOFS:
