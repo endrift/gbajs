@@ -834,12 +834,12 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 	
 	var i;
 	for (i = 0; i < 4; ++i) {
-		this.bg[i].pushPixel = (this.bg[i].multipalette || this.backgroundMode != 0) ? this.pushPixelOpaque256 : this.pushPixelOpaque;
+		this.bg[i].pushPixel = (this.bg[i].multipalette || (i > 1 && this.backgroundMode != 0)) ? this.pushPixelOpaque256 : this.pushPixelOpaque;
 	}
 	if (this.blendMode == 1) {
 		for (i = 0; i < 4; ++i) {
 			if (this.target1[i]) {
-				this.bg[i].pushPixel = (this.bg[i].multipalette || this.backgroundMode != 0) ? this.pushPixelBlend256 : this.pushPixelBlend;
+				this.bg[i].pushPixel = (this.bg[i].multipalette ||(i > 1 && this.backgroundMode != 0)) ? this.pushPixelBlend256 : this.pushPixelBlend;
 			}
 		}
 	}
