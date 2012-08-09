@@ -972,14 +972,14 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 
 	var i;
 	for (i = 0; i < 4; ++i) {
-		this.bg[i].pushPixel = (this.bg[i].multipalette || this.backgroundMode != 0) ? this.pushPixelOpaque256 : this.pushPixelOpaque;
+		this.bg[i].pushPixel = (this.bg[i].multipalette || (i > 1 && this.backgroundMode != 0)) ? this.pushPixelOpaque256 : this.pushPixelOpaque;
 	}
 	switch (this.blendMode) {
 	case 1:
 		// Alpha
 		for (i = 0; i < 4; ++i) {
 			if (this.target1[i]) {
-				this.bg[i].pushPixel = (this.bg[i].multipalette || this.backgroundMode != 0) ? this.pushPixelBlend256 : this.pushPixelBlend;
+				this.bg[i].pushPixel = (this.bg[i].multipalette || (i > 1 && this.backgroundMode != 0)) ? this.pushPixelBlend256 : this.pushPixelBlend;
 			}
 		}
 	case 0:
@@ -998,12 +998,12 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 };
 
 GameBoyAdvanceVideo.prototype.setBlendEnabled = function(layer, enabled) {
-	layer.pushPixel = (layer.multipalette || this.backgroundMode != 0) ? this.pushPixelOpaque256 : this.pushPixelOpaque;
+	layer.pushPixel = (layer.multipalette || (layer.index > 1 && this.backgroundMode != 0)) ? this.pushPixelOpaque256 : this.pushPixelOpaque;
 	if (enabled) {
 		switch (this.blendMode) {
 		case 1:
 			// Alpha
-			layer.pushPixel = (layer.multipalette || this.backgroundMode != 0) ? this.pushPixelBlend256 : this.pushPixelBlend;
+			layer.pushPixel = (layer.multipalette || (layer.index > 1 && this.backgroundMode != 0)) ? this.pushPixelBlend256 : this.pushPixelBlend;
 		case 0:
 			// Normal
 			this.palette.makeNormalPalette(layer);
