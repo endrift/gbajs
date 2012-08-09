@@ -316,6 +316,11 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
  	case this.SIODATA8:
  		this.core.STUB('Unimplemented SIO register read: 0x' + offset.toString(16));
  		return 0;
+ 		
+	case 0x20A:
+		// These are the high bits for IME, which do nothing. Some games try to do a 32-bit read
+		// from IME and that will trip this. Return 0, as the bits are just empty after all.
+		return 0;
 	default:
 		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
 	}
