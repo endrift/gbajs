@@ -22,6 +22,7 @@ function GameBoyAdvanceKeypad() {
 	this.L = 9;
 
 	this.currentDown = 0x03FF;
+	this.eatInput = false;
 
 	var self = this;
 	this.keyboardHandler = function(e) {
@@ -66,6 +67,10 @@ function GameBoyAdvanceKeypad() {
 			this.currentDown &= ~toggle;
 		} else {
 			this.currentDown |= toggle;
+		}
+
+		if (this.eatInput) {
+			e.preventDefault();
 		}
 	};
 };
