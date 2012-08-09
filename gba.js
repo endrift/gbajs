@@ -100,10 +100,15 @@ GameBoyAdvance.prototype.hasRom = function() {
 	return !!this.rom;
 };
 
-GameBoyAdvance.prototype.loadRomFromFile = function(romFile) {
+GameBoyAdvance.prototype.loadRomFromFile = function(romFile, callback) {
 	var reader = new FileReader();
 	var self = this;
-	reader.onload = function(e) { self.setRom(e.target.result); }
+	reader.onload = function(e) {
+		self.setRom(e.target.result);
+		if (callback) {
+			callback();
+		}
+	}
 	reader.readAsArrayBuffer(romFile);
 };
 
