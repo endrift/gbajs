@@ -646,7 +646,7 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.vcountSetting = 0;
 
 	// VCOUNT
-	this.vcount = 0;
+	this.vcount = -1;
 
 	// WIN0H
 	this.win0Left = 0;
@@ -761,11 +761,11 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 		if (this.inHblank) {
 			// End Hblank
 			this.inHblank = false;
-			this.pixelData.data.y = this.vcount; // Used inside of drawScanline
-			switch (this.vcount + 1) {
+			this.nextEvent = this.nextHblank;
+
+			switch (this.vcount) {
 			case this.VERTICAL_PIXELS:
 				this.inVblank = true;
-				this.drawScanline(this.platformBacking); // Draw final scanline
 				this.finishDraw();
 				this.nextVblankIRQ = this.nextEvent + this.TOTAL_LENGTH;
 				this.cpu.mmu.runVblankDmas();
@@ -773,24 +773,16 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 					this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
 				}
 				break;
-			case this.VERTICAL_TOTAL_PIXELS - 1:
-				this.inVblank = false;
-				break;
 			case this.VERTICAL_TOTAL_PIXELS:
-				this.vcount = -1;
-				break;
-			default:
-				if (!this.inVblank) {
-					this.drawScanline(this.platformBacking);
-				}
+				this.inVblank = false;
+				this.vcount = 0;
 				break;
 			}
-			++this.vcount;
-			if (this.vcount == this.vcountSetting && this.vcounterIRQ) {
-				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VCOUNTER);
-				this.nextVcounterIRQ += this.TOTAL_LENGTH;
+
+			if (this.vcount < this.VERTICAL_PIXELS) {
+				this.pixelData.data.y = this.vcount; // Used inside of drawScanline
+				this.drawScanline(this.platformBacking);
 			}
-			this.nextEvent = this.nextHblank;
 		} else {
 			// Begin Hblank
 			this.inHblank = true;
@@ -798,11 +790,18 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			this.nextEvent = this.lastHblank + this.HBLANK_LENGTH;
 			this.nextHblank = this.nextEvent + this.HDRAW_LENGTH;
 			this.nextHblankIRQ = this.nextHblank;
+
 			if (this.vcount < this.VERTICAL_PIXELS) {
 				this.cpu.mmu.runHblankDmas();
 				if (this.hblankIRQ) {
 					this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
 				}
+			}
+
+			++this.vcount;
+			if (this.vcount == this.vcountSetting && this.vcounterIRQ) {
+				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VCOUNTER);
+				this.nextVcounterIRQ += this.TOTAL_LENGTH;
 			}
 		}
 	}
