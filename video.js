@@ -392,10 +392,10 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff) {
 	var offset;
 	if (this.x < video.HORIZONTAL_PIXELS) {
 		underflow = 0;
-		offset = (backing.y * video.HORIZONTAL_PIXELS + this.x) * 4;
+		offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
 	} else {
 		underflow = 512 - this.x;
-		offset = (backing.y * video.HORIZONTAL_PIXELS) * 4;
+		offset = (y * video.HORIZONTAL_PIXELS) * 4;
 	}
 	
 	var localX;
@@ -449,10 +449,10 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff) {
 	var offset;
 	if (this.x < video.HORIZONTAL_PIXELS) {
 		underflow = 0;
-		offset = (backing.y * video.HORIZONTAL_PIXELS + this.x) * 4;
+		offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
 	} else {
 		underflow = 512 - this.x;
-		offset = (backing.y * video.HORIZONTAL_PIXELS) * 4;
+		offset = (y * video.HORIZONTAL_PIXELS) * 4;
 	}
 
 	var localX;
@@ -1154,7 +1154,7 @@ GameBoyAdvanceVideo.prototype.identity = function(x) {
 };
 
 GameBoyAdvanceVideo.prototype.drawScanlineBlank = function(backing) {
-	var offset = backing.y * 4 * this.HORIZONTAL_PIXELS;
+	var offset = this.vcount * 4 * this.HORIZONTAL_PIXELS;
 	for (var x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 		backing[offset++] = 0xFF;
 		backing[offset++] = 0xFF;
@@ -1164,7 +1164,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBlank = function(backing) {
 };
 
 GameBoyAdvanceVideo.prototype.drawScanlineBackdrop = function(backing) {
-	var offset = backing.y * 4 * this.HORIZONTAL_PIXELS;
+	var offset = this.vcount * 4 * this.HORIZONTAL_PIXELS;
 	var bd = this.palette.accessColor(this.LAYER_BACKDROP, 0);
 	for (var x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 		backing[offset++] = bd[0];
@@ -1178,7 +1178,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 	var video = this.video;
 	var x;
 	var y = video.vcount;
-	var offset = (backing.y * video.HORIZONTAL_PIXELS + start) << 2;
+	var offset = (video.vcount * video.HORIZONTAL_PIXELS + start) << 2;
 	var xOff = bg.x;
 	var yOff = bg.y;
 	var localX;
@@ -1245,7 +1245,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode1 = function(backing, bg, start,
 	var video = this.video;
 	var x;
 	var y = video.vcount;
-	var offset = (backing.y * video.HORIZONTAL_PIXELS + start) << 2;
+	var offset = (video.vcount * video.HORIZONTAL_PIXELS + start) << 2;
 	var localX;
 	var localY;
 	var screenBase = bg.screenBase;
