@@ -2,7 +2,15 @@ function MemoryAligned16(size) {
 	this.buffer = new Uint16Array(size >> 1);
 };
 
-MemoryAligned16.prototype.loadU8 = function(offset, value) {
+MemoryAligned16.prototype.load8 = function(offset) {
+	return (this.loadU8(offset) << 24) >> 24;
+};
+
+MemoryAligned16.prototype.load16 = function(offset) {
+	return (this.loadU16(offset) << 16) >> 16;
+};
+
+MemoryAligned16.prototype.loadU8 = function(offset) {
 	var index = offset >> 1;
 	if (offset & 1) {
 		return (this.buffer[index] & 0xFF00) >>> 8;
