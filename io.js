@@ -441,16 +441,16 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.video.writeBackgroundVOffset(3, value);
 		break;
 	case this.BG2X_LO:
-		this.video.writeBackgroundRefX(2, (this.registers[offset | 1] << 16) | value);
+		this.video.writeBackgroundRefX(2, (this.registers[(offset >> 1) | 1] << 16) | value);
 		break;
 	case this.BG2X_HI:
-		this.video.writeBackgroundRefX(2, this.registers[offset ^ 1] | (value << 16));
+		this.video.writeBackgroundRefX(2, this.registers[(offset >> 1) ^ 1] | (value << 16));
 		break;
 	case this.BG2Y_LO:
-		this.video.writeBackgroundRefY(2, (this.registers[offset | 1] << 16) | value);
+		this.video.writeBackgroundRefY(2, (this.registers[(offset >> 1) | 1] << 16) | value);
 		break;
 	case this.BG2Y_HI:
-		this.video.writeBackgroundRefY(2, this.registers[offset ^ 1] | (value << 16));
+		this.video.writeBackgroundRefY(2, this.registers[(offset >> 1) ^ 1] | (value << 16));
 		break;
 	case this.BG2PA:
 		this.video.writeBackgroundParamA(2, value);
@@ -465,16 +465,16 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.video.writeBackgroundParamD(2, value);
 		break;
 	case this.BG3X_LO:
-		this.video.writeBackgroundRefX(3, (this.registers[offset | 1] << 16) | value);
+		this.video.writeBackgroundRefX(3, (this.registers[(offset >> 1) | 1] << 16) | value);
 		break;
 	case this.BG3X_HI:
-		this.video.writeBackgroundRefX(3, this.registers[offset ^ 1] | (value << 16));
+		this.video.writeBackgroundRefX(3, this.registers[(offset >> 1) ^ 1] | (value << 16));
 		break;
 	case this.BG3Y_LO:
-		this.video.writeBackgroundRefY(3, (this.registers[offset | 1] << 16) | value);
+		this.video.writeBackgroundRefY(3, (this.registers[(offset >> 1) | 1] << 16) | value);
 		break;
 	case this.BG3Y_HI:
-		this.video.writeBackgroundRefY(3, this.registers[offset ^ 1] | (value << 16));
+		this.video.writeBackgroundRefY(3, this.registers[(offset >> 1) ^ 1] | (value << 16));
 		break;
 	case this.BG3PA:
 		this.video.writeBackgroundParamA(3, value);
