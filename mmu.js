@@ -1,38 +1,39 @@
 function MemoryView(memory, offset) {
 	this.buffer = memory;
 	this.view = new DataView(this.buffer, typeof(offset) === "number" ? offset : 0);
+	this.mask = memory.byteLength - 1;
 };
 
 MemoryView.prototype.load8 = function(offset) {
-	return this.view.getInt8(offset);
+	return this.view.getInt8(offset & this.mask);
 };
 
 MemoryView.prototype.load16 = function(offset) {
-	return this.view.getInt16(offset, true);
+	return this.view.getInt16(offset & this.mask, true);
 };
 
 MemoryView.prototype.loadU8 = function(offset) {
-	return this.view.getUint8(offset);
+	return this.view.getUint8(offset & this.mask);
 };
 
 MemoryView.prototype.loadU16 = function(offset) {
-	return this.view.getUint16(offset, true);
+	return this.view.getUint16(offset & this.mask, true);
 };
 
 MemoryView.prototype.load32 = function(offset) {
-	return this.view.getInt32(offset, true);
+	return this.view.getInt32(offset & this.mask, true);
 };
 
 MemoryView.prototype.store8 = function(offset, value) {
-	this.view.setInt8(offset, value);
+	this.view.setInt8(offset & this.mask, value);
 };
 
 MemoryView.prototype.store16 = function(offset, value) {
-	this.view.setInt16(offset, value, true);
+	this.view.setInt16(offset & this.mask, value, true);
 };
 
 MemoryView.prototype.store32 = function(offset, value) {
-	this.view.setInt32(offset, value, true);
+	this.view.setInt32(offset & this.mask, value, true);
 };
 
 MemoryView.prototype.replaceData = function(memory, offset) {
@@ -48,6 +49,7 @@ MemoryBlock.prototype = Object.create(MemoryView.prototype);
 
 function ROMView(rom, offset) {
 	MemoryView.call(this, rom, offset);
+	this.mask = 0x01FFFFFF;
 };
 
 ROMView.prototype = Object.create(MemoryView.prototype);
