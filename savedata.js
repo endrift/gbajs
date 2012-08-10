@@ -40,7 +40,7 @@ function FlashSavedata(size) {
 		this.id = this.ID_SANYO;
 		this.bank1 = new DataView(this.buffer, 0x00010000);
 	} else {
-		this,id = this.ID_PANASONIC;
+		this.id = this.ID_PANASONIC;
 		this.bank1 = null;
 	}
 	this.bank = this.bank0;
@@ -56,7 +56,7 @@ function FlashSavedata(size) {
 
 FlashSavedata.prototype.load8 = function(offset) {
 	if (this.idMode && offset < 2) {
-		return (this.id >> ((1 - offset) << 3)) & 0xFF;
+		return (this.id >> (offset << 3)) & 0xFF;
 	} else {
 		return this.bank.getInt8(offset);
 	}
@@ -83,10 +83,19 @@ FlashSavedata.prototype.store8 = function(offset, value) {
 	case 0:
 		if (offset == 0x5555) {
 			if (this.second == 0x55) {
-				if (value == this.COMMAND_ERASE) {
+				switch (value) {
+				case this.COMMAND_ERASE:
 					this.pendingCommand = value;
-				} else {
+					break;
+				case this.COMMAND_ID:
+					this.idMode = true;
+					break;
+				case this.COMMAND_TERMINATE_ID:
+					this.idMode = false;
+					break;
+				default:
 					this.command = value;
+					break;
 				}
 				this.second = 0;
 				this.first = 0;
@@ -104,20 +113,6 @@ FlashSavedata.prototype.store8 = function(offset, value) {
 			}
 		}
 		break;
-	case this.COMMAND_WIPE:
-		if (offset == 0x5555) {
-			// TODO: wipe chip
-			this.erasePending = false;
-		}
-		this.command = 0;
-		break;
-	case this.COMMAND_ERASE_SECTOR:
-		if (!(offet & 0x0000FFFF)) {
-			// TODO: wipe sector
-			this.erasePending = false;
-		}
-		this.command = 0;
-		break;
 	case this.COMMAND_ERASE:
 		switch (value) {
 		case this.COMMAND_WIPE:
@@ -132,16 +127,10 @@ FlashSavedata.prototype.store8 = function(offset, value) {
 				for (var i = offset; i < offset + 0x1000; i += 4) {
 					this.bank.setInt32(i, -1);
 				}
-				break;
 			}
+			break;
 		}
 		this.pendingCommand = 0;
-		this.command = 0;
-		break;
-	case this.COMMAND_ID:
-		if (offset == 0x5555) {
-			this.idMode = true;
-		}
 		this.command = 0;
 		break;
 	case this.COMMAND_WRITE:
@@ -157,12 +146,6 @@ FlashSavedata.prototype.store8 = function(offset, value) {
 			} else {
 				this.bank = this.bank0;
 			}
-		}
-		this.command = 0;
-		break;
-	case this.COMMAND_TERMINATE_ID:
-		if (offset == 0x5555) {
-			this.idMode = false;
 		}
 		this.command = 0;
 		break;
