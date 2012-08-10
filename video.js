@@ -392,18 +392,23 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	var underflow;
 	var offset;
 	var totalWidth = this.cachedWidth;
-	if (end < this.cachedWidth + this.x) {
-		totalWidth = end - this.x;
-	}
-	if (this.x < start) {
-		underflow = start - this.x;
-		offset = (y * video.HORIZONTAL_PIXELS + start) * 4;
-	} else if (this.x < video.HORIZONTAL_PIXELS) {
-		underflow = 0;
-		offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
+	if (this.x < video.HORIZONTAL_PIXELS) {
+		if (this.x < start) {
+			underflow = start - this.x;
+			offset = (y * video.HORIZONTAL_PIXELS + start) * 4;
+		} else {
+			underflow = 0;
+			offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
+		}
+		if (end < this.cachedWidth + this.x) {
+			totalWidth = end - this.x;
+		}
 	} else {
 		underflow = 512 - this.x;
 		offset = (y * video.HORIZONTAL_PIXELS) * 4;
+		if (end < this.cachedWidth - underflow) {
+			totalWidth = end;
+		}
 	}
 	
 	var localX;
@@ -455,16 +460,6 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 	var x;
 	var underflow;
 	var offset;
-	if (this.x < start) {
-		underflow = start - this.x;
-		offset = (y * video.HORIZONTAL_PIXELS + start) * 4;
-	} else if (this.x < video.HORIZONTAL_PIXELS) {
-		underflow = 0;
-		offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
-	} else {
-		underflow = 512 - this.x;
-		offset = (y * video.HORIZONTAL_PIXELS) * 4;
-	}
 
 	var localX;
 	var localY;
@@ -478,8 +473,24 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 	if (drawWidth > video.HORIZONTAL_PIXELS) {
 		totalWidth = video.HORIZONTAL_PIXELS;
 	}
-	if (end < drawWidth + this.x) {
-		drawWidth = end - this.x;
+
+	if (this.x < video.HORIZONTAL_PIXELS) {
+		if (this.x < start) {
+			underflow = start - this.x;
+			offset = (y * video.HORIZONTAL_PIXELS + start) * 4;
+		} else {
+			underflow = 0;
+			offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
+		}
+		if (end < drawWidth + this.x) {
+			drawWdth = end - this.x;
+		}
+	} else {
+		underflow = 512 - this.x;
+		offset = (y * video.HORIZONTAL_PIXELS) * 4;
+		if (end < drawWidth - underflow) {
+			drawWidth = end;
+		}
 	}
 
 	for (x = underflow; x < drawWidth; ++x) {
