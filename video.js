@@ -807,7 +807,8 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			}
 
 			++this.vcount;
-			if (this.vcount == this.vcountSetting && this.vcounterIRQ) {
+			this.vcounter = this.vcount == this.vcountSetting;
+			if (this.vcounter && this.vcounterIRQ) {
 				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VCOUNTER);
 				this.nextVcounterIRQ += this.TOTAL_LENGTH;
 			}
