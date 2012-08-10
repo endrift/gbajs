@@ -105,6 +105,7 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		switch (obj.mode) {
 		case 0x0000:
 			// Normal
+			// TODO: make this line up with BLDCNT
 			obj.pushPixel = obj.multipalette ? this.video.pushPixelOpaque256 : this.video.pushPixelOpaque;
 			break;
 		case 0x0400:
@@ -385,12 +386,19 @@ function GameBoyAdvanceOBJ(oam, index) {
 	this.cachedHeight = 8;
 };
 
-GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff) {
+GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, start, end) {
 	var video = this.oam.video;
 	var x;
 	var underflow;
 	var offset;
-	if (this.x < video.HORIZONTAL_PIXELS) {
+	var totalWidth = this.cachedWidth;
+	if (end < this.cachedWidth + this.x) {
+		totalWidth = end - this.x;
+	}
+	if (this.x < start) {
+		underflow = start - this.x;
+		offset = (y * video.HORIZONTAL_PIXELS + start) * 4;
+	} else if (this.x < video.HORIZONTAL_PIXELS) {
 		underflow = 0;
 		offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
 	} else {
@@ -422,7 +430,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff) {
 	}
 
 	tileRow = video.accessTile(this.TILE_OFFSET + (x & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), localYLo << paletteShift);
-	for (x = underflow; x < this.cachedWidth; ++x) {
+	for (x = underflow; x < totalWidth; ++x) {
 		if (!this.hflip) {
 			localX = x;
 		} else {
@@ -442,12 +450,15 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff) {
 	}
 };
 
-GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff) {
+GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, start, end) {
 	var video = this.oam.video;
 	var x;
 	var underflow;
 	var offset;
-	if (this.x < video.HORIZONTAL_PIXELS) {
+	if (this.x < start) {
+		underflow = start - this.x;
+		offset = (y * video.HORIZONTAL_PIXELS + start) * 4;
+	} else if (this.x < video.HORIZONTAL_PIXELS) {
 		underflow = 0;
 		offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
 	} else {
@@ -466,6 +477,9 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff) {
 	var drawWidth = totalWidth;
 	if (drawWidth > video.HORIZONTAL_PIXELS) {
 		totalWidth = video.HORIZONTAL_PIXELS;
+	}
+	if (end < drawWidth + this.x) {
+		drawWidth = end - this.x;
 	}
 
 	for (x = underflow; x < drawWidth; ++x) {
@@ -542,21 +556,22 @@ GameBoyAdvanceOBJ.prototype.recalcSize = function() {
 	}
 };
 
-function GameBoyAdvanceOBJLayer(i) {
+function GameBoyAdvanceOBJLayer(i, video) {
+	this.video = video;
 	this.bg = false;
-	this.index = i;
+	this.index = video.LAYER_OBJ;
 	this.priority = i;
 	this.objs = new Array();
 };
 
-GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, video) {
-	var y = video.vcount;
+GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, end) {
+	var y = this.video.vcount;
 	var wrappedY;
 	var obj;
 	// Draw in reverse: OBJ0 is higher priority than OBJ1, etc
 	for (var i = this.objs.length; i--;) {
 		obj = this.objs[i];
-		if (obj.y < video.VERTICAL_PIXELS) {
+		if (obj.y < this.video.VERTICAL_PIXELS) {
 			wrappedY = obj.y;
 		} else {
 			wrappedY = obj.y - 256;
@@ -568,7 +583,7 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, video) {
 			totalHeight = obj.cachedHeight << obj.doublesize;
 		}
 		if (wrappedY <= y && (wrappedY + totalHeight) > y) {
-			this.objs[i].drawScanline(backing, y, wrappedY);
+			this.objs[i].drawScanline(backing, y, wrappedY, start, end);
 		}
 	}
 };
@@ -622,10 +637,10 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.oam = new GameBoyAdvanceOAM(this.cpu.mmu.SIZE_OAM);
 	this.oam.video = this;
 	this.objLayers = [
-		new GameBoyAdvanceOBJLayer(0),
-		new GameBoyAdvanceOBJLayer(1),
-		new GameBoyAdvanceOBJLayer(2),
-		new GameBoyAdvanceOBJLayer(3)
+		new GameBoyAdvanceOBJLayer(0, this),
+		new GameBoyAdvanceOBJLayer(1, this),
+		new GameBoyAdvanceOBJLayer(2, this),
+		new GameBoyAdvanceOBJLayer(3, this)
 	];
 
 	// DISPCNT
@@ -771,6 +786,13 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			this.inHblank = false;
 			this.nextEvent = this.nextHblank;
 
+			++this.vcount;
+			this.vcounter = this.vcount == this.vcountSetting;
+			if (this.vcounter && this.vcounterIRQ) {
+				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VCOUNTER);
+				this.nextVcounterIRQ += this.TOTAL_LENGTH;
+			}
+
 			switch (this.vcount) {
 			case this.VERTICAL_PIXELS:
 				this.inVblank = true;
@@ -781,8 +803,10 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 					this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
 				}
 				break;
-			case this.VERTICAL_TOTAL_PIXELS:
+			case this.VERTICAL_TOTAL_PIXELS - 1:
 				this.inVblank = false;
+				break;
+			case this.VERTICAL_TOTAL_PIXELS:
 				this.vcount = 0;
 				break;
 			}
@@ -804,13 +828,6 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 				if (this.hblankIRQ) {
 					this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
 				}
-			}
-
-			++this.vcount;
-			this.vcounter = this.vcount == this.vcountSetting;
-			if (this.vcounter && this.vcounterIRQ) {
-				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VCOUNTER);
-				this.nextVcounterIRQ += this.TOTAL_LENGTH;
 			}
 		}
 	}
@@ -990,6 +1007,7 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 				this.bg[i].pushPixel = (this.bg[i].multipalette || (i > 1 && this.backgroundMode != 0)) ? this.pushPixelBlend256 : this.pushPixelBlend;
 			}
 		}
+		// Fall through
 	case 0:
 		// Normal
 		this.palette.makeNormalPalettes();
@@ -1012,6 +1030,7 @@ GameBoyAdvanceVideo.prototype.setBlendEnabled = function(layer, enabled) {
 		case 1:
 			// Alpha
 			layer.pushPixel = (layer.multipalette || (layer.index > 1 && this.backgroundMode != 0)) ? this.pushPixelBlend256 : this.pushPixelBlend;
+			// Fall through
 		case 0:
 			// Normal
 			this.palette.makeNormalPalette(layer);
@@ -1330,42 +1349,38 @@ GameBoyAdvanceVideo.prototype.drawScanline = function(backing) {
 	// Draw lower priority first and then draw over them
 	for (var i = this.drawLayers.length; i--;) {
 		layer = this.drawLayers[i];
-		if (layer.bg) {
-			if (!(this.win0 || this.win1)) {
-				layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
-			} else {
-				firstEnd = this.HORIZONTAL_PIXELS;
-				lastStart = 0;
-				if (this.win1 && y >= this.win1Top && y < this.win1Bottom) {
-					firstEnd = Math.min(firstEnd, this.win1Left);
-					lastStart = Math.max(lastStart, this.win1Right);
-					if (this.windows[1].enabled[layer.index]) {
-						this.setBlendEnabled(layer, this.windows[1].special && this.target1[layer.index]);
-						layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
-						this.setBlendEnabled(layer, this.target1[layer.index]);
-					}
-				}
-				if (this.win0 && y >= this.win0Top && y < this.win0Bottom) {
-					firstEnd = Math.min(firstEnd, this.win0Left);
-					lastStart = Math.max(lastStart, this.win0Right);
-					if (this.windows[0].enabled[layer.index]) {
-						this.setBlendEnabled(layer, this.windows[0].special && this.target1[layer.index]);
-						layer.drawScanline(backing, layer, this.win0Left, this.win0Right);
-						this.setBlendEnabled(layer, this.target1[layer.index]);
-					}
-				}
-				if (this.windows[2].enabled[layer.index]) {
-					// WINOUT
-					this.setBlendEnabled(layer, this.windows[2].special && this.target1[layer.index]);
-					layer.drawScanline(backing, layer, 0, firstEnd);
-					// TODO: middle region
-					layer.drawScanline(backing, layer, lastStart, this.HORIZONTAL_PIXELS);
+		if (!(this.win0 || this.win1)) {
+			layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
+		} else {
+			firstEnd = this.HORIZONTAL_PIXELS;
+			lastStart = 0;
+			if (this.win1 && y >= this.win1Top && y < this.win1Bottom) {
+				firstEnd = Math.min(firstEnd, this.win1Left);
+				lastStart = Math.max(lastStart, this.win1Right);
+				if (this.windows[1].enabled[layer.index]) {
+					this.setBlendEnabled(layer, this.windows[1].special && this.target1[layer.index]);
+					layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
 					this.setBlendEnabled(layer, this.target1[layer.index]);
 				}
-				// TODO: objwin
 			}
-		} else {
-			layer.drawScanline(backing, this);
+			if (this.win0 && y >= this.win0Top && y < this.win0Bottom) {
+				firstEnd = Math.min(firstEnd, this.win0Left);
+				lastStart = Math.max(lastStart, this.win0Right);
+				if (this.windows[0].enabled[layer.index]) {
+					this.setBlendEnabled(layer, this.windows[0].special && this.target1[layer.index]);
+					layer.drawScanline(backing, layer, this.win0Left, this.win0Right);
+					this.setBlendEnabled(layer, this.target1[layer.index]);
+				}
+			}
+			if (this.windows[2].enabled[layer.index]) {
+				// WINOUT
+				this.setBlendEnabled(layer, this.windows[2].special && this.target1[layer.index]);
+				layer.drawScanline(backing, layer, 0, firstEnd);
+				// TODO: middle region
+				layer.drawScanline(backing, layer, lastStart, this.HORIZONTAL_PIXELS);
+				this.setBlendEnabled(layer, this.target1[layer.index]);
+			}
+			// TODO: objwin
 		}
 	}
 };
