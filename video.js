@@ -147,7 +147,7 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.tileBase = value & 0x03FF;
 		obj.priority = (value & 0x0C00) >> 10;
 		obj.palette = (value & 0xF000) >> 8; // This is shifted up 4 to make pushPixel faster
-		if (layer != obj.priority) {
+		if (layer != obj.priority && !obj.disable) {
 			this.video.objLayers[layer].remove(obj);
 			this.video.objLayers[obj.priority].insert(obj);
 		}
