@@ -887,27 +887,27 @@ GameBoyAdvanceVideo.prototype.writeBackgroundVOffset = function(bg, value) {
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundRefX = function(bg, value) {
-	this.bg[bg].refx = (value << 4) / 4096;
+	this.bg[bg].refx = (value << 4) / 0x1000;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundRefY = function(bg, value) {
-	this.bg[bg].refy = (value << 4) / 4096;
+	this.bg[bg].refy = (value << 4) / 0x1000;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundParamA = function(bg, value) {
-	this.bg[bg].dx = (value >> 0) / 256;
+	this.bg[bg].dx = (value << 16) / 0x1000000;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundParamB = function(bg, value) {
-	this.bg[bg].dmx = (value >> 0) / 256;
+	this.bg[bg].dmx = (value << 16) / 0x1000000;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundParamC = function(bg, value) {
-	this.bg[bg].dy = (value >> 0) / 256;
+	this.bg[bg].dy = (value << 16) / 0x1000000;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundParamD = function(bg, value) {
-	this.bg[bg].dmy = (value >> 0) / 256;
+	this.bg[bg].dmy = (value << 16) / 0x1000000;
 };
 
 GameBoyAdvanceVideo.prototype.writeWin0H = function(value) {
@@ -1251,18 +1251,29 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode1 = function(backing, bg, start,
 	var screenBase = bg.screenBase;
 	var charBase = bg.charBase;
 	var size = bg.size;
+	var sizeAdjusted = 128 << size;
 	var index = bg.index;
 	var map = video.sharedMap;
 	var color;
-	var det = 1 / (bg.dx * bg.dmy - bg.dmx * bg.dy);
 
 	var yBase;
 
 	for (x = start; x < end; ++x) {
 		localX = bg.dx * x + bg.dmx * y + bg.refx;
 		localY = bg.dy * x + bg.dmy * y + bg.refy;
-		localX %= 256;
-		localY %= 256;
+		if (bg.overflow) {
+			localX &= sizeAdjusted - 1;
+			if (localX < 0) {
+				localX += sizeAdjusted;
+			}
+			localY &= sizeAdjusted - 1;
+			if (localY < 0) {
+				localY += sizeAdjusted;
+			}
+		} else if (localX < 0 || localY < 0 || localX >= sizeAdjusted || localY >= sizeAdjusted) {
+			offset += 4;
+			continue;
+		}
 		yBase = (localY << 2) & 0x7E0;
 		video.accessMapMode1(screenBase, size, localX, yBase, map);
 		color = this.vram.loadU8(charBase + (map.tile << 6) + ((localY & 0x7) << 3) + (localX & 0x7));
