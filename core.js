@@ -627,14 +627,14 @@ ARMCore.prototype.compileArm = function(instruction) {
 			switch (opcode) {
 			case 0x00000000:
 				// AND
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					gprs[rd] = gprs[rn] & cpu.shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = gprs[rn] & cpu.shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -642,19 +642,28 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 							cpu.cpsrC = cpu.shifterCarryOut;
 						}
-					}
-				};
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = gprs[rn] & cpu.shifterOperand;
+					};
+				}
 				break;
 			case 0x00200000:
 				// EOR
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					gprs[rd] = gprs[rn] ^ cpu.shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = gprs[rn] ^ cpu.shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -662,19 +671,28 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 							cpu.cpsrC = cpu.shifterCarryOut;
 						}
-					}
-				};
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = gprs[rn] ^ cpu.shifterOperand;
+					};
+				}
 				break;
 			case 0x00400000:
 				// SUB
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					var d = gprs[rn] - cpu.shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var d = gprs[rn] - cpu.shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -684,20 +702,30 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrV = (gprs[rn] & 0x80000000) != (cpu.shifterOperand & 0x80000000) &&
 										(gprs[rn] & 0x80000000) != (d & 0x80000000);
 						}
-					}
-					gprs[rd] = d;
-				};
+						gprs[rd] = d;
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var d = gprs[rn] - cpu.shifterOperand;
+						gprs[rd] = d;
+					};
+				}
 				break;
 			case 0x00600000:
 				// RSB
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					var d = cpu.shifterOperand - gprs[rn];
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var d = cpu.shifterOperand - gprs[rn];
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -707,9 +735,19 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrV = (cpu.shifterOperand & 0x80000000) != (gprs[rn] & 0x80000000) &&
 										(cpu.shifterOperand & 0x80000000) != (d & 0x80000000);
 						}
-					}
-					gprs[rd] = d;
-				};
+						gprs[rd] = d;
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var d = cpu.shifterOperand - gprs[rn];
+						gprs[rd] = d;
+					};
+				}
 				break;
 			case 0x00800000:
 				// ADD
@@ -737,15 +775,15 @@ ARMCore.prototype.compileArm = function(instruction) {
 				break;
 			case 0x00A00000:
 				// ADC
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
-					var d = (gprs[rn] >>> 0) + shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
+						var d = (gprs[rn] >>> 0) + shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -756,21 +794,32 @@ ARMCore.prototype.compileArm = function(instruction) {
 										(gprs[rn] & 0x80000000) != (d & 0x80000000) &&
 										(shifterOperand & 0x80000000) != (d & 0x80000000);
 						}
-					}
-					gprs[rd] = d;
-				};
+						gprs[rd] = d;
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
+						var d = (gprs[rn] >>> 0) + shifterOperand;
+						gprs[rd] = d;
+					};
+				}
 				break;
 			case 0x00C00000:
 				// SBC
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
-					var d = (gprs[rn] >>> 0) - shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
+						var d = (gprs[rn] >>> 0) - shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -780,21 +829,32 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrV = (gprs[rn] & 0x80000000) != (shifterOperand & 0x80000000) &&
 										(gprs[rn] & 0x80000000) != (d & 0x80000000);
 						}
-					}
-					gprs[rd] = d;
-				};
+						gprs[rd] = d;
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
+						var d = (gprs[rn] >>> 0) - shifterOperand;
+						gprs[rd] = d;
+					};
+				}
 				break;
 			case 0x00E00000:
 				// RSC
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					var n = (gprs[rn] >>> 0) + !cpu.cpsrC;
-					var d = (cpu.shifterOperand >>> 0) - n;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var n = (gprs[rn] >>> 0) + !cpu.cpsrC;
+						var d = (cpu.shifterOperand >>> 0) - n;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -804,9 +864,20 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrV = (cpu.shifterOperand & 0x80000000) != (n & 0x80000000) &&
 										(cpu.shifterOperand & 0x80000000) != (d & 0x80000000);
 						}
-					}
-					gprs[rd] = d;
-				};
+						gprs[rd] = d;
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						var n = (gprs[rn] >>> 0) + !cpu.cpsrC;
+						var d = (cpu.shifterOperand >>> 0) - n;
+						gprs[rd] = d;
+					};
+				}
 				break;
 			case 0x01000000:
 				// TST
@@ -871,14 +942,14 @@ ARMCore.prototype.compileArm = function(instruction) {
 				break;
 			case 0x01800000:
 				// ORR
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					gprs[rd] = gprs[rn] | cpu.shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = gprs[rn] | cpu.shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -886,19 +957,28 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 							cpu.cpsrC = cpu.shifterCarryOut;
 						}
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = gprs[rn] | cpu.shifterOperand;
 					}
-				};
+				}
 				break;
 			case 0x01A00000:
 				// MOV
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					gprs[rd] = cpu.shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = cpu.shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -906,19 +986,28 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 							cpu.cpsrC = cpu.shifterCarryOut;
 						}
-					}
-				};
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = cpu.shifterOperand;
+					};
+				}
 				break;
 			case 0x01C00000:
 				// BIC
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					gprs[rd] = gprs[rn] & ~cpu.shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = gprs[rn] & ~cpu.shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -926,19 +1015,28 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 							cpu.cpsrC = cpu.shifterCarryOut;
 						}
-					}
-				};
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = gprs[rn] & ~cpu.shifterOperand;
+					};
+				}
 				break;
 			case 0x01E00000:
 				// MVN
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					shiftOp();
-					gprs[rd] = ~cpu.shifterOperand;
-					if (s) {
+				if (s) {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = ~cpu.shifterOperand;
 						if (rd == cpu.PC && cpu.hasSPSR()) {
 							cpu.unpackCPSR(cpu.spsr);
 						} else {
@@ -946,8 +1044,17 @@ ARMCore.prototype.compileArm = function(instruction) {
 							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 							cpu.cpsrC = cpu.shifterCarryOut;
 						}
-					}
-				};
+					};
+				} else {
+					op = function() {
+						cpu.mmu.waitSeq32(gprs[cpu.PC]);
+						if (condOp && !condOp()) {
+							return;
+						}
+						shiftOp();
+						gprs[rd] = ~cpu.shifterOperand;
+					};
+				}
 				break;
 			}
 			op.writesPC = rd == this.PC;
