@@ -1386,9 +1386,17 @@ GameBoyAdvanceVideo.prototype.drawScanline = function(backing) {
 			if (this.windows[2].enabled[layer.index]) {
 				// WINOUT
 				this.setBlendEnabled(layer, this.windows[2].special && this.target1[layer.index]);
-				layer.drawScanline(backing, layer, 0, firstEnd);
-				// TODO: middle region
-				layer.drawScanline(backing, layer, lastStart, this.HORIZONTAL_PIXELS);
+				if (firstEnd > lastStart) {
+					layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
+				} else {
+					if (firstEnd) {
+						layer.drawScanline(backing, layer, 0, firstEnd);
+					}
+					// TODO: middle region
+					if (lastStart < this.HORIZONTAL_PIXELS) {
+						layer.drawScanline(backing, layer, lastStart, this.HORIZONTAL_PIXELS);
+					}
+				}
 				this.setBlendEnabled(layer, this.target1[layer.index]);
 			}
 			// TODO: objwin
