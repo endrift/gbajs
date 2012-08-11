@@ -2075,40 +2075,18 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		if (load) {
 			if (b) {
 				// LDRB(1)
-				op = function() {
-					var n = gprs[rn] + immediate;
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					cpu.mmu.wait(n);
-					++cpu.cycles;
-					gprs[rd] = cpu.mmu.loadU8(n);
-				}
+				op = this.thumbCompiler.constructLDRB1(rd, rn, immediate);
 			} else {
 				// LDR(1)
-				op = function() {
-					var n = gprs[rn] + immediate;
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					cpu.mmu.wait32(n);
-					++cpu.cycles;
-					gprs[rd] = cpu.mmu.load32(n);
-				}
+				op = this.thumbCompiler.constructLDR1(rd, rn, immediate);
 			}
 		} else {
 			if (b) {
 				// STRB(1)
-				op = function() {
-					var n = gprs[rn] + immediate;
-					cpu.mmu.store8(n, gprs[rd]);
-					cpu.mmu.wait(gprs[cpu.PC]);
-					cpu.mmu.wait(n);
-				};
+				op = this.thumbCompiler.constructSTRB1(rd, rn, immediate);
 			} else {
 				// STR(1)
-				op = function() {
-					var n = gprs[rn] + immediate;
-					cpu.mmu.store32(n, gprs[rd]);
-					cpu.mmu.wait(gprs[cpu.PC]);
-					cpu.mmu.wait32(n);
-				}
+				op = this.thumbCompiler.constructSTR1(rd, rn, immediate);
 			}
 		}
 		op.writesPC = false;

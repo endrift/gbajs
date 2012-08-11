@@ -148,6 +148,28 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructLDR1 = function(rd, rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			var n = gprs[rn] + immediate;
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait32(n);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.load32(n);
+		};
+	};
+
+	this.constructLDRB1 = function(rd, rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			var n = gprs[rn] + immediate;
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(n);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.loadU8(n);
+		};
+	};
+
 	this.constructLSL2 = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -284,6 +306,26 @@ ARMCoreThumb = function (cpu) {
 			cpu.cpsrC = d > 0xFFFFFFFF;
 			cpu.cpsrV = ((gprs[rd] ^ m) & 0x80000000) && ((gprs[rd] ^ d) & 0x80000000);
 			gprs[rd] = d;
+		};
+	};
+
+	this.constructSTR1 = function(rd, rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			var n = gprs[rn] + immediate;
+			cpu.mmu.store32(n, gprs[rd]);
+			cpu.mmu.wait(gprs[cpu.PC]);
+			cpu.mmu.wait32(n);
+		};
+	};
+
+	this.constructSTRB1 = function(rd, rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			var n = gprs[rn] + immediate;
+			cpu.mmu.store8(n, gprs[rd]);
+			cpu.mmu.wait(gprs[cpu.PC]);
+			cpu.mmu.wait(n);
 		};
 	};
 
