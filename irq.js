@@ -296,11 +296,15 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		var wordsize = (mode & 0x04000000) ? 4 : 2;
 		if (fill) {
 			if (wordsize == 4) {
+				source &= 0xFFFFFFFC;
+				dest &= 0xFFFFFFFC;
 				var word = this.cpu.mmu.load32(source);
 				for (var i = 0; i < count; ++i) {
 					this.cpu.mmu.store32(dest + (i << 2), word);
 				}
 			} else {
+				source &= 0xFFFFFFFE;
+				dest &= 0xFFFFFFFE;
 				var word = this.cpu.mmu.load16(source);
 				for (var i = 0; i < count; ++i) {
 					this.cpu.mmu.store16(dest + (i << 1), word);
@@ -308,11 +312,15 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			}
 		} else {
 			if (wordsize == 4) {
+				source &= 0xFFFFFFFC;
+				dest &= 0xFFFFFFFC;
 				for (var i = 0; i < count; ++i) {
 					var word = this.cpu.mmu.load32(source + (i << 2));
 					this.cpu.mmu.store32(dest + (i << 2), word);
 				}
 			} else {
+				source &= 0xFFFFFFFE;
+				dest &= 0xFFFFFFFE;
 				for (var i = 0; i < count; ++i) {
 					var word = this.cpu.mmu.load16(source + (i << 1));
 					this.cpu.mmu.store16(dest + (i << 1), word);
@@ -322,8 +330,8 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		return;
 	case 0x0C:
 		// FastCpuSet
-		var source = this.cpu.gprs[0];
-		var dest = this.cpu.gprs[1];
+		var source = this.cpu.gprs[0] & 0xFFFFFFFC;
+		var dest = this.cpu.gprs[1] & 0xFFFFFFFC;
 		var mode = this.cpu.gprs[2];
 		var count = mode & 0x000FFFFF;
 		var fill = mode & 0x01000000;
