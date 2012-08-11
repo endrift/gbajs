@@ -30,6 +30,19 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructADD2 = function(rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var d = (gprs[rn] >>> 0) + immediate;
+			cpu.cpsrN = d & 0x80000000;
+			cpu.cpsrZ = !(d & 0xFFFFFFFF);
+			cpu.cpsrC = d > 0xFFFFFFFF;
+			cpu.cpsrV = !(gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000) && ((immediate ^ d) & 0x80000000);
+			gprs[rn] = d;
+		};
+	};
+
 	this.constructAND = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -96,6 +109,18 @@ ARMCoreThumb = function (cpu) {
 			            (gprs[rm] & 0x80000000) != (aluOut & 0x80000000);
 		};
 	};
+
+	this.constructCMP1 = function(rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var aluOut = gprs[rn] - immediate;
+			cpu.cpsrN = aluOut & 0x80000000;
+			cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
+			cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
+			cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ aluOut) & 0x80000000);
+		};
+	}
 
 	this.constructCMP2 = function(rd, rm) {
 		var gprs = cpu.gprs;
@@ -166,6 +191,16 @@ ARMCoreThumb = function (cpu) {
 			}
 			cpu.cpsrN = gprs[rd] & 0x80000000;
 			cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+		};
+	};
+
+	this.constructMOV1 = function(rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			gprs[rn] = immediate;
+			cpu.cpsrN = immediate & 0x80000000;
+			cpu.cpsrZ = !(immediate & 0xFFFFFFFF);
 		};
 	};
 
@@ -249,6 +284,19 @@ ARMCoreThumb = function (cpu) {
 			cpu.cpsrC = d > 0xFFFFFFFF;
 			cpu.cpsrV = ((gprs[rd] ^ m) & 0x80000000) && ((gprs[rd] ^ d) & 0x80000000);
 			gprs[rd] = d;
+		};
+	};
+
+	this.constructSUB2 = function(rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var d = gprs[rn] - immediate;
+			cpu.cpsrN = d & 0x80000000;
+			cpu.cpsrZ = !(d & 0xFFFFFFFF);
+			cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
+			cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000);
+			gprs[rn] = d;
 		};
 	};
 

@@ -1959,47 +1959,19 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		switch (instruction & 0x1800) {
 		case 0x0000:
 			// MOV(1)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				gprs[rn] = immediate;
-				cpu.cpsrN = immediate & 0x80000000;
-				cpu.cpsrZ = !(immediate & 0xFFFFFFFF);
-			};
+			op = this.thumbCompiler.constructMOV1(rn, immediate);
 			break;
 		case 0x0800:
 			// CMP(1)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var aluOut = gprs[rn] - immediate;
-				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
-				cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ aluOut) & 0x80000000);
-			};
+			op = this.thumbCompiler.constructCMP1(rn, immediate);
 			break;
 		case 0x1000:
 			// ADD(2)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var d = (gprs[rn] >>> 0) + immediate;
-				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !(d & 0xFFFFFFFF);
-				cpu.cpsrC = d > 0xFFFFFFFF;
-				cpu.cpsrV = !(gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000) && ((immediate ^ d) & 0x80000000);
-				gprs[rn] = d;
-			}
+			op = this.thumbCompiler.constructADD2(rn, immediate);
 			break;
 		case 0x1800:
 			// SUB(2)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var d = gprs[rn] - immediate;
-				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !(d & 0xFFFFFFFF);
-				cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000);
-				gprs[rn] = d;
-			};
+			op = this.thumbCompiler.constructSUB2(rn, immediate);
 			break;
 		}
 		op.writesPC = false;
