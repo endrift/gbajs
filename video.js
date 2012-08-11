@@ -798,11 +798,6 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			this.nextEvent = this.nextHblank;
 
 			++this.vcount;
-			this.vcounter = this.vcount == this.vcountSetting;
-			if (this.vcounter && this.vcounterIRQ) {
-				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VCOUNTER);
-				this.nextVcounterIRQ += this.TOTAL_LENGTH;
-			}
 
 			switch (this.vcount) {
 			case this.VERTICAL_PIXELS:
@@ -820,6 +815,12 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 			case this.VERTICAL_TOTAL_PIXELS:
 				this.vcount = 0;
 				break;
+			}
+
+			this.vcounter = this.vcount == this.vcountSetting;
+			if (this.vcounter && this.vcounterIRQ) {
+				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VCOUNTER);
+				this.nextVcounterIRQ += this.TOTAL_LENGTH;
 			}
 
 			if (this.vcount < this.VERTICAL_PIXELS) {
