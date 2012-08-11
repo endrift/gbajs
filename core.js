@@ -1704,8 +1704,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = d > 0xFFFFFFFF;
-				cpu.cpsrV = (gprs[rd] & 0x80000000) != (m & 0x80000000) &&
-							(gprs[rd] & 0x80000000) != (d & 0x80000000);
+				cpu.cpsrV = ((gprs[rd] ^ m) & 0x80000000) && ((gprs[rd] ^ d) & 0x80000000);
 				gprs[rd] = d;
 			};
 			break;
@@ -1844,8 +1843,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 				cpu.cpsrC = (gprs[rd] >>> 0) >= (gprs[rm] >>> 0);
-				cpu.cpsrV = (gprs[rd] & 0x80000000) != (gprs[rm] & 0x80000000) &&
-					        (gprs[rd] & 0x80000000) != (aluOut & 0x80000000);
+				cpu.cpsrV = ((gprs[rd] ^ gprs[rm]) & 0x80000000) && ((gprs[rd] ^ aluOut) & 0x80000000);
 			}
 			op.writesPC = false;
 			break;
@@ -1881,9 +1879,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = d > 0xFFFFFFFF;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) == (gprs[rm] & 0x80000000) &&
-				            (gprs[rn] & 0x80000000) != (d & 0x80000000) &&
-				            (gprs[rm] & 0x80000000) != (d & 0x80000000);
+				cpu.cpsrV = !((gprs[rn] ^ gprs[rm]) & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000) && ((gprs[rm] ^ d) & 0x80000000);
 				gprs[rd] = d;
 			};
 			break;
@@ -1910,9 +1906,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					cpu.cpsrN = d & 0x80000000;
 					cpu.cpsrZ = !(d & 0xFFFFFFFF);
 					cpu.cpsrC = d > 0xFFFFFFFF;
-					cpu.cpsrV = (gprs[rn] & 0x80000000) == (immediate & 0x80000000) &&
-								(gprs[rn] & 0x80000000) != (d & 0x80000000) &&
-								(immediate & 0x80000000) != (d & 0x80000000);
+					cpu.cpsrV = !(gprs[rn] & 0x80000000) && ((gprs[rn] & 0x80000000 ^ d) & 0x80000000) && (d & 0x80000000);
 					gprs[rd] = d;
 				};
 			} else {
@@ -1937,8 +1931,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) != (immediate & 0x80000000) &&
-				            (gprs[rn] & 0x80000000) != (d & 0x80000000);
+				cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000);
 				gprs[rd] = d;
 			};
 			break;
@@ -2024,8 +2017,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrN = aluOut & 0x80000000;
 				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 				cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) != (immediate & 0x80000000) &&
-				            (gprs[rn] & 0x80000000) != (aluOut & 0x80000000);
+				cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ aluOut) & 0x80000000);
 			};
 			break;
 		case 0x1000:
@@ -2036,9 +2028,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = d > 0xFFFFFFFF;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) == (immediate & 0x80000000) &&
-							(gprs[rn] & 0x80000000) != (d & 0x80000000) &&
-							(immediate & 0x80000000) != (d & 0x80000000);
+				cpu.cpsrV = !(gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000) && ((immediate ^ d) & 0x80000000);
 				gprs[rn] = d;
 			}
 			break;
@@ -2050,8 +2040,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				cpu.cpsrN = d & 0x80000000;
 				cpu.cpsrZ = !(d & 0xFFFFFFFF);
 				cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) != (immediate & 0x80000000) &&
-							(gprs[rn] & 0x80000000) != (d & 0x80000000);
+				cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000);
 				gprs[rn] = d;
 			};
 			break;
