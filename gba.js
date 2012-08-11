@@ -49,6 +49,7 @@ function GameBoyAdvance() {
 
 	this.keypad.registerKeyboardHandlers();
 	this.doStep = this.returnFalse;
+	this.paused = false;
 
 	this.seenFrame = false;
 	this.seenSave = false;
@@ -144,6 +145,12 @@ GameBoyAdvance.prototype.waitFrame = function() {
 	return !this.seenFrame;
 };
 
+GameBoyAdvance.prototype.pause = function() {
+	this.paused = true;
+	clearInterval(this.interval);
+	this.interval = false;
+};
+
 GameBoyAdvance.prototype.advanceFrame = function() {
 	this.seenFrame = false;
 	this.doStep = this.waitFrame;
@@ -170,6 +177,7 @@ GameBoyAdvance.prototype.runStable = function() {
 	var frames = 0;
 	var runFunc;
 	var start = Date.now();
+	this.paused = false;
 
 	if (this.reportFPS) {
 		runFunc = function() {
