@@ -255,6 +255,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			return;
 		}
 		var ie = this.io.loadU16(this.io.IE);
+		this.io.store16(this.io.IE, this.cpu.gprs[1]);
 		this.waitForIRQ();
 		this.io.store16(this.io.IE, ie);
 		break;
