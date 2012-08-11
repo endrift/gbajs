@@ -2349,12 +2349,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				}
 				immediate <<= 1;
 				var condOp = this.generateCond(cond);
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					if (condOp()) {
-						gprs[cpu.PC] += immediate;
-					}
-				}
+				op = this.thumbCompiler.constructB1(immediate, condOp);
 				op.writesPC = true;
 			}
 			break;

@@ -63,6 +63,16 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructB1 = function(immediate, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			if (condOp()) {
+				gprs[cpu.PC] += immediate;
+			}
+		};
+	};
+
 	this.constructBIC = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
