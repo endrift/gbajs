@@ -37,6 +37,7 @@ function ARMCore() {
 	this.BASE_IRQ = 0x00000018;
 	this.BASE_FIQ = 0x0000001C;
 
+	this.armCompiler = new ARMCoreArm(this);
 	this.thumbCompiler = new ARMCoreThumb(this);
 };
 
@@ -1602,49 +1603,11 @@ ARMCore.prototype.compileArm = function(instruction) {
 			}
 			if (load) {
 				// LDM
-				op = function() {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					if (condOp && !condOp()) {
-						return;
-					}
-					var addr = address();
-					var m, i;
-					for (m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
-						if (rs & m) {
-							cpu.mmu.waitSeq32(addr);
-							gprs[i] = cpu.mmu.load32(addr);
-							addr += 4;
-						}
-					}
-					++cpu.cycles;
-				};
+				op = this.armCompiler.constructLDM(rs, address, condOp);
 				op.writesPC = rs & (1 << 15);
 			} else {
 				// STM
-				op = function() {
-					if (condOp && !condOp()) {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						return;
-					}
-					var addr = address();
-					var m, i;
-					for (m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
-						if (rs & m) {
-							cpu.mmu.wait32(addr);
-							cpu.mmu.store32(addr, gprs[i]);
-							addr += 4;
-							break;
-						}
-					}
-					for (m <<= 1, ++i; i < 16; m <<= 1, ++i) {
-						if (rs & m) {
-							cpu.mmu.waitSeq32(addr);
-							cpu.mmu.store32(addr, gprs[i]);
-							addr += 4;
-						}
-					}
-					cpu.mmu.wait32(gprs[cpu.PC]);
-				};
+				op = this.armCompiler.constructSTM(rs, address, condOp);
 				op.writesPC = false;
 			}
 			break;
