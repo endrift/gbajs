@@ -483,7 +483,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 			offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
 		}
 		if (end < drawWidth + this.x) {
-			drawWdth = end - this.x;
+			drawWidth = end - this.x;
 		}
 	} else {
 		underflow = 512 - this.x;
@@ -579,6 +579,9 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, 
 	var y = this.video.vcount;
 	var wrappedY;
 	var obj;
+	if (start >= end) {
+		return;
+	}
 	// Draw in reverse: OBJ0 is higher priority than OBJ1, etc
 	for (var i = this.objs.length; i--;) {
 		obj = this.objs[i];
