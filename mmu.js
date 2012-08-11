@@ -492,8 +492,8 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var destBlock = this.memory[destRegion];
 	var word;
 
-	var blocksRemaining = (wordsRemaining * width + (1 << this.ICACHE_PAGE_BITS) - 1) >> this.ICACHE_PAGE_BITS;
-	for (var i = info.nextDest >> this.ICACHE_PAGE_BITS; blocksRemaining--; ++i) {
+	var endPage = (info.nextDest + wordsRemaining * width) >> this.ICACHE_PAGE_BITS;
+	for (var i = info.nextDest >> this.ICACHE_PAGE_BITS; i <= endPage; ++i) {
 		this.icache[i] = null;
 	}
 
