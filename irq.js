@@ -251,13 +251,11 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		if (!this.enable) {
 			this.io.store16(this.io.IME, 1);
 		}
-		if (!this.cpu.gprs[0] && this.enabledIRQs & this.cpu.gprs[1]) {
+		if (!this.cpu.gprs[0] && this.interruptFlags & this.cpu.gprs[1]) {
 			return;
 		}
-		var ie = this.io.loadU16(this.io.IE);
-		this.io.store16(this.io.IE, this.cpu.gprs[1]);
-		this.waitForIRQ();
-		this.io.store16(this.io.IE, ie);
+		this.dismissIRQs(0xFFFFFFFF);
+		this.cpu.raiseTrap();
 		break;
 	case 0x06:
 		// Div

@@ -261,11 +261,19 @@ ARMCore.prototype.raiseIRQ = function() {
 	this.gprs[this.LR] = this.gprs[this.PC] - instructionWidth + 4;
 	this.gprs[this.PC] = this.BASE_IRQ + this.WORD_SIZE_ARM;
 	this.instruction = null;
-
 	this.switchExecMode(this.MODE_ARM);
-	this.loadInstruction = this.loadInstructionArm;
-	this.instructionWidth = this.WORD_SIZE_ARM;
+	this.cpsrI = true;
+};
 
+ARMCore.prototype.raiseTrap = function() {
+	var cpsr = this.packCPSR();
+	var instructionWidth = this.instructionWidth;
+	this.switchMode(this.MODE_SUPERVISOR);
+	this.spsr = cpsr;
+	this.gprs[this.LR] = this.gprs[this.PC] - instructionWidth;
+	this.gprs[this.PC] = this.BASE_SWI + this.WORD_SIZE_ARM;
+	this.instruction = null;
+	this.switchExecMode(this.MODE_ARM);
 	this.cpsrI = true;
 };
 
