@@ -840,9 +840,9 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 
 			if (this.vcount < this.VERTICAL_PIXELS) {
 				this.cpu.mmu.runHblankDmas();
-				if (this.hblankIRQ) {
-					this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
-				}
+			}
+			if (this.hblankIRQ) {
+				this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_HBLANK);
 			}
 		}
 	}
