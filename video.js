@@ -1309,7 +1309,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode1 = function(backing, bg, start,
 			offset += 4;
 			continue;
 		}
-		yBase = (localY << 2) & 0x7E0;
+		yBase = ((localY << 1) & 0x7F0) << size;
 		video.accessMapMode1(screenBase, size, localX, yBase, map);
 		color = this.vram.loadU8(charBase + (map.tile << 6) + ((localY & 0x7) << 3) + (localX & 0x7));
 		bg.pushPixel(0, map, video, color, 0, offset, backing);
