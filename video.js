@@ -176,7 +176,6 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 };
 
 function GameBoyAdvancePalette() {
-	this.rawPalette = [ new Uint16Array(0x100), new Uint16Array(0x100) ];
 	this.colors = [ new Array(0x100), new Array(0x100) ];
 	this.adjustedColors = [ new Array(0x100), new Array(0x100) ];
 	this.passthroughColors = [
@@ -187,15 +186,6 @@ function GameBoyAdvancePalette() {
 		this.colors[1], // OBJ
 		this.colors[0] // Backdrop
 	];
-
-	var i;
-	for (i = 0; i < 256; ++i) {
-		this.colors[0][i] = [ 0, 0, 0 ];
-		this.colors[1][i] = [ 0, 0, 0 ];
-		this.adjustedColors[0][i] = [ 0, 0, 0 ];
-		this.adjustedColors[1][i] = [ 0, 0, 0 ];
-	}
-
 	this.blendY = 1;
 };
 
@@ -204,7 +194,7 @@ GameBoyAdvancePalette.prototype.loadU8 = function(offset) {
 };
 
 GameBoyAdvancePalette.prototype.loadU16 = function(offset) {
-	return this.rawPalette[(offset & 0x200) >> 9][(offset & 0x1FF) >> 1];
+	return this.colors[(offset & 0x200) >> 9][(offset & 0x1FF) >> 1];
 };
 
 GameBoyAdvancePalette.prototype.load16 = function(offset) {
@@ -218,8 +208,7 @@ GameBoyAdvancePalette.prototype.load32 = function(offset) {
 GameBoyAdvancePalette.prototype.store16 = function(offset, value) {
 	var type = (offset & 0x200) >> 9;
 	var index = (offset & 0x1FF) >> 1;
-	this.rawPalette[type][index] = value;
-	this.convert16To32(value, this.colors[type][index]);
+	this.colors[type][index] = value;
 	this.adjustColor(value, this.adjustedColors[type][index]);
 };
 
@@ -228,14 +217,30 @@ GameBoyAdvancePalette.prototype.store32 = function(offset, value) {
 	this.store16(offset + 2, value >> 16);
 };
 
-GameBoyAdvancePalette.prototype.convert16To32 = function(value, array) {
+GameBoyAdvancePalette.prototype.convert16To32 = function(value, input) {
 	var r = (value & 0x001F) << 3;
 	var g = (value & 0x03E0) >> 2;
 	var b = (value & 0x7C00) >> 7;
 
-	array[0] = r;
-	array[1] = g;
-	array[2] = b;
+	input[0] = r;
+	input[1] = g;
+	input[2] = b;
+};
+
+GameBoyAdvancePalette.prototype.mix = function(aWeight, aColor, bWeight, bColor) {
+	var ar = (aColor & 0x001F);
+	var ag = (aColor & 0x03E0) >> 5;
+	var ab = (aColor & 0x7C00) >> 10;
+
+	var br = (bColor & 0x001F);
+	var bg = (bColor & 0x03E0) >> 5;
+	var bb = (bColor & 0x7C00) >> 10;
+
+	var r = (aWeight * ar + bWeight * br) & 0x1F;
+	var g = (aWeight * ag + bWeight * bg) & 0x1F;
+	var b = (aWeight * ab + bWeight * bb) & 0x1F;
+
+	return r | (g << 5) | (b << 10);
 };
 
 GameBoyAdvancePalette.prototype.makeDarkPalettes = function(layers) {
@@ -307,15 +312,15 @@ GameBoyAdvancePalette.prototype.resetPaletteLayers = function(layers) {
 GameBoyAdvancePalette.prototype.resetPalettes = function() {
 	var i;
 	var outPalette = this.adjustedColors[0];
-	var inPalette = this.rawPalette[0];
+	var inPalette = this.colors[0];
 	for (i = 0; i < 256; ++i) {
-		this.adjustColor(inPalette[i], outPalette[i]);
+		outPalette[i] = this.adjustColor(inPalette[i]);
 	}
 
 	outPalette = this.adjustedColors[1];
-	inPalette = this.rawPalette[1];
+	inPalette = this.colors[1];
 	for (i = 0; i < 256; ++i) {
-		this.adjustColor(inPalette[i], outPalette[i]);
+		outPalette[i] = this.adjustColor(inPalette[i]);
 	}
 }
 
@@ -323,7 +328,7 @@ GameBoyAdvancePalette.prototype.accessColor = function(layer, index) {
 	return this.passthroughColors[layer][index];
 };
 
-GameBoyAdvancePalette.prototype.adjustColorDark = function(color, array) {
+GameBoyAdvancePalette.prototype.adjustColorDark = function(color) {
 	var r = (color & 0x001F);
 	var g = (color & 0x03E0) >> 5;
 	var b = (color & 0x7C00) >> 10;
@@ -332,12 +337,10 @@ GameBoyAdvancePalette.prototype.adjustColorDark = function(color, array) {
 	g = g - (g * this.blendY);
 	b = b - (b * this.blendY);
 
-	array[0] = r << 3;
-	array[1] = g << 3;
-	array[2] = b << 3;
+	return r | (g << 5) | (b << 10);
 };
 
-GameBoyAdvancePalette.prototype.adjustColorBright = function(color, array) {
+GameBoyAdvancePalette.prototype.adjustColorBright = function(color) {
 	var r = (color & 0x001F);
 	var g = (color & 0x03E0) >> 5;
 	var b = (color & 0x7C00) >> 10;
@@ -346,12 +349,10 @@ GameBoyAdvancePalette.prototype.adjustColorBright = function(color, array) {
 	g = g + ((31 - g) * this.blendY);
 	b = b + ((31 - b) * this.blendY);
 
-	array[0] = r << 3;
-	array[1] = g << 3;
-	array[2] = b << 3;
+	return r | (g << 5) | (b << 10);
 };
 
-GameBoyAdvancePalette.prototype.adjustColor = GameBoyAdvancePalette.prototype.convert16To32;
+GameBoyAdvancePalette.prototype.adjustColor = GameBoyAdvancePalette.prototype.adjustColorBright;
 
 GameBoyAdvancePalette.prototype.setBlendY = function(y) {
 	if (this.blendY != y) {
@@ -395,17 +396,17 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	if (this.x < video.HORIZONTAL_PIXELS) {
 		if (this.x < start) {
 			underflow = start - this.x;
-			offset = (y * video.HORIZONTAL_PIXELS + start) * 4;
+			offset = start;
 		} else {
 			underflow = 0;
-			offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
+			offset = this.x;
 		}
 		if (end < this.cachedWidth + this.x) {
 			totalWidth = end - this.x;
 		}
 	} else {
 		underflow = 512 - this.x;
-		offset = (y * video.HORIZONTAL_PIXELS) * 4;
+		offset = 0;
 		if (end < this.cachedWidth - underflow) {
 			totalWidth = end;
 		}
@@ -451,7 +452,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 			}
 		}
 		this.pushPixel(4, this, video, tileRow, localX & 0x7, offset, backing);
-		offset += 4;
+		offset++;
 	}
 };
 
@@ -477,17 +478,17 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 	if (this.x < video.HORIZONTAL_PIXELS) {
 		if (this.x < start) {
 			underflow = start - this.x;
-			offset = (y * video.HORIZONTAL_PIXELS + start) * 4;
+			offset = start;
 		} else {
 			underflow = 0;
-			offset = (y * video.HORIZONTAL_PIXELS + this.x) * 4;
+			offset = this.x;
 		}
 		if (end < drawWidth + this.x) {
 			drawWidth = end - this.x;
 		}
 	} else {
 		underflow = 512 - this.x;
-		offset = (y * video.HORIZONTAL_PIXELS) * 4;
+		offset = 0;
 		if (end < drawWidth - underflow) {
 			drawWidth = end;
 		}
@@ -498,7 +499,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 		localY = this.scalerotOam.c * (x - (totalWidth >> 1)) + this.scalerotOam.d * (yDiff - (totalHeight >> 1)) + (this.cachedHeight >> 1);
 
 		if (localX < 0 || localX >= this.cachedWidth || localY < 0 || localY >= this.cachedHeight) {
-			offset += 4;
+			offset++;
 			continue;
 		}
 
@@ -509,7 +510,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 		}
 		tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), (localY & 0x7) << paletteShift);
 		this.pushPixel(4, this, video, tileRow, localX & 0x7, offset, backing);
-		offset += 4;
+		offset++;
 	}
 };
 
@@ -770,6 +771,8 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 
 	this.drawLayers = [];
 
+	this.scanline = new Uint16Array(this.HORIZONTAL_PIXELS);
+	this.sharedColor = [ 0, 0, 0 ];
 	this.sharedMap = {
 		tile: 0,
 		hflip: false,
@@ -790,7 +793,7 @@ GameBoyAdvanceVideo.prototype.setBacking = function(backing) {
 		this.pixelData.data[offset++] = 0xFF;
 	}
 
-	this.platformBacking = this.pixelData.data;
+	this.platformBacking = this.scanline;
 }
 
 GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
@@ -1148,9 +1151,7 @@ GameBoyAdvanceVideo.prototype.pushPixelOpaque = function(layer, map, video, row,
 	// Index 0 is transparent
 	if (index) {
 		var pixel = video.palette.accessColor(layer, map.palette | index);
-		backing[offset] = pixel[0];
-		backing[offset + 1] = pixel[1];
-		backing[offset + 2] = pixel[2];
+		backing[offset] = pixel;
 	}
 };
 
@@ -1158,9 +1159,7 @@ GameBoyAdvanceVideo.prototype.pushPixelOpaque256 = function(layer, map, video, r
 	var index = (row >> (x << 3)) & 0xFF;
 	if (index) {
 		var pixel = video.palette.accessColor(layer, index);
-		backing[offset] = pixel[0];
-		backing[offset + 1] = pixel[1];
-		backing[offset + 2] = pixel[2];
+		backing[offset] = pixel;
 	}
 };
 
@@ -1170,9 +1169,7 @@ GameBoyAdvanceVideo.prototype.pushPixelBlend = function(layer, map, video, row, 
 	if (index) {
 		var pixel = video.palette.accessColor(layer, map.palette | index);
 		// TODO: better detect which layer is below us
-		backing[offset] = backing[offset] * video.blendB + pixel[0] * video.blendA;
-		backing[offset + 1] = backing[offset + 1] * video.blendB + pixel[1] * video.blendA;
-		backing[offset + 2] = backing[offset + 2] * video.blendB + pixel[2] * video.blendA;
+		backing[offset] = video.palette.mix(video.blendA, pixel, video.blendB, backing[offset]);
 	}
 };
 
@@ -1182,9 +1179,7 @@ GameBoyAdvanceVideo.prototype.pushPixelBlend256 = function(layer, map, video, ro
 	if (index) {
 		var pixel = video.palette.accessColor(layer, index);
 		// TODO: better detect which layer is below us
-		backing[offset] = backing[offset] * video.blendB + pixel[0] * video.blendA;
-		backing[offset + 1] = backing[offset + 1] * video.blendB + pixel[1] * video.blendA;
-		backing[offset + 2] = backing[offset + 2] * video.blendB + pixel[2] * video.blendA;
+		backing[offset] = video.palette.mix(video.blendA, pixel, video.blendB, backing[offset]);
 	}
 };
 
@@ -1193,23 +1188,17 @@ GameBoyAdvanceVideo.prototype.identity = function(x) {
 };
 
 GameBoyAdvanceVideo.prototype.drawScanlineBlank = function(backing) {
-	var offset = this.vcount * 4 * this.HORIZONTAL_PIXELS;
+	var offset = 0;
 	for (var x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
-		backing[offset++] = 0xFF;
-		backing[offset++] = 0xFF;
-		backing[offset++] = 0xFF;
-		backing[offset++] = 0xFF;
+		backing[offset++] = 0xFFFF;
 	}
 };
 
 GameBoyAdvanceVideo.prototype.drawScanlineBackdrop = function(backing) {
-	var offset = this.vcount * 4 * this.HORIZONTAL_PIXELS;
+	var offset = 0;
 	var bd = this.palette.accessColor(this.LAYER_BACKDROP, 0);
 	for (var x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
-		backing[offset++] = bd[0];
-		backing[offset++] = bd[1];
-		backing[offset++] = bd[2];
-		offset++;
+		backing[offset++] = bd;
 	}
 };
 
@@ -1217,7 +1206,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 	var video = this.video;
 	var x;
 	var y = video.vcount;
-	var offset = (video.vcount * video.HORIZONTAL_PIXELS + start) << 2;
+	var offset = start;
 	var xOff = bg.x;
 	var yOff = bg.y;
 	var localX;
@@ -1250,7 +1239,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 				tileRow = video.accessTile(charBase, map.tile, !map.vflip ? localYLo : 7 - localYLo);
 				if (!tileRow) {
 					x += 7;
-					offset += 32;
+					offset += 8;
 					continue;
 				}
 			}
@@ -1260,14 +1249,14 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 				tileRow = video.accessTile(charBase, map.tile << 1, (!map.vflip ? localYLo : 7 - localYLo) << 1);
 				if (!tileRow) {
 					x += 3;
-					offset += 16;
+					offset += 4;
 					continue;
 				}
 			} else if (!(localXLo & 0x3)) {
 				tileRow = video.accessTile(charBase + 4, map.tile << 1, (!map.vflip ? localYLo : 7 - localYLo) << 1);
 				if (!tileRow) {
 					x += 3;
-					offset += 16;
+					offset += 4;
 					continue;
 				}
 			}
@@ -1276,7 +1265,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 			localXLo = 7 - localXLo;
 		}
 		bg.pushPixel(index, map, video, tileRow, localXLo, offset, backing);
-		offset += 4;
+		offset++;
 	}
 };
 
@@ -1284,7 +1273,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode2 = function(backing, bg, start,
 	var video = this.video;
 	var x;
 	var y = video.vcount;
-	var offset = (video.vcount * video.HORIZONTAL_PIXELS + start) << 2;
+	var offset = start;
 	var localX;
 	var localY;
 	var screenBase = bg.screenBase;
@@ -1310,14 +1299,14 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode2 = function(backing, bg, start,
 				localY += sizeAdjusted;
 			}
 		} else if (localX < 0 || localY < 0 || localX >= sizeAdjusted || localY >= sizeAdjusted) {
-			offset += 4;
+			offset++;
 			continue;
 		}
 		yBase = ((localY << 1) & 0x7F0) << size;
 		video.accessMapMode1(screenBase, size, localX, yBase, map);
 		color = this.vram.loadU8(charBase + (map.tile << 6) + ((localY & 0x7) << 3) + (localX & 0x7));
 		bg.pushPixel(0, map, video, color, 0, offset, backing);
-		offset += 4;
+		offset++;
 	}
 };
 
@@ -1325,7 +1314,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode4 = function(backing, bg, start,
 	var video = this.video;
 	var x;
 	var y = video.vcount;
-	var offset = (backing.y * video.HORIZONTAL_PIXELS + start) << 2;
+	var offset = start;
 	var localX;
 	var localY;
 	var charBase = bg.charBase;
@@ -1344,12 +1333,12 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode4 = function(backing, bg, start,
 		localY = bg.dy * x + bg.sy;
 		yBase = (localY << 2) & 0x7E0;
 		if (localX < 0 || localY < 0 || localX >= video.HORIZONTAL_PIXELS || localY >= video.VERTICAL_PIXELS) {
-			offset += 4;
+			offset++;
 			continue;
 		}
 		color = this.vram.loadU8(charBase + ((localY & 0x7) << 3) + localX);
 		bg.pushPixel(0, map, video, color, 0, offset, backing);
-		offset += 4;
+		offset++;
 	}
 };
 
@@ -1413,6 +1402,21 @@ GameBoyAdvanceVideo.prototype.drawScanline = function(backing) {
 			layer.sx += layer.dmx;
 			layer.sy += layer.dmy;
 		}
+	}
+
+	this.finishScanline(backing);
+};
+
+GameBoyAdvanceVideo.prototype.finishScanline = function(backing) {
+	var color;
+	var xx = this.vcount * this.HORIZONTAL_PIXELS * 4;
+	for (var x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
+		color = backing[x];
+		this.palette.convert16To32(color, this.sharedColor);
+		this.pixelData.data[xx++] = this.sharedColor[0];
+		this.pixelData.data[xx++] = this.sharedColor[1];
+		this.pixelData.data[xx++] = this.sharedColor[2];
+		xx++;
 	}
 };
 
