@@ -752,6 +752,8 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 			dmx: 0,
 			dy: 0,
 			dmy: 0,
+			sx: 0,
+			sy: 0,
 			pushPixel: this.pushPixelOpaque,
 			drawScanline: this.drawScanlineBGMode0
 		});
@@ -921,10 +923,12 @@ GameBoyAdvanceVideo.prototype.writeBackgroundVOffset = function(bg, value) {
 
 GameBoyAdvanceVideo.prototype.writeBackgroundRefX = function(bg, value) {
 	this.bg[bg].refx = (value << 4) / 0x1000;
+	this.bg[bg].sx = this.bg[bg].refx;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundRefY = function(bg, value) {
 	this.bg[bg].refy = (value << 4) / 0x1000;
+	this.bg[bg].sy = this.bg[bg].refy;
 };
 
 GameBoyAdvanceVideo.prototype.writeBackgroundParamA = function(bg, value) {
@@ -1294,8 +1298,8 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode1 = function(backing, bg, start,
 	var yBase;
 
 	for (x = start; x < end; ++x) {
-		localX = bg.dx * x + bg.dmx * y + bg.refx;
-		localY = bg.dy * x + bg.dmy * y + bg.refy;
+		localX = bg.dx * x + bg.sx;
+		localY = bg.dy * x + bg.sy;
 		if (bg.overflow) {
 			localX &= sizeAdjusted - 1;
 			if (localX < 0) {
@@ -1336,8 +1340,8 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode4 = function(backing, bg, start,
 	var yBase;
 
 	for (x = start; x < end; ++x) {
-		localX = bg.dx * x + bg.dmx * y + bg.refx;
-		localY = bg.dy * x + bg.dmy * y + bg.refy;
+		localX = bg.dx * x + bg.sx;
+		localY = bg.dy * x + bg.sy;
 		yBase = (localY << 2) & 0x7E0;
 		if (localX < 0 || localY < 0 || localX >= video.HORIZONTAL_PIXELS || localY >= video.VERTICAL_PIXELS) {
 			offset += 4;
@@ -1405,10 +1409,18 @@ GameBoyAdvanceVideo.prototype.drawScanline = function(backing) {
 			}
 			// TODO: objwin
 		}
+		if (layer.bg) {
+			layer.sx += layer.dmx;
+			layer.sy += layer.dmy;
+		}
 	}
 };
 
 GameBoyAdvanceVideo.prototype.finishDraw = function() {
 	this.context.putImageData(this.pixelData, 0, 0);
+	this.bg[2].sx = this.bg[2].refx;
+	this.bg[2].sy = this.bg[2].refy;
+	this.bg[3].sx = this.bg[3].refx;
+	this.bg[3].sy = this.bg[3].refy;
 	this.drawCallback();
 };
