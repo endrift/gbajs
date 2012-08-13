@@ -427,6 +427,14 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		// LZ77UnCompVram
 		this.lz77(this.cpu.gprs[0], this.cpu.gprs[1], 2);
 		break;
+	case 0x14:
+		// RlUnCompWram
+		this.rl(this.cpu.gprs[0], this.cpu.gprs[1], 1);
+		break;
+	case 0x15:
+		// RlUnCompVram
+		this.rl(this.cpu.gprs[0], this.cpu.gprs[1], 2);
+		break;
 	case 0x1F:
 		// MidiKey2Freq
 		var key = this.cpu.mmu.load32(this.cpu.gprs[0] + 4);
@@ -704,5 +712,39 @@ GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize)
 			blockheader = this.cpu.mmu.loadU8(sPointer++);
 			blocksRemaining = 8;
 		}
+	}
+};
+
+GameBoyAdvanceInterruptHandler.prototype.rl = function(source, dest, unitsize) {
+	source = source & 0xFFFFFFFC;
+	var remaining = (this.cpu.mmu.load32(source) & 0xFFFFFF00) >> 8;
+	var padding = (4 - remaining) & 0x3;
+	// We assume the signature byte (0x30) is correct
+	var blockheader;
+	var block;
+	var sPointer = source + 4;
+	var dPointer = dest;
+	while (remaining > 0) {
+		blockheader = this.cpu.mmu.loadU8(sPointer++);
+		if (blockheader & 0x80) {
+			// Compressed
+			blockheader &= 0x7F;
+			blockheader += 3;
+			block = this.cpu.mmu.loadU8(sPointer++);
+			while (blockheader-- && remaining) {
+				--remaining;
+				this.cpu.mmu.store8(dPointer++, block);
+			}
+		} else {
+			// Uncompressed
+			blockheader++;
+			while (blockheader-- && remaining) {
+				--remaining;
+				this.cpu.mmu.store8(dPointer++, this.cpu.mmu.loadU8(sPointer++));
+			}
+		}
+	}
+	while (padding--) {
+		this.cpu.mmu.store8(dPointer++, 0);
 	}
 };
