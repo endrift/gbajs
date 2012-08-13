@@ -761,8 +761,8 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 
 	this.bgModes = [
 		this.drawScanlineBGMode0,
-		this.drawScanlineBGMode1,
-		function () { throw 'Unimplemented BG Mode 2'; },
+		this.drawScanlineBGMode2, // Modes 1 and 2 are identical for layers 2 and 3
+		this.drawScanlineBGMode2,
 		function () { throw 'Unimplemented BG Mode 3'; },
 		this.drawScanlineBGMode4,
 		function () { throw 'Unimplemented BG Mode 5'; }
@@ -1280,7 +1280,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 	}
 };
 
-GameBoyAdvanceVideo.prototype.drawScanlineBGMode1 = function(backing, bg, start, end) {
+GameBoyAdvanceVideo.prototype.drawScanlineBGMode2 = function(backing, bg, start, end) {
 	var video = this.video;
 	var x;
 	var y = video.vcount;
