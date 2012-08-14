@@ -1132,6 +1132,8 @@ GameBoyAdvanceVideo.prototype.pushPixel16 = function(layer, map, video, row, x, 
 		if (backing.stencil[offset] & video.TARGET2_MASK && mask & video.TARGET1_MASK) {
 			// That pixel below us needs to be blended
 			pixel = video.palette.mix(video.blendA, pixel, video.blendB, backing.color[offset]);
+			// We've already blended, strip off our TARGET1 bit
+			mask &= ~video.TARGET1_MASK;
 		}
 		if ((backing.stencil[offset] & video.LAYER_MASK) - (mask & video.LAYER_MASK) == 1) {
 			// That layer is right below us and high priority, strip off our TARGET1 bit
