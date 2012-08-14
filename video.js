@@ -209,7 +209,7 @@ GameBoyAdvancePalette.prototype.store16 = function(offset, value) {
 	var type = (offset & 0x200) >> 9;
 	var index = (offset & 0x1FF) >> 1;
 	this.colors[type][index] = value;
-	this.adjustColor(value, this.adjustedColors[type][index]);
+	this.adjustedColors[type][index] = this.adjustColor(value);
 };
 
 GameBoyAdvancePalette.prototype.store32 = function(offset, value) {
