@@ -236,9 +236,9 @@ GameBoyAdvancePalette.prototype.mix = function(aWeight, aColor, bWeight, bColor)
 	var bg = (bColor & 0x03E0) >> 5;
 	var bb = (bColor & 0x7C00) >> 10;
 
-	var r = (aWeight * ar + bWeight * br) & 0x1F;
-	var g = (aWeight * ag + bWeight * bg) & 0x1F;
-	var b = (aWeight * ab + bWeight * bb) & 0x1F;
+	var r = Math.min(aWeight * ar + bWeight * br, 0x1F);
+	var g = Math.min(aWeight * ag + bWeight * bg, 0x1F);
+	var b = Math.min(aWeight * ab + bWeight * bb, 0x1F);
 
 	return r | (g << 5) | (b << 10);
 };
