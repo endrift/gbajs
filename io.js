@@ -509,7 +509,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.video.writeWinOut(value);
 		break;
 	case this.BLDCNT:
-		value &= 0x4FFF;
+		value &= 0x7FFF;
 		this.video.writeBlendControl(value);
 		break;
 	case this.BLDALPHA:
