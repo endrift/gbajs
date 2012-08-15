@@ -1100,7 +1100,7 @@ GameBoyAdvanceVideo.prototype.layerComparator = function(a, b) {
 	}
 	var diff = b.priority - a.priority;
 	if (!diff) {
-		return a.index - b.index;
+		return b.index - a.index;
 	}
 	return diff;
 };
@@ -1164,11 +1164,16 @@ GameBoyAdvanceVideo.pushPixel = function(layer, map, video, row, x, offset, back
 	}
 
 	var pixel = video.palette.accessColor(layer, index);
+	var highPriority = (mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK);
+	// Backgrounds can draw over each other, too.
+	if ((mask & video.PRIORITY_MASK) == (oldStencil & video.PRIORITY_MASK)) {
+		highPriority = mask & video.BACKGROUND_MASK;
+	}
 
 	if (!(oldStencil & video.WRITTEN_MASK)) {
 		// Nothing here yet, just continue
 		stencil |= mask;
-	} else if ((mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK)) {
+	} else if (highPriority) {
 		// We are higher priority
 		if (mask & video.TARGET1_MASK && oldStencil & video.TARGET2_MASK) {
 			pixel = video.palette.mix(video.blendA, pixel, video.blendB, backing.color[offset]);
