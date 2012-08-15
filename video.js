@@ -505,7 +505,6 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 };
 
 GameBoyAdvanceOBJ.prototype.recalcSize = function() {
-	// TODO: scale/rotation
 	switch (this.shape) {
 	case 0:
 		// Square
@@ -860,7 +859,12 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 	this.win1 = value & 0x4000;
 	this.objwin = value & 0x8000;
 
-	// TODO: reduce copied code
+	if (this.backgroundMode > 0) {
+		this.bg[2].multipalette = true;
+	}
+	if (this.backgroundMode == 2) {
+		this.bg[3].multipalette = true;
+	}
 	
 	this.resetLayers();
 };
@@ -889,7 +893,9 @@ GameBoyAdvanceVideo.prototype.writeBackgroundControl = function(bg, value) {
 	bgData.priority = value & 0x0003;
 	bgData.charBase = (value & 0x000C) << 12;
 	bgData.mosaic = value & 0x0040;
-	bgData.multipalette = value & 0x0080;
+	if (bg < 2 || this.backgroundMode == 0) {
+		bgData.multipalette = value & 0x0080;
+	}
 	bgData.screenBase = (value & 0x1F00) << 3;
 	bgData.overflow = value & 0x2000;
 	bgData.size = (value & 0xC000) >> 14;
@@ -1371,7 +1377,7 @@ GameBoyAdvanceVideo.prototype.drawScanline = function(backing) {
 				firstEnd = Math.min(firstEnd, this.win0Left);
 				lastStart = Math.max(lastStart, this.win0Right);
 				if (this.windows[0].enabled[layer.index]) {
-					this.setBlendEnabled(layer.index, this.windows[0].special);
+					this.setBlendEnabled(layer.index, this.windows[0].special && this.target1[layer.index]);
 					layer.drawScanline(backing, layer, this.win0Left, this.win0Right);
 				}
 			}
@@ -1379,7 +1385,7 @@ GameBoyAdvanceVideo.prototype.drawScanline = function(backing) {
 				firstEnd = Math.min(firstEnd, this.win1Left);
 				lastStart = Math.max(lastStart, this.win1Right);
 				if (this.windows[1].enabled[layer.index]) {
-					this.setBlendEnabled(layer.index, this.windows[1].special);
+					this.setBlendEnabled(layer.index, this.windows[1].special && this.target1[layer.index]);
 					layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
 				}
 			}
