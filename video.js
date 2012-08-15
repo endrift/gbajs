@@ -1070,13 +1070,13 @@ GameBoyAdvanceVideo.prototype.resetLayers = function() {
 };
 
 GameBoyAdvanceVideo.prototype.layerComparator = function(a, b) {
-	var diff = a.priority - b.priority;
+	if (a.bg && !b.bg) {
+		return 1;
+	} else if (!a.bg && b.bg) {
+		return -1;
+	}
+	var diff = b.priority - a.priority;
 	if (!diff) {
-		if (a.bg && !b.bg) {
-			return 1;
-		} else if (!a.bg && b.bg) {
-			return -1;
-		}
 		return a.index - b.index;
 	}
 	return diff;
@@ -1150,9 +1150,8 @@ GameBoyAdvanceVideo.pushPixel = function(layer, map, video, row, x, offset, back
 		if (mask & video.TARGET1_MASK && oldStencil & video.TARGET2_MASK) {
 			pixel = video.palette.mix(video.blendA, pixel, video.blendB, backing.color[offset]);
 		}
-		// But there's already something here, so we can't be a target
-		// We can only draw a sprite and a background on the same pixel.
-		stencil |= mask & ~(video.TARGET1_MASK | video.TARGET2_MASK);
+		// We just drew over something, so it doesn't make sense for us to be a TARGET1 anymore...
+		stencil |= mask & ~video.TARGET1_MASK;
 	} else if ((mask & video.PRIORITY_MASK) > (oldStencil & video.PRIORITY_MASK)) {
 		// We're below another layer, but might be the blend target for it
 		stencil = oldStencil & ~(video.TARGET1_MASK | video.TARGET2_MASK);
