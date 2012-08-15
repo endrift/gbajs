@@ -102,17 +102,6 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		obj.multipalette = value & 0x2000;
 		obj.shape = (value & 0xC000) >> 14;
 
-		switch (obj.mode) {
-		case 0x00:
-		case 0x10:
-			// Normal
-			obj.pushPixel = obj.multipalette ? this.video.pushPixel256 : this.video.pushPixel16;
-			break;
-		case 0x20:
-			// OBJ Window
-			break;
-		}
-
 		obj.recalcSize();
 		break;
 	case 2:
@@ -368,7 +357,7 @@ function GameBoyAdvanceOBJ(oam, index) {
 	this.priority = 0;
 	this.palette = 0;
 	this.drawScanline = this.drawScanlineNormal;
-	this.pushPixel = null;
+	this.pushPixel = GameBoyAdvanceVideo.pushPixel;
 	this.cachedWidth = 8;
 	this.cachedHeight = 8;
 };
@@ -378,7 +367,14 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	var x;
 	var underflow;
 	var offset;
-	var mask = this.mode | video.target1[4] | video.target2[4] | (this.priority << 1);
+	var mask = this.mode | video.target2[video.LAYER_OBJ] | (this.priority << 1);
+	if (this.blendMode == 0x10) {
+		mask |= video.TARGET1_MASK;
+	}
+	if (video.blendMode == 1) {
+		mask |= video.target1[video.LAYER_OBJ];
+	}
+
 	var totalWidth = this.cachedWidth;
 	if (this.x < video.HORIZONTAL_PIXELS) {
 		if (this.x < start) {
@@ -438,7 +434,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 				tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4), this.tileBase + (tileOffset << 1) + ((localX & 0x01F8) >> 2), localYLo << 1);
 			}
 		}
-		this.pushPixel(4, this, video, tileRow, localX & 0x7, offset, backing, mask);
+		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask);
 		offset++;
 	}
 };
@@ -448,7 +444,13 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 	var x;
 	var underflow;
 	var offset;
-	var mask = this.mode | video.target1[4] | video.target2[4] | (this.priority << 1);
+	var mask = this.mode | video.target2[video.LAYER_OBJ] | (this.priority << 1);
+	if (this.blendMode == 0x10) {
+		mask |= video.TARGET1_MASK;
+	}
+	if (video.blendMode == 1) {
+		mask |= video.target1[video.LAYER_OBJ];
+	}
 
 	var localX;
 	var localY;
@@ -497,7 +499,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 			tileOffset = (localY & 0x01F8) << 2;
 		}
 		tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), (localY & 0x7) << paletteShift);
-		this.pushPixel(4, this, video, tileRow, localX & 0x7, offset, backing, mask);
+		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask);
 		offset++;
 	}
 };
@@ -589,10 +591,7 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, 
 			totalHeight = obj.cachedHeight << obj.doublesize;
 		}
 		if (wrappedY <= y && (wrappedY + totalHeight) > y) {
-			var alpha = this.video.alphaEnabled;
-			this.video.alphaEnabled = obj.mode == 0x10;
 			obj.drawScanline(backing, y, wrappedY, start, end);
-			this.video.alphaEnabled = alpha;
 		}
 	}
 };
@@ -735,7 +734,7 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 			dmy: 0,
 			sx: 0,
 			sy: 0,
-			pushPixel: this.pushPixelOpaque,
+			pushPixel: GameBoyAdvanceVideo.pushPixel,
 			drawScanline: this.drawScanlineBGMode0
 		});
 	}
@@ -752,7 +751,6 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.drawLayers = [ this.bg[0], this.bg[1], this.bg[2], this.bg[3], this.objLayer ];
 
 	this,objwinActive = false;
-	this.alphaEnabled = false;
 
 	this.scanline = {
 		color: new Uint16Array(this.HORIZONTAL_PIXELS),
@@ -864,10 +862,6 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 
 	// TODO: reduce copied code
 	
-	var i;
-	for (i = 0; i < 4; ++i) {
-		this.bg[i].pushPixel = (this.bg[i].multipalette || (i > 1 && this.backgroundMode != 0)) ? this.pushPixel256 : this.pushPixel16;
-	}
 	this.resetLayers();
 };
 
@@ -1024,12 +1018,10 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 };
 
 GameBoyAdvanceVideo.prototype.setBlendEnabled = function(layer, enabled) {
-	this.alphaEnabled = false;
 	if (enabled) {
 		switch (this.blendMode) {
 		case 1:
 			// Alpha
-			this.alphaEnabled = true;
 			// Fall through
 		case 0:
 			// Normal
@@ -1117,79 +1109,20 @@ GameBoyAdvanceVideo.prototype.accessTile = function(base, tile, y) {
 	return this.vram.load32(offset);
 }
 
-GameBoyAdvanceVideo.prototype.pushPixel16 = function(layer, map, video, row, x, offset, backing, mask) {
-	var index = (row >> (x << 2)) & 0xF;
-	// Index 0 is transparent
-	if (!index) {
-		return;
-	}
-
-	var stencil = video.WRITTEN_MASK;
-	var oldStencil = backing.stencil[offset]; 
-	if (video.objwinActive) {
-		if (oldStencil & video.OBJWIN_MASK) {
-			if (video.windows[3].enabled[layer]) {
-				video.setBlendEnabled(layer, video.windows[3].special);
-				stencil |= video.OBJWIN_MASK;
-			} else {
-				return;
-			}
-		} else if (video.windows[2].enabled[layer]) {
-			video.setBlendEnabled(layer, video.windows[2].special);
-		} else {
-			return;
-		}
-	}
-
-	var pixel = video.palette.accessColor(layer, map.palette | index);
-
-	if (!(oldStencil & video.WRITTEN_MASK)) {
-		// Nothing here yet, just continue
-		stencil |= mask;
-	} else if ((mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK)) {
-		// We are higher priority. Take charge!
-		if (oldStencil & video.TARGET2_MASK && mask & video.TARGET1_MASK) {
-			// That pixel below us needs to be blended
-			pixel = video.palette.mix(video.blendA, pixel, video.blendB, backing.color[offset]);
-			// We've already blended, strip off our TARGET bits
-			mask &= ~(video.TARGET1_MASK | video.TARGET2_MASK);
-		}
-		if ((backing.stencil[offset] & video.PRIORITY_MASK) - (mask & video.PRIORITY_MASK) == 1) {
-			// That layer is right below us and high priority, strip off our TARGET bits
-			mask &= ~(video.TARGET1_MASK | video.TARGET2_MASK);
-		}
-		stencil |= mask;
-	} else if ((mask & video.LAYER_MASK) > (oldStencil & video.LAYER_MASK)) {
-		if (mask & video.TARGET2_MASK && oldStencil & video.TARGET1_MASK) {
-			// We're under a layer and need to be reverse blended
-			pixel = video.palette.mix(video.blendB, pixel, video.blendA, backing.color[offset]);
-			stencil |= oldStencil & video.LAYER_MASK;
-		} else {
-			// We're just under an opaque layer
-			return;
-		}
+GameBoyAdvanceVideo.pushPixel = function(layer, map, video, row, x, offset, backing, mask) {
+	var index;
+	if (this.multipalette) {
+		index = (row >> (x << 3)) & 0xFF;
 	} else {
-		// This is the same layer. We're two sprites overlapping.
-		return;
+		index = (row >> (x << 2)) & 0xF;
 	}
-
-	if (mask & video.OBJWIN_MASK) {
-		// We ARE the object window, don't draw pixels!
-		backing.stencil[offset] |= video.OBJWIN_MASK;
-		return;
-	}
-	backing.color[offset] = pixel;
-	backing.stencil[offset] = stencil;
-};
-
-GameBoyAdvanceVideo.prototype.pushPixel256 = function(layer, map, video, row, x, offset, backing, mask) {
-	var index = (row >> (x << 3)) & 0xFF;
 	// Index 0 is transparent
 	if (!index) {
 		return;
+	} else if (!this.multipalette) {
+		index |= map.palette;
 	}
 
-	// TODO: reduce code copying
 	var stencil = video.WRITTEN_MASK;
 	var oldStencil = backing.stencil[offset]; 
 	if (video.objwinActive) {
@@ -1207,36 +1140,28 @@ GameBoyAdvanceVideo.prototype.pushPixel256 = function(layer, map, video, row, x,
 		}
 	}
 
-	var alpha = video.alphaEnabled;
 	var pixel = video.palette.accessColor(layer, index);
 
 	if (!(oldStencil & video.WRITTEN_MASK)) {
 		// Nothing here yet, just continue
 		stencil |= mask;
 	} else if ((mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK)) {
-		// We are higher priority. Take charge!
-		if (alpha && oldStencil & video.TARGET2_MASK && mask & video.TARGET1_MASK) {
-			// That pixel below us needs to be blended
+		// We are higher priority
+		if (mask & video.TARGET1_MASK && oldStencil & video.TARGET2_MASK) {
 			pixel = video.palette.mix(video.blendA, pixel, video.blendB, backing.color[offset]);
-			// We've already blended, strip off our TARGET bits
-			mask &= ~(video.TARGET1_MASK | video.TARGET2_MASK);
 		}
-		if ((backing.stencil[offset] & video.PRIORITY_MASK) - (mask & video.PRIORITY_MASK) == 1) {
-			// That layer is right below us and high priority, strip off our TARGET bits
-			mask &= ~(video.TARGET1_MASK | video.TARGET2_MASK);
-		}
-		stencil |= mask;
-	} else if ((mask & video.LAYER_MASK) > (oldStencil & video.LAYER_MASK)) {
-		if (alpha && mask & video.TARGET2_MASK && oldStencil & video.TARGET1_MASK) {
-			// We're under a layer and need to be reverse blended
+		// But there's already something here, so we can't be a target
+		// We can only draw a sprite and a background on the same pixel.
+		stencil |= mask & ~(video.TARGET1_MASK | video.TARGET2_MASK);
+	} else if ((mask & video.PRIORITY_MASK) > (oldStencil & video.PRIORITY_MASK)) {
+		// We're below another layer, but might be the blend target for it
+		stencil = oldStencil & ~(video.TARGET1_MASK | video.TARGET2_MASK);
+		if (mask & video.TARGET2_MASK && oldStencil & video.TARGET1_MASK) {
 			pixel = video.palette.mix(video.blendB, pixel, video.blendA, backing.color[offset]);
-			stencil |= oldStencil & video.LAYER_MASK;
 		} else {
-			// We're just under an opaque layer
 			return;
 		}
 	} else {
-		// This is the same layer. We're two sprites overlapping.
 		return;
 	}
 
@@ -1283,7 +1208,10 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 	var index = bg.index;
 	var map = video.sharedMap;
 	var paletteShift = bg.multipalette ? 1 : 0;
-	var mask = video.target1[index] | video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+	var mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+	if (video.blendMode == 1) {
+		mask |= video.target1[index];
+	}
 
 	var yBase = (localY << 3) & 0x7C0;
 	if (size == 2) {
@@ -1348,7 +1276,10 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode2 = function(backing, bg, start,
 	var index = bg.index;
 	var map = video.sharedMap;
 	var color;
-	var mask = video.target1[index] | video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+	var mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+	if (video.blendMode == 1) {
+		mask |= video.target1[index];
+	}
 
 	var yBase;
 
@@ -1391,7 +1322,10 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode4 = function(backing, bg, start,
 	var index = bg.index;
 	var map = video.sharedMap;
 	var color;
-	var mask = video.target1[index] | video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+	var mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+	if (video.blendMode == 1) {
+		mask |= video.target1[index];
+	}
 
 	var yBase;
 
