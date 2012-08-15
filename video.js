@@ -631,6 +631,23 @@ function GameBoyAdvanceVideo() {
 	this.PRIORITY_MASK = this.LAYER_MASK | this.BACKGROUND_MASK;
 
 	this.drawCallback = function() {};
+
+	this.drawBackdrop = new (function(video) {
+		this.bg = true;
+		this.priority = -1;
+		this.index = video.LAYER_BACKDROP;
+		this.enabled = true;
+
+		this.drawScanline = function(backing, layer, start, end) {
+			// TODO: interactions with blend modes and OBJWIN
+			for (var x = start; x < end; ++x) {
+				if (!(backing.stencil[x] & video.WRITTEN_MASK)) {
+					backing.color[x] = video.palette.accessColor(this.index, 0);
+					backing.stencil[x] = video.WRITTEN_MASK;
+				}
+			}
+		}
+	})(this);
 };
 
 GameBoyAdvanceVideo.prototype.clear = function() {
@@ -683,7 +700,7 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.windows = new Array();
 	for (var i = 0; i < 4; ++i) {
 		this.windows.push({
-			enabled: new Array(5),
+			enabled: [ false, false, false, false, false, true ],
 			special: 0
 		});
 	};
@@ -747,7 +764,7 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 		function () { throw 'Unimplemented BG Mode 5'; }
 	];
 
-	this.drawLayers = [ this.bg[0], this.bg[1], this.bg[2], this.bg[3], this.objLayer ];
+	this.drawLayers = [ this.bg[0], this.bg[1], this.bg[2], this.bg[3], this.objLayer, this.drawBackdrop ];
 
 	this,objwinActive = false;
 
@@ -1406,6 +1423,8 @@ GameBoyAdvanceVideo.prototype.drawScanline = function(backing) {
 					}
 				}
 			}
+
+			this.setBlendEnabled(this.LAYER_BACKDROP, this.target1[this.LAYER_BACKDROP] && this.windows[2].special);
 		}
 		if (layer.bg) {
 			layer.sx += layer.dmx;
