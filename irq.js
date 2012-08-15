@@ -121,7 +121,9 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
-				this.io.registers[this.io.TM1CNT_LO >> 1] = timer.reload;
+				if (!timer.countUp || this.io.registers[this.io.TM1CNT_LO >> 1] == 0x10000) {
+					this.io.registers[this.io.TM1CNT_LO >> 1] = timer.reload;
+				}
 				timer.oldReload = timer.reload;
 
 				if (timer.doIrq) {
@@ -156,7 +158,9 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
-				this.io.registers[this.io.TM2CNT_LO >> 1] = timer.reload;
+				if (!timer.countUp || this.io.registers[this.io.TM2CNT_LO >> 1] == 0x10000) {
+					this.io.registers[this.io.TM2CNT_LO >> 1] = timer.reload;
+				}
 				timer.oldReload = timer.reload;
 
 				if (timer.doIrq) {
@@ -181,7 +185,9 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 			if (this.cpu.cycles >= timer.nextEvent) {
 				timer.lastEvent = timer.nextEvent;
 				timer.nextEvent += timer.overflowInterval;
-				this.io.registers[this.io.TM3CNT_LO >> 1] = timer.reload;
+				if (!timer.countUp || this.io.registers[this.io.TM3CNT_LO >> 1] == 0x10000) {
+					this.io.registers[this.io.TM3CNT_LO >> 1] = timer.reload;
+				}
 				timer.oldReload = timer.reload;
 
 				if (timer.doIrq) {
@@ -637,7 +643,7 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 		currentTimer.prescaleBits = 10;
 		break;
 	}
-	currentTimer.countUp = 0; //control & 0x0004;
+	currentTimer.countUp = control & 0x0004;
 	currentTimer.doIrq = control & 0x0040;
 	currentTimer.overflowInterval = (0x10000 - currentTimer.reload) << currentTimer.prescaleBits;
 	var wasEnabled = currentTimer.enable;
@@ -663,15 +669,11 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 
 	// We've changed the timers somehow...we need to reset the next event
 	this.pollNextEvent();
-
-	if (currentTimer.countUp) {
-		this.core.WARN('Timer count up not implemented');
-	}
 };
 
 GameBoyAdvanceInterruptHandler.prototype.timerRead = function(timer) {
 	var currentTimer = this.timers[timer];
-	if (currentTimer.enable) {
+	if (currentTimer.enable && !currentTimer.countUp) {
 		return currentTimer.oldReload + (this.cpu.cycles - currentTimer.lastEvent) >> currentTimer.prescaleBits;
 	} else {
 		return this.io.registers[(this.io.TM0CNT_LO + (timer << 2)) >> 1];
