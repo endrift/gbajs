@@ -371,7 +371,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	if (this.blendMode == 0x10) {
 		mask |= video.TARGET1_MASK;
 	}
-	if (video.blendMode == 1) {
+	if (video.blendMode == 1 && video.alphaEnabled) {
 		mask |= video.target1[video.LAYER_OBJ];
 	}
 
@@ -448,7 +448,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 	if (this.blendMode == 0x10) {
 		mask |= video.TARGET1_MASK;
 	}
-	if (video.blendMode == 1) {
+	if (video.blendMode == 1 && video.alphaEnabled) {
 		mask |= video.target1[video.LAYER_OBJ];
 	}
 
@@ -767,6 +767,7 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.drawLayers = [ this.bg[0], this.bg[1], this.bg[2], this.bg[3], this.objLayer, this.drawBackdrop ];
 
 	this,objwinActive = false;
+	this.alphaEnabled = false;
 
 	this.scanline = {
 		color: new Uint16Array(this.HORIZONTAL_PIXELS),
@@ -1041,10 +1042,12 @@ GameBoyAdvanceVideo.prototype.writeBlendControl = function(value) {
 };
 
 GameBoyAdvanceVideo.prototype.setBlendEnabled = function(layer, enabled) {
+	this.alphaEnabled = false;
 	if (enabled) {
 		switch (this.blendMode) {
 		case 1:
 			// Alpha
+			this.alphaEnabled = enabled;
 			// Fall through
 		case 0:
 			// Normal
@@ -1236,7 +1239,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode0 = function(backing, bg, start,
 	var map = video.sharedMap;
 	var paletteShift = bg.multipalette ? 1 : 0;
 	var mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
-	if (video.blendMode == 1) {
+	if (video.blendMode == 1 && video.alphaEnabled) {
 		mask |= video.target1[index];
 	}
 
@@ -1304,7 +1307,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode2 = function(backing, bg, start,
 	var map = video.sharedMap;
 	var color;
 	var mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
-	if (video.blendMode == 1) {
+	if (video.blendMode == 1 && video.alphaEnabled) {
 		mask |= video.target1[index];
 	}
 
@@ -1350,7 +1353,7 @@ GameBoyAdvanceVideo.prototype.drawScanlineBGMode4 = function(backing, bg, start,
 	var map = video.sharedMap;
 	var color;
 	var mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
-	if (video.blendMode == 1) {
+	if (video.blendMode == 1 && video.alphaEnabled) {
 		mask |= video.target1[index];
 	}
 
