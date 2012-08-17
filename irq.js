@@ -234,6 +234,28 @@ GameBoyAdvanceInterruptHandler.prototype.swi32 = function(opcode) {
 
 GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 	switch (opcode) {
+	case 0x00:
+		// SoftReset
+		var mem = this.core.mmu.memory[this.core.mmu.REGION_WORKING_IRAM];
+		var flag = mem.loadU8(0x7FFA);
+		for (var i = 0x7E00; i < 0x8000; i += 4) {
+			mem.store32(i, 0);
+		}
+		this.cpu.switchMode(this.cpu.MODE_SUPERVISOR);
+		this.cpu.gprs[this.cpu.SP] = 0x3007FE0;
+		this.cpu.switchMode(this.cpu.MODE_IRQ);
+		this.cpu.gprs[this.cpu.SP] = 0x3007FA0;
+		this.cpu.switchMode(this.cpu.MODE_SYSTEM);
+		this.cpu.gprs[this.cpu.SP] = 0x3007F00;
+		if (!flag) {
+			this.cpu.gprs[this.cpu.LR] = 0x08000000;
+		} else {
+			this.cpu.gprs[this.cpu.LR] = 0x02000000;
+		}
+		this.switchExecMode(this.cpu.MODE_ARM);
+		this.cpu.instruction.writesPC = true;
+		this.cpu.gprs[this.cpu.PC] = this.cpu.gprs[this.cpu.LR];
+		break;
 	case 0x01:
 		// RegisterRamReset
 		this.core.STUB('Unimplemented RegisterRamReset');
