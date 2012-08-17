@@ -120,6 +120,38 @@ DummyMemory.prototype.store16 = function(offset, value) {};
 
 DummyMemory.prototype.store32 = function(offset, value) {};
 
+function BadMemory(mmu, cpu) {
+	this.cpu = cpu;
+	this.mmu = mmu
+};
+
+BadMemory.prototype = Object.create(DummyMemory.prototype);
+
+BadMemory.prototype.load8 = function(offset) {
+	return this.mmu.load8(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x3);
+};
+
+BadMemory.prototype.load16 = function(offset) {
+	return this.mmu.load16(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x2);
+};
+
+BadMemory.prototype.loadU8 = function(offset) {
+	return this.mmu.loadU8(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x3);
+};
+
+BadMemory.prototype.loadU16 = function(offset) {
+	return this.mmu.loadU16(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x2);
+};
+
+BadMemory.prototype.load32 = function(offset) {
+	if (this.cpu.execMode == this.cpu.MODE_ARM) {
+		return this.mmu.load32(this.cpu.gprs[this.cpu.gprs.PC]);
+	} else {
+		var halfword = this.mmu.loadU16(this.cpu.gprs[this.cpu.gprs.PC]);
+		return halfword | (halfword << 16);
+	}
+};
+
 function GameBoyAdvanceMMU() {
 	this.REGION_BIOS = 0x0;
 	this.REGION_WORKING_RAM = 0x2;
@@ -182,6 +214,14 @@ function GameBoyAdvanceMMU() {
 	this.WAITSTATES_SEQ_32 = [ 0, 0, 5, 0, 0, 1, 0, 1, 5, 0, 9, 0, 17, 0, 8 ];
 	this.NULLWAIT = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
 
+	for (var i = 16; i < 256; ++i) {
+		this.WAITSTATES[i] = 0;
+		this.WAITSTATES_32[i] = 0;
+		this.WAITSTATES_SEQ[i] = 0;
+		this.WAITSTATES_SEQ_32[i] = 0;
+		this.NULLWAIT[i] = 0;
+	}
+
 	this.ROM_WS = [ 4, 3, 2, 8 ];
 	this.ROM_WS_SEQ = [
 		[ 2, 1 ],
@@ -200,7 +240,7 @@ GameBoyAdvanceMMU.prototype.mmap = function(region, object) {
 GameBoyAdvanceMMU.prototype.clear = function() {
 	this.memory = [
 		null,
-		null, // Unused
+		new DummyMemory(), // Unused
 		new MemoryBlock(this.SIZE_WORKING_RAM),
 		new MemoryBlock(this.SIZE_WORKING_IRAM),
 		null, // This is owned by GameBoyAdvanceIO
@@ -213,9 +253,13 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 		new DummyMemory(),
 		new DummyMemory(),
 		new DummyMemory(),
-		null,
-		null // Unused
+		new DummyMemory(),
+		new DummyMemory() // Unused
 	];
+	var badMemory = new BadMemory(this, this.cpu);
+	for (var i = 16; i < 256; ++i) {
+		this.memory[i] = badMemory;
+	}
 
 	this.icache = [];
 
@@ -370,61 +414,61 @@ GameBoyAdvanceMMU.prototype.loadSavedata = function(save) {
 };
 
 GameBoyAdvanceMMU.prototype.load8 = function(offset) {
-	return this.memory[offset >> this.BASE_OFFSET].load8(offset & 0x00FFFFFF);
+	return this.memory[offset >>> this.BASE_OFFSET].load8(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.load16 = function(offset) {
-	return this.memory[offset >> this.BASE_OFFSET].load16(offset & 0x00FFFFFF);
+	return this.memory[offset >>> this.BASE_OFFSET].load16(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.load32 = function(offset) {
-	return this.memory[offset >> this.BASE_OFFSET].load32(offset & 0x00FFFFFF);
+	return this.memory[offset >>> this.BASE_OFFSET].load32(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.loadU8 = function(offset) {
-	return this.memory[offset >> this.BASE_OFFSET].loadU8(offset & 0x00FFFFFF);
+	return this.memory[offset >>> this.BASE_OFFSET].loadU8(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.loadU16 = function(offset) {
-	return this.memory[offset >> this.BASE_OFFSET].loadU16(offset & 0x00FFFFFF);
+	return this.memory[offset >>> this.BASE_OFFSET].loadU16(offset & 0x00FFFFFF);
 };
 
 GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFF;
-	var memory = this.memory[offset >> this.BASE_OFFSET];
+	var memory = this.memory[offset >>> this.BASE_OFFSET];
 	memory.store8(maskedOffset, value);
 	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
 };
 
 GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFE;
-	var memory = this.memory[offset >> this.BASE_OFFSET];
+	var memory = this.memory[offset >>> this.BASE_OFFSET];
 	memory.store16(maskedOffset, value);
 	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
 };
 
 GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFC;
-	var memory = this.memory[offset >> this.BASE_OFFSET];
+	var memory = this.memory[offset >>> this.BASE_OFFSET];
 	memory.store32(maskedOffset, value);
 	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
 	this.icache[(offset + 2) >> this.ICACHE_PAGE_BITS] = null;
 };
 
 GameBoyAdvanceMMU.prototype.wait = function(memory) {
-	this.cpu.cycles += 1 + this.waitstates[memory >> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstates[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.wait32 = function(memory) {
-	this.cpu.cycles += 1 + this.waitstates32[memory >> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstates32[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.waitSeq = function(memory) {
-	this.cpu.cycles += 1 + this.waitstatesSeq[memory >> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstatesSeq[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.waitSeq32 = function(memory) {
-	this.cpu.cycles += 1 + this.waitstatesSeq32[memory >> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstatesSeq32[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.scheduleDma = function(number, info) {
@@ -486,8 +530,8 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var wordsRemaining = info.nextCount;
 	var source = info.nextSource & this.OFFSET_MASK;
 	var dest = info.nextDest & this.OFFSET_MASK;
-	var sourceRegion = info.nextSource >> this.BASE_OFFSET;
-	var destRegion = info.nextDest >> this.BASE_OFFSET;
+	var sourceRegion = info.nextSource >>> this.BASE_OFFSET;
+	var destRegion = info.nextDest >>> this.BASE_OFFSET;
 	var sourceBlock = this.memory[sourceRegion];
 	var destBlock = this.memory[destRegion];
 	var word;
