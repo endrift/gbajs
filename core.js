@@ -1776,67 +1776,26 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		switch (instruction & 0x0600) {
 		case 0x0000:
 			// ADD(3)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var d = (gprs[rn] >>> 0) + (gprs[rm] >>> 0);
-				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !(d & 0xFFFFFFFF);
-				cpu.cpsrC = d > 0xFFFFFFFF;
-				cpu.cpsrV = !((gprs[rn] ^ gprs[rm]) & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000) && ((gprs[rm] ^ d) & 0x80000000);
-				gprs[rd] = d;
-			};
+			op = this.thumbCompiler.constructADD3(rd, rn, rm);
 			break;
 		case 0x0200:
 			// SUB(3)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var d = gprs[rn] - gprs[rm];
-				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !(d & 0xFFFFFFFF);
-				cpu.cpsrC = (gprs[rn] >>> 0) >= (gprs[rm] >>> 0);
-				cpu.cpsrV = (gprs[rn] & 0x80000000) != (gprs[rm] & 0x80000000) &&
-							(gprs[rn] & 0x80000000) != (d & 0x80000000);
-				gprs[rd] = d;
-			};
+			op = this.thumbCompiler.constructSUB3(rd, rn, rm);
 			break;
 		case 0x0400:
 			var immediate = (instruction & 0x01C0) >> 6;
 			if (immediate) {
 				// ADD(1)
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					var d = (gprs[rn] >>> 0) + immediate;
-					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !(d & 0xFFFFFFFF);
-					cpu.cpsrC = d > 0xFFFFFFFF;
-					cpu.cpsrV = !(gprs[rn] & 0x80000000) && ((gprs[rn] & 0x80000000 ^ d) & 0x80000000) && (d & 0x80000000);
-					gprs[rd] = d;
-				};
+				op = this.thumbCompiler.constructADD1(rd, rn, immediate);
 			} else {
 				// MOV(2)
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					var d = gprs[rn];
-					cpu.cpsrN = d & 0x80000000;
-					cpu.cpsrZ = !(d & 0xFFFFFFFF);
-					cpu.cpsrC = 0;
-					cpu.cpsrV = 0;
-					gprs[rd] = d;
-				};
+				op = this.thumbCompiler.constructMOV2(rd, rn, rm);
 			}
 			break;
 		case 0x0600:
 			// SUB(1)
 			var immediate = (instruction & 0x01C0) >> 6;
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var d = gprs[rn] - immediate;
-				cpu.cpsrN = d & 0x80000000;
-				cpu.cpsrZ = !(d & 0xFFFFFFFF);
-				cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
-				cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000);
-				gprs[rd] = d;
-			};
+			op = this.thumbCompiler.constructSUB1(rd, rn, immediate);
 			break;
 		}
 		op.writesPC = false;

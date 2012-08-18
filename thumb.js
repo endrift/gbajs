@@ -43,6 +43,19 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructADD3 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var d = (gprs[rn] >>> 0) + (gprs[rm] >>> 0);
+			cpu.cpsrN = d & 0x80000000;
+			cpu.cpsrZ = !(d & 0xFFFFFFFF);
+			cpu.cpsrC = d > 0xFFFFFFFF;
+			cpu.cpsrV = !((gprs[rn] ^ gprs[rm]) & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000) && ((gprs[rm] ^ d) & 0x80000000);
+			gprs[rd] = d;
+		};
+	};
+
 	this.constructADD4 = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -255,6 +268,19 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructMOV2 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var d = gprs[rn];
+			cpu.cpsrN = d & 0x80000000;
+			cpu.cpsrZ = !(d & 0xFFFFFFFF);
+			cpu.cpsrC = 0;
+			cpu.cpsrV = 0;
+			gprs[rd] = d;
+		};
+	};
+
 	this.constructMOV3 = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -366,6 +392,19 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructSUB1 = function(rd, rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var d = gprs[rn] - immediate;
+			cpu.cpsrN = d & 0x80000000;
+			cpu.cpsrZ = !(d & 0xFFFFFFFF);
+			cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
+			cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000);
+			gprs[rd] = d;
+		};
+	}
+
 	this.constructSUB2 = function(rn, immediate) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -376,6 +415,20 @@ ARMCoreThumb = function (cpu) {
 			cpu.cpsrC = (gprs[rn] >>> 0) >= immediate;
 			cpu.cpsrV = (gprs[rn] & 0x80000000) && ((gprs[rn] ^ d) & 0x80000000);
 			gprs[rn] = d;
+		};
+	};
+
+	this.constructSUB3 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var d = gprs[rn] - gprs[rm];
+			cpu.cpsrN = d & 0x80000000;
+			cpu.cpsrZ = !(d & 0xFFFFFFFF);
+			cpu.cpsrC = (gprs[rn] >>> 0) >= (gprs[rm] >>> 0);
+			cpu.cpsrV = (gprs[rn] & 0x80000000) != (gprs[rm] & 0x80000000) &&
+						(gprs[rn] & 0x80000000) != (d & 0x80000000);
+			gprs[rd] = d;
 		};
 	};
 
