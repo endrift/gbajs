@@ -877,11 +877,14 @@ GameBoyAdvanceVideo.prototype.writeDisplayControl = function(value) {
 	this.win1 = value & 0x4000;
 	this.objwin = value & 0x8000;
 
+	// Total hack so we can store both things that would set it to 256-color mode in the same variable
+	this.bg[2].multipalette &= ~0x0001;
+	this.bg[3].multipalette &= ~0x0001;
 	if (this.backgroundMode > 0) {
-		this.bg[2].multipalette = true;
+		this.bg[2].multipalette |= 0x0001;
 	}
 	if (this.backgroundMode == 2) {
-		this.bg[3].multipalette = true;
+		this.bg[3].multipalette |= 0x0001;
 	}
 	
 	this.resetLayers();
@@ -912,7 +915,8 @@ GameBoyAdvanceVideo.prototype.writeBackgroundControl = function(bg, value) {
 	bgData.charBase = (value & 0x000C) << 12;
 	bgData.mosaic = value & 0x0040;
 	if (bg < 2 || this.backgroundMode == 0) {
-		bgData.multipalette = value & 0x0080;
+		bgData.multipalette &= ~0x0080;
+		bgData.multipalette |= value & 0x0080;
 	}
 	bgData.screenBase = (value & 0x1F00) << 3;
 	bgData.overflow = value & 0x2000;
