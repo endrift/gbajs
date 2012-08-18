@@ -74,6 +74,26 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructASR1 = function(rd, rm, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			if (immediate == 0) {
+				cpu.cpsrC = gprs[rm] & 0x80000000;
+				if (cpu.cpsrC) {
+					gprs[rd] = 0xFFFFFFFF;
+				} else {
+					gprs[rd] = 0;
+				}
+			} else {
+				cpu.cpsrC = gprs[rm] & (1 << (immediate - 1));
+				gprs[rd] = gprs[rm] >> immediate;
+			}
+			cpu.cpsrN = gprs[rd] & 0x80000000;
+			cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+		};
+	};
+
 	this.constructASR2 = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -212,6 +232,21 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructLSL1 = function(rd, rm, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			if (immediate == 0) {
+				gprs[rd] = gprs[rm];
+			} else {
+				cpu.cpsrC = gprs[rm] & (1 << (32 - immediate));
+				gprs[rd] = gprs[rm] << immediate;
+			}
+			cpu.cpsrN = gprs[rd] & 0x80000000;
+			cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+		};
+	};
+
 	this.constructLSL2 = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -234,6 +269,22 @@ ARMCoreThumb = function (cpu) {
 			cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 		};
 	};
+
+	this.constructLSR1 = function(rd, rm, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			if (immediate == 0) {
+				cpu.cpsrC = gprs[rm] & 0x80000000;
+				gprs[rd] = 0;
+			} else {
+				cpu.cpsrC = gprs[rm] & (1 << (immediate - 1));
+				gprs[rd] = gprs[rm] >>> immediate;
+			}
+			cpu.cpsrN = 0;
+			cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+		};
+	}
 
 	this.constructLSR2 = function(rd, rm) {
 		var gprs = cpu.gprs;

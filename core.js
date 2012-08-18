@@ -1807,51 +1807,15 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		switch (instruction & 0x1800) {
 		case 0x0000:
 			// LSL(1)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				if (immediate == 0) {
-					gprs[rd] = gprs[rm];
-				} else {
-					cpu.cpsrC = gprs[rm] & (1 << (32 - immediate));
-					gprs[rd] = gprs[rm] << immediate;
-				}
-				cpu.cpsrN = gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
-			};
+			op = this.thumbCompiler.constructLSL1(rd, rm, immediate);
 			break;
 		case 0x0800:
 			// LSR(1)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				if (immediate == 0) {
-					cpu.cpsrC = gprs[rm] & 0x80000000;
-					gprs[rd] = 0;
-				} else {
-					cpu.cpsrC = gprs[rm] & (1 << (immediate - 1));
-					gprs[rd] = gprs[rm] >>> immediate;
-				}
-				cpu.cpsrN = 0;
-				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
-			};
+			op = this.thumbCompiler.constructLSR1(rd, rm, immediate);
 			break;
 		case 0x1000:
 			// ASR(1)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				if (immediate == 0) {
-					cpu.cpsrC = gprs[rm] & 0x80000000;
-					if (cpu.cpsrC) {
-						gprs[rd] = 0xFFFFFFFF;
-					} else {
-						gprs[rd] = 0;
-					}
-				} else {
-					cpu.cpsrC = gprs[rm] & (1 << (immediate - 1));
-					gprs[rd] = gprs[rm] >> immediate;
-				}
-				cpu.cpsrN = gprs[rd] & 0x80000000;
-				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
-			};
+			op = this.thumbCompiler.constructASR1(rd, rm, immediate);
 			break;
 		case 0x1800:
 			break;
