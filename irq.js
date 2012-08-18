@@ -252,7 +252,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		} else {
 			this.cpu.gprs[this.cpu.LR] = 0x02000000;
 		}
-		this.switchExecMode(this.cpu.MODE_ARM);
+		this.cpu.switchExecMode(this.cpu.MODE_ARM);
 		this.cpu.instruction.writesPC = true;
 		this.cpu.gprs[this.cpu.PC] = this.cpu.gprs[this.cpu.LR];
 		break;
