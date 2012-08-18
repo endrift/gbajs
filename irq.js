@@ -455,6 +455,10 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		// LZ77UnCompVram
 		this.lz77(this.cpu.gprs[0], this.cpu.gprs[1], 2);
 		break;
+	case 0x13:
+		// HuffUnComp
+		this.huffman(this.cpu.gprs[0], this.cpu.gprs[1]);
+		break;
 	case 0x14:
 		// RlUnCompWram
 		this.rl(this.cpu.gprs[0], this.cpu.gprs[1], 1);
@@ -736,6 +740,105 @@ GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize)
 			blockheader = this.cpu.mmu.loadU8(sPointer++);
 			blocksRemaining = 8;
 		}
+	}
+};
+
+GameBoyAdvanceInterruptHandler.prototype.huffman = function(source, dest) {
+	source = source & 0xFFFFFFFC;
+	var header = this.cpu.mmu.load32(source);
+	var remaining = header >> 8;
+	var bits = header & 0xF;
+	if (32 % bits) {
+		throw 'Unimplemented unaligned Huffman';
+	}
+	var padding = (4 - remaining) & 0x3;
+	remaining &= 0xFFFFFFFC;
+	// We assume the signature byte (0x20) is correct
+	var tree = [];
+	var treesize = (this.cpu.mmu.load8(source + 4) << 1) + 1;
+	var block;
+	var sPointer = source + 5 + treesize;
+	var dPointer = dest & 0xFFFFFFFC;
+	var i;
+	for (i = 0; i < treesize; ++i) {
+		tree.push(this.cpu.mmu.loadU8(source + 5 + i));
+	}
+	var stack = [];
+	var node;
+	// Construct tree
+	for (i = 0;;) {
+		node = tree[i];
+		if (typeof(node) === 'number') {
+			// Descending
+			var next = (i - 1 | 1) + ((node & 0x3F) << 1) + 2;
+			node = {
+				l: next,
+				r: next + 1,
+				lTerm: node & 0x80,
+				rTerm: node & 0x40
+			};
+			tree[i] = node;
+			if (!node.lTerm) {
+				// Descend
+				stack.push(i);
+				i = node.l;
+				continue;
+			}
+		}
+		if (!node.rTerm) {
+			// Traverse
+			i = node.r;
+		} else {
+			// Ascend
+			if (stack.length) {
+				i = stack.pop();
+			} else {
+				// Nothing left to ascend from
+				break;
+			}
+		}
+	}
+	var bitsRemaining;
+	var readBits;
+	var bitsSeen = 0;
+	node = tree[0];
+	while (remaining > 0) {
+		var bitstream = this.cpu.mmu.load32(sPointer);
+		sPointer += 4;
+		for (bitsRemaining = 32; bitsRemaining > 0; --bitsRemaining, bitstream <<= 1) {
+			if (bitstream & 0x80000000) {
+				// Go right
+				if (node.rTerm) {
+					readBits = tree[node.r];
+				} else {
+					node = tree[node.r];
+					continue;
+				}
+			} else {
+				// Go left
+				if (node.lTerm) {
+					readBits = tree[node.l];
+				} else {
+					node = tree[node.l];
+					continue;
+				}
+			}
+
+			block |= (readBits & ((1 << bits) - 1)) << bitsSeen;
+			bitsSeen += bits;
+			node = tree[0];
+			if (bitsSeen == 32) {
+				bitsSeen = 0;
+				this.cpu.mmu.store32(dPointer, block);
+				dPointer += 4;
+				remaining -= 4;
+				block = 0;
+			}
+		}
+
+	}
+	if (padding) {
+		this.cpu.mmu.store32(dPointer, block);
 	}
 };
 
