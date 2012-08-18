@@ -1848,11 +1848,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		// LDR(3)
 		var rd = (instruction & 0x0700) >> 8;
 		var immediate = (instruction & 0x00FF) << 2;
-		op = function() {
-			cpu.mmu.waitSeq(gprs[cpu.PC]);
-			cpu.mmu.wait32(gprs[cpu.PC]);
-			gprs[rd] = cpu.mmu.load32((gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
-		};
+		op = this.thumbCompiler.constructLDR3(rd, immediate);
 		op.writesPC = false;
 	} else if ((instruction & 0xF000) == 0x5000) {
 		// Load and store with relative offset
