@@ -1749,39 +1749,22 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		switch (instruction & 0x0300) {
 		case 0x0000:
 			// ADD(4)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				gprs[rd] += gprs[rm];
-			};
+			op = this.thumbCompiler.constructADD4(rd, rm)
 			op.writesPC = rd == this.PC;
 			break;
 		case 0x0100:
 			// CMP(3)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var aluOut = gprs[rd] - gprs[rm];
-				cpu.cpsrN = aluOut & 0x80000000;
-				cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
-				cpu.cpsrC = (gprs[rd] >>> 0) >= (gprs[rm] >>> 0);
-				cpu.cpsrV = ((gprs[rd] ^ gprs[rm]) & 0x80000000) && ((gprs[rd] ^ aluOut) & 0x80000000);
-			}
+			op = this.thumbCompiler.constructCMP3(rd, rm);
 			op.writesPC = false;
 			break;
 		case 0x0200:
 			// MOV(3)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				gprs[rd] = gprs[rm];
-			};
+			op = this.thumbCompiler.constructMOV3(rd, rm);
 			op.writesPC = rd == this.PC;
 			break;
 		case 0x0300:
 			// BX
-			op = function() {
-				// TODO: implement timings
-				cpu.switchExecMode(gprs[rm] & 0x00000001);
-				gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
-			};
+			op = this.thumbCompiler.constructBX(rd, rm);
 			op.writesPC = true;
 			break;
 		}

@@ -43,6 +43,14 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructADD4 = function(rd, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			gprs[rd] += gprs[rm];
+		};
+	};
+
 	this.constructAND = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -96,6 +104,15 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructBX = function(rd, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			// TODO: implement timings
+			cpu.switchExecMode(gprs[rm] & 0x00000001);
+			gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
+		};
+	};
+
 	this.constructCMN = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -135,6 +152,18 @@ ARMCoreThumb = function (cpu) {
 			cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
 			cpu.cpsrC = (d >>> 0) >= (m >>> 0);
 			cpu.cpsrV = dn != (m & 0x80000000) && dn != an;
+		};
+	};
+
+	this.constructCMP3 = function(rd, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var aluOut = gprs[rd] - gprs[rm];
+			cpu.cpsrN = aluOut & 0x80000000;
+			cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
+			cpu.cpsrC = (gprs[rd] >>> 0) >= (gprs[rm] >>> 0);
+			cpu.cpsrV = ((gprs[rd] ^ gprs[rm]) & 0x80000000) && ((gprs[rd] ^ aluOut) & 0x80000000);
 		};
 	};
 
@@ -223,6 +252,14 @@ ARMCoreThumb = function (cpu) {
 			gprs[rn] = immediate;
 			cpu.cpsrN = immediate & 0x80000000;
 			cpu.cpsrZ = !(immediate & 0xFFFFFFFF);
+		};
+	};
+
+	this.constructMOV3 = function(rd, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			gprs[rd] = gprs[rm];
 		};
 	};
 
