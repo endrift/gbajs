@@ -573,6 +573,28 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 
 	// DMA
+	case this.DMA0SAD_LO:
+	case this.DMA0DAD_LO:
+	case this.DMA1SAD_LO:
+	case this.DMA1DAD_LO:
+	case this.DMA2SAD_LO:
+	case this.DMA2DAD_LO:
+	case this.DMA3SAD_LO:
+	case this.DMA3DAD_LO:
+		this.store32(offset, (this.registers[(offset >> 1) + 1] << 16) | value);
+		return;
+
+	case this.DMA0SAD_HI:
+	case this.DMA0DAD_HI:
+	case this.DMA1SAD_HI:
+	case this.DMA1DAD_HI:
+	case this.DMA2SAD_HI:
+	case this.DMA2DAD_HI:
+	case this.DMA3SAD_HI:
+	case this.DMA3DAD_HI:
+		this.store32(offset - 2, this.registers[(offset >> 1) - 1] | (value << 16));
+		return;
+
 	case this.DMA0CNT_LO:
 		this.cpu.irq.dmaSetWordCount(0, value);
 		break;
