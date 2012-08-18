@@ -755,7 +755,7 @@ GameBoyAdvanceInterruptHandler.prototype.huffman = function(source, dest) {
 	remaining &= 0xFFFFFFFC;
 	// We assume the signature byte (0x20) is correct
 	var tree = [];
-	var treesize = (this.cpu.mmu.load8(source + 4) << 1) + 1;
+	var treesize = (this.cpu.mmu.loadU8(source + 4) << 1) + 1;
 	var block;
 	var sPointer = source + 5 + treesize;
 	var dPointer = dest & 0xFFFFFFFC;
@@ -763,41 +763,8 @@ GameBoyAdvanceInterruptHandler.prototype.huffman = function(source, dest) {
 	for (i = 0; i < treesize; ++i) {
 		tree.push(this.cpu.mmu.loadU8(source + 5 + i));
 	}
-	var stack = [];
 	var node;
-	// Construct tree
-	for (i = 0;;) {
-		node = tree[i];
-		if (typeof(node) === 'number') {
-			// Descending
-			var next = (i - 1 | 1) + ((node & 0x3F) << 1) + 2;
-			node = {
-				l: next,
-				r: next + 1,
-				lTerm: node & 0x80,
-				rTerm: node & 0x40
-			};
-			tree[i] = node;
-			if (!node.lTerm) {
-				// Descend
-				stack.push(i);
-				i = node.l;
-				continue;
-			}
-		}
-		if (!node.rTerm) {
-			// Traverse
-			i = node.r;
-		} else {
-			// Ascend
-			if (stack.length) {
-				i = stack.pop();
-			} else {
-				// Nothing left to ascend from
-				break;
-			}
-		}
-	}
+	var offset = 0;
 	var bitsRemaining;
 	var readBits;
 	var bitsSeen = 0;
@@ -806,11 +773,24 @@ GameBoyAdvanceInterruptHandler.prototype.huffman = function(source, dest) {
 		var bitstream = this.cpu.mmu.load32(sPointer);
 		sPointer += 4;
 		for (bitsRemaining = 32; bitsRemaining > 0; --bitsRemaining, bitstream <<= 1) {
+			if (typeof (node) === 'number') {
+				// Lazily construct tree
+				var next = (offset - 1 | 1) + ((node & 0x3F) << 1) + 2;
+				node = {
+					l: next,
+					r: next + 1,
+					lTerm: node & 0x80,
+					rTerm: node & 0x40
+				};
+				tree[offset] = node;
+			}
+
 			if (bitstream & 0x80000000) {
 				// Go right
 				if (node.rTerm) {
 					readBits = tree[node.r];
 				} else {
+					offset = node.r;
 					node = tree[node.r];
 					continue;
 				}
@@ -819,13 +799,15 @@ GameBoyAdvanceInterruptHandler.prototype.huffman = function(source, dest) {
 				if (node.lTerm) {
 					readBits = tree[node.l];
 				} else {
-					node = tree[node.l];
+					offset = node.l;
+					node = tree[offset];
 					continue;
 				}
 			}
 
 			block |= (readBits & ((1 << bits) - 1)) << bitsSeen;
 			bitsSeen += bits;
+			offset = 0;
 			node = tree[0];
 			if (bitsSeen == 32) {
 				bitsSeen = 0;
