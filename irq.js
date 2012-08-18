@@ -513,7 +513,7 @@ GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
 	}
 
 	if (this.timersEnabled) {
-		timer = this.timers[0];
+		var timer = this.timers[0];
 		test = timer.nextEvent;
 		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
 			this.nextEvent = test;
