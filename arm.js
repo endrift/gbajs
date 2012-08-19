@@ -1,4 +1,17 @@
 ARMCoreArm = function (cpu) {
+	this.constructB = function(immediate, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(gprs[cpu.PC]);
+				return;
+			}
+			gprs[cpu.PC] += immediate;
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
 	this.constructBX = function(rm, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -8,6 +21,20 @@ ARMCoreArm = function (cpu) {
 			}
 			cpu.switchExecMode(gprs[rm] & 0x00000001);
 			gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
+	this.constructBL = function(immediate, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(gprs[cpu.PC]);
+				return;
+			}
+			gprs[cpu.LR] = gprs[cpu.PC] - 4;
+			gprs[cpu.PC] += immediate;
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			cpu.mmu.wait32(gprs[cpu.PC]);
 		};

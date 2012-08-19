@@ -1552,18 +1552,11 @@ ARMCore.prototype.compileArm = function(instruction) {
 			}
 			immediate <<= 2;
 			var link = instruction & 0x01000000;
-			op = function() {
-				if (condOp && !condOp()) {
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					return;
-				}
-				if (link) {
-					gprs[cpu.LR] = gprs[cpu.PC] - 4;
-				}
-				gprs[cpu.PC] += immediate;
-				cpu.mmu.waitSeq32(gprs[cpu.PC]);
-				cpu.mmu.wait32(gprs[cpu.PC]);
-			};
+			if (link) {
+				op = this.armCompiler.constructBL(immediate, condOp);
+			} else {
+				op = this.armCompiler.constructB(immediate, condOp);
+			}
 			op.writesPC = true;
 			break;
 		case 0x0C000000:
