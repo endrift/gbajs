@@ -64,6 +64,30 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructADD5 = function(rd, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			gprs[rd] = (gprs[cpu.PC] & 0xFFFFFFFC) + immediate;
+		};
+	};
+
+	this.constructADD6 = function(rd, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			gprs[rd] = gprs[cpu.SP] + immediate;
+		};
+	};
+
+	this.constructADD7 = function(immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			gprs[cpu.SP] += immediate;
+		};
+	};
+
 	this.constructAND = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {

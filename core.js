@@ -1967,16 +1967,10 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			var immediate = (instruction & 0x00FF) << 2;
 			if (instruction & 0x0800) {
 				// ADD(6)
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					gprs[rd] = gprs[cpu.SP] + immediate;
-				};
+				op = this.thumbCompiler.constructADD6(rd, immediate);
 			} else {
 				// ADD(5)
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					gprs[rd] = (gprs[cpu.PC] & 0xFFFFFFFC) + immediate;
-				};
+				op = this.thumbCompiler.constructADD5(rd, immediate);
 			}
 			op.writesPC = false;
 			break;
@@ -1990,10 +1984,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				if (b) {
 					immediate = -immediate;
 				}
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					gprs[cpu.SP] += immediate;
-				};
+				op = this.thumbCompiler.constructADD7(immediate)
 				op.writesPC = false;
 			}
 			break;
