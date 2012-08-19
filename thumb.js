@@ -221,6 +221,16 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructLDR2 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait32(gprs[rn] + gprs[rm]);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.load32(gprs[rn] + gprs[rm]);
+		}
+	};
+
 	this.constructLDR3 = function(rd, immediate) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -238,6 +248,46 @@ ARMCoreThumb = function (cpu) {
 			cpu.mmu.wait(n);
 			++cpu.cycles;
 			gprs[rd] = cpu.mmu.loadU8(n);
+		};
+	};
+
+	this.constructLDRB2 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[rn] + gprs[rm]);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.loadU8(gprs[rn] + gprs[rm]);
+		};
+	};
+
+	this.constructLDRH2 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[rn] + gprs[rm]);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.loadU16(gprs[rn] + gprs[rm]);
+		};
+	};
+
+	this.constructLDRSB = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[rn] + gprs[rm]);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.load8(gprs[rn] + gprs[rm]);
+		};
+	};
+
+	this.constructLDRSH = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[rn] + gprs[rm]);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.load16(gprs[rn] + gprs[rm]);
 		};
 	};
 
@@ -442,6 +492,15 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructSTR2 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.store32(gprs[rn] + gprs[rm], gprs[rd]);
+			cpu.mmu.wait(gprs[cpu.PC]);
+			cpu.mmu.wait32(gprs[rn] + gprs[rm]);
+		};
+	};
+
 	this.constructSTRB1 = function(rd, rn, immediate) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -450,6 +509,24 @@ ARMCoreThumb = function (cpu) {
 			cpu.mmu.wait(gprs[cpu.PC]);
 			cpu.mmu.wait(n);
 		};
+	};
+
+	this.constructSTRB2 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.store8(gprs[rn] + gprs[rm], gprs[rd]);
+			cpu.mmu.wait(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[rn] + gprs[rm]);
+		}
+	};
+
+	this.constructSTRH2 = function(rd, rn, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.store16(gprs[rn] + gprs[rm], gprs[rd]);
+			cpu.mmu.wait(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[rn] + gprs[rm]);
+		}
 	};
 
 	this.constructSUB1 = function(rd, rn, immediate) {

@@ -1859,72 +1859,35 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		switch (opcode) {
 		case 0x0000:
 			// STR(2)
-			op = function() {
-				cpu.mmu.store32(gprs[rn] + gprs[rm], gprs[rd]);
-				cpu.mmu.wait(gprs[cpu.PC]);
-				cpu.mmu.wait32(gprs[rn] + gprs[rm]);
-			}
+			op = this.thumbCompiler.constructSTR2(rd, rn, rm);
 			break;
 		case 0x0200:
 			// STRH(2)
-			op = function() {
-				cpu.mmu.store16(gprs[rn] + gprs[rm], gprs[rd]);
-				cpu.mmu.wait(gprs[cpu.PC]);
-				cpu.mmu.wait(gprs[rn] + gprs[rm]);
-			}
+			op = this.thumbCompiler.constructSTRH2(rd, rn, rm);
 			break;
 		case 0x0400:
 			// STRB(2)
-			op = function() {
-				cpu.mmu.store8(gprs[rn] + gprs[rm], gprs[rd]);
-				cpu.mmu.wait(gprs[cpu.PC]);
-				cpu.mmu.wait(gprs[rn] + gprs[rm]);
-			}
+			op = this.thumbCompiler.constructSTRB2(rd, rn, rm);
 			break;
 		case 0x0600:
 			// LDRSB
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				cpu.mmu.wait(gprs[rn] + gprs[rm]);
-				++cpu.cycles;
-				gprs[rd] = cpu.mmu.load8(gprs[rn] + gprs[rm]);
-			}
+			op = this.thumbCompiler.constructLDRSB(rd, rn, rm);
 			break;
 		case 0x0800:
 			// LDR(2)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				cpu.mmu.wait32(gprs[rn] + gprs[rm]);
-				++cpu.cycles;
-				gprs[rd] = cpu.mmu.load32(gprs[rn] + gprs[rm]);
-			}
+			op = this.thumbCompiler.constructLDR2(rd, rn, rm);
 			break;
 		case 0x0A00:
 			// LDRH(2)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				cpu.mmu.wait(gprs[rn] + gprs[rm]);
-				++cpu.cycles;
-				gprs[rd] = cpu.mmu.loadU16(gprs[rn] + gprs[rm]);
-			}
+			op = this.thumbCompiler.constructLDRH2(rd, rn, rm);
 			break;
 		case 0x0C00:
 			// LDRB(2)
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				cpu.mmu.wait(gprs[rn] + gprs[rm]);
-				++cpu.cycles;
-				gprs[rd] = cpu.mmu.loadU8(gprs[rn] + gprs[rm]);
-			}
+			op = this.thumbCompiler.constructLDRB2(rd, rn, rm);
 			break;
 		case 0x0E00:
 			// LDRSH
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				cpu.mmu.wait(gprs[rn] + gprs[rm]);
-				++cpu.cycles;
-				gprs[rd] = cpu.mmu.load16(gprs[rn] + gprs[rm]);
-			}
+			op = this.thumbCompiler.constructLDRSH(rd, rn, rm);
 			break;
 		}
 	} else if ((instruction & 0xE000) == 0x6000) {
