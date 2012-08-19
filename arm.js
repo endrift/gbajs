@@ -34,6 +34,17 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.constructMRS = function(rd, r, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+					if (r) {
+				gprs[rd] = cpu.spsr;
+			} else {
+				gprs[rd] = cpu.packCPSR();
+			}
+		};
+	};
+
 	this.constructMSR = function(rm, r, instruction, immediate, condOp) {
 		var gprs = cpu.gprs;
 		var c = instruction & 0x00010000;

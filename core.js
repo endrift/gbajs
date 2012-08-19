@@ -454,13 +454,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 			} else if ((instruction & 0x00BF0000) == 0x000F0000) {
 				// MRS
 				var rd = (instruction & 0x0000F000) >> 12;
-				op = function() {
-					if (r) {
-						gprs[rd] = cpu.spsr;
-					} else {
-						gprs[rd] = cpu.packCPSR();
-					}
-				};
+				op = this.armCompiler.constructMRS(rd, r, condOp);
 				op.writesPC = rd == this.PC;
 			}
 		} else {
