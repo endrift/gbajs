@@ -1994,42 +1994,10 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			var rs = instruction & 0x00FF;
 			if (instruction & 0x0800) {
 				// LDMIA
-				op = function() {
-					
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					var address = gprs[rn];
-					var m, i;
-					for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
-						if (rs & m) {
-							cpu.mmu.waitSeq32(address);
-							gprs[i] = cpu.mmu.load32(address);
-							address += 4;
-						}
-					}
-					gprs[rn] = address;
-				};
+				op = this.thumbCompiler.constructLDMIA(rn, rs);
 			} else {
 				// STMIA
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					var address = gprs[rn];
-					var m, i;
-					for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
-						if (rs & m) {
-							cpu.mmu.wait32(address);
-							cpu.mmu.store32(address, gprs[i]);
-							address += 4;
-						}
-					}
-					for (m <<= 1, ++i; i < 8; m <<= 1, ++i) {
-						if (rs & m) {
-							cpu.mmu.waitSeq32(address);
-							cpu.mmu.store32(address, gprs[i]);
-							address -= 4;
-						}
-					}
-					gprs[rn] = address;
-				};
+				op = this.thumbCompiler.constructSTMIA(rn, rs);
 			}
 			op.writesPC = false;
 			break;
