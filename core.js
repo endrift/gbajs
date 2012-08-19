@@ -1924,54 +1924,11 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		var rs = instruction & 0x00FF;
 		if (instruction & 0x0800) {
 			// POP
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var address = gprs[cpu.SP];
-				var m, i;
-				for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
-					if (rs & m) {
-						cpu.mmu.waitSeq32(address);
-						gprs[i] = cpu.mmu.load32(address);
-						address += 4;
-					}
-				}
-				if (r) {
-					cpu.mmu.waitSeq32(address);
-					gprs[cpu.PC] = cpu.mmu.load32(address) & 0xFFFFFFFE;
-					address += 4;
-				}
-				gprs[cpu.SP] = address;
-				++cpu.cycles;
-			};
+			op = this.thumbCompiler.constructPOP(rs, r);
 			op.writesPC = r;
 		} else {
 			// PUSH
-			op = function() {
-				cpu.mmu.waitSeq(gprs[cpu.PC]);
-				var address = gprs[cpu.SP] - 4;
-				if (r) {
-					cpu.mmu.waitSeq32(address);
-					cpu.mmu.store32(address, gprs[cpu.LR]);
-					address -= 4;
-				}
-				var m, i;
-				for (m = 0x80, i = 7; m; m >>= 1, --i) {
-					if (rs & m) {
-						cpu.mmu.wait32(address);
-						cpu.mmu.store32(address, gprs[i]);
-						address -= 4;
-						break;
-					}
-				}
-				for (m >>= 1, --i; m; m >>= 1, --i) {
-					if (rs & m) {
-						cpu.mmu.waitSeq32(address);
-						cpu.mmu.store32(address, gprs[i]);
-						address -= 4;
-					}
-				}
-				gprs[cpu.SP] = address + 4;
-			};
+			op = this.thumbCompiler.constructPUSH(rs, r);
 			op.writesPC = false;
 		}
 	} else if (instruction & 0x8000) {
