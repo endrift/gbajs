@@ -435,16 +435,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 	if ((instruction & 0x0FFFFFF0) == 0x012FFF10) {
 		// BX
 		var rm = instruction & 0xF;
-		op = function() {
-			if (condOp && !condOp()) {
-				cpu.mmu.waitSeq32(gprs[cpu.PC]);
-				return;
-			}
-			cpu.switchExecMode(gprs[rm] & 0x00000001);
-			gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
-			cpu.mmu.waitSeq32(gprs[cpu.PC]);
-			cpu.mmu.wait32(gprs[cpu.PC]);
-		};
+		op = this.armCompiler.constructBX(rm, condOp);
 		op.writesPC = true;
 	} else if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
 		var opcode = instruction & 0x01E00000;

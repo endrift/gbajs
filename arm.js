@@ -1,4 +1,18 @@
 ARMCoreArm = function (cpu) {
+	this.constructBX = function(rm, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(gprs[cpu.PC]);
+				return;
+			}
+			cpu.switchExecMode(gprs[rm] & 0x00000001);
+			gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
 	this.constructLDM = function(rs, address, condOp) {
 		var gprs = cpu.gprs;
 		var mmu = cpu.mmu;
