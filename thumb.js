@@ -151,6 +151,14 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructB2 = function(immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			gprs[cpu.PC] += immediate;
+		};
+	};
+
 	this.constructBIC = function(rd, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -159,6 +167,24 @@ ARMCoreThumb = function (cpu) {
 			cpu.cpsrN = gprs[rd] & 0x80000000;
 			cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 		};
+	};
+
+	this.constructBL1 = function(immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			gprs[cpu.LR] = gprs[cpu.PC] + immediate;
+		}
+	};
+
+	this.constructBL2 = function(immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			var pc = gprs[cpu.PC];
+			gprs[cpu.PC] = gprs[cpu.LR] + (immediate << 1);
+			gprs[cpu.LR] = pc - 1;
+		}
 	};
 
 	this.constructBX = function(rd, rm) {
@@ -725,6 +751,17 @@ ARMCoreThumb = function (cpu) {
 						(gprs[rn] & 0x80000000) != (d & 0x80000000);
 			gprs[rd] = d;
 		};
+	};
+
+	this.constructSWI = function(immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.irq.swi(immediate);
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			// Wait on BIOS
+			cpu.mmu.wait32(0);
+			cpu.mmu.waitSeq32(0);
+		}
 	};
 
 	this.constructTST = function(rd, rm) {

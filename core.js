@@ -2007,14 +2007,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			var immediate = (instruction & 0x00FF);
 			if (cond == 0xF) {
 				// SWI
-				op = function() {
-					cpu.irq.swi(immediate);
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					// Wait on BIOS
-					// FIXME: Is this correct?
-					cpu.mmu.wait32(0);
-					cpu.mmu.waitSeq32(0);
-				}
+				op = this.thumbCompiler.constructSWI(immediate);
 				op.writesPC = false;
 			} else {
 				// B(1)
@@ -2039,10 +2032,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					immediate |= 0xFFFFF800;
 				}
 				immediate <<= 1;
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					gprs[cpu.PC] += immediate;
-				};
+				op = this.thumbCompiler.constructB2(immediate);
 				op.writesPC = true;
 				break;
 			case 0x0800:
@@ -2060,20 +2050,12 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					immediate |= 0xFFFFFC00;
 				}
 				immediate <<= 12;
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					gprs[cpu.LR] = gprs[cpu.PC] + immediate;
-				}
+				op = this.thumbCompiler.constructBL1(immediate);
 				op.writesPC = false;
 				break;
 			case 0x1800:
 				// BL(2)
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					var pc = gprs[cpu.PC];
-					gprs[cpu.PC] = gprs[cpu.LR] + (immediate << 1);
-					gprs[cpu.LR] = pc - 1;
-				}
+				op = this.thumbCompiler.constructBL2(immediate);
 				op.writesPC = true;
 				break;
 			}
