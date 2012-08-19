@@ -261,6 +261,17 @@ ARMCoreThumb = function (cpu) {
 		};
 	};
 
+	this.constructLDRH1 = function(rd, rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			var n = gprs[rn] + immediate;
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(n);
+			gprs[rd] = cpu.mmu.loadU16(n);
+			++cpu.cycles;
+		};
+	};
+
 	this.constructLDRH2 = function(rd, rn, rm) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -571,6 +582,16 @@ ARMCoreThumb = function (cpu) {
 			cpu.mmu.wait(gprs[cpu.PC]);
 			cpu.mmu.wait(gprs[rn] + gprs[rm]);
 		}
+	};
+
+	this.constructSTRH1 = function(rd, rn, immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			var n = gprs[rn] + immediate;
+			cpu.mmu.store16(n, gprs[rd]);
+			cpu.mmu.wait(gprs[cpu.PC]);
+			cpu.mmu.wait(n);
+		};
 	};
 
 	this.constructSTRH2 = function(rd, rn, rm) {
