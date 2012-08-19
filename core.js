@@ -1954,19 +1954,10 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			var load = instruction & 0x0800;
 			if (load) {
 				// LDR(4)
-				op = function() {
-					cpu.mmu.waitSeq(gprs[cpu.PC]);
-					cpu.mmu.wait32(gprs[cpu.SP] + immediate);
-					gprs[rd] = cpu.mmu.load32(gprs[cpu.SP] + immediate);
-					++cpu.cycles;
-				}
+				op = this.thumbCompiler.constructLDR4(rd, immediate);
 			} else {
 				// STR(3)
-				op = function() {
-					cpu.mmu.store32(gprs[cpu.SP] + immediate, gprs[rd]);
-					cpu.mmu.wait(gprs[cpu.PC]);
-					cpu.mmu.wait32(gprs[cpu.SP] + immediate);
-				}
+				op = this.thumbCompiler.constructSTR3(rd, immediate);
 			}
 			op.writesPC = false;
 			break;
