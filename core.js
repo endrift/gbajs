@@ -39,6 +39,7 @@ function ARMCore() {
 
 	this.armCompiler = new ARMCoreArm(this);
 	this.thumbCompiler = new ARMCoreThumb(this);
+	this.generateConds();
 };
 
 ARMCore.prototype.resetCPU = function(startOffset) {
@@ -288,84 +289,69 @@ ARMCore.prototype.badOp = function(instruction) {
 	return func;
 };
 
-ARMCore.prototype.generateCond = function(cond) {
+ARMCore.prototype.generateConds = function() {
 	var cpu = this;
-	switch (cond) {
-	case 0x0:
+	this.conds = [
 		// EQ
-		return function() {
+		function() {
 			return cpu.conditionPassed = cpu.cpsrZ;
-		};
-	case 0x1:
+		},
 		// NE
-		return function() {
+		function() {
 			return cpu.conditionPassed = !cpu.cpsrZ;
-		};
-	case 0x2:
+		},
 		// CS
-		return function() {
+		function() {
 			return cpu.conditionPassed = cpu.cpsrC;
-		};
-	case 0x3:
+		},
 		// CC
-		return function() {
+		function() {
 			return cpu.conditionPassed = !cpu.cpsrC;
-		};
-	case 0x4:
+		},
 		// MI
-		return function() {
+		function() {
 			return cpu.conditionPassed = cpu.cpsrN;
-		};
-	case 0x5:
+		},
 		// PL
-		return function() {
+		function() {
 			return cpu.conditionPassed = !cpu.cpsrN;
-		};
-	case 0x6:
+		},
 		// VS
-		return function() {
+		function() {
 			return cpu.conditionPassed = cpu.cpsrV;
-		};
-	case 0x7:
+		},
 		// VC
-		return function() {
+		function() {
 			return cpu.conditionPassed = !cpu.cpsrV;
-		};
-	case 0x8:
+		},
 		// HI
-		return function () {
+		function () {
 			return cpu.conditionPassed = cpu.cpsrC && !cpu.cpsrZ;
-		};
-	case 0x9:
+		},
 		// LS
-		return function () {
+		function () {
 			return cpu.conditionPassed = !cpu.cpsrC || cpu.cpsrZ;
-		};
-	case 0xA:
+		},
 		// GE
-		return function () {
+		function () {
 			return cpu.conditionPassed = !cpu.cpsrN == !cpu.cpsrV;
-		};
-	case 0xB:
+		},
 		// LT
-		return function () {
+		function () {
 			return cpu.conditionPassed = !cpu.cpsrN != !cpu.cpsrV;
-		};
-	case 0xC:
+		},
 		// GT
-		return function () {
+		function () {
 			return cpu.conditionPassed = !cpu.cpsrZ && !cpu.cpsrN == !cpu.cpsrV;
-		};
-	case 0xD:
+		},
 		// LE
-		return function () {
+		function () {
 			return cpu.conditionPassed = cpu.cpsrZ || !cpu.cpsrN != !cpu.cpsrV;
-		};
-	case 0xE:
+		},
 		// AL
-	default:
-		return null;
-	}
+		null,
+		null
+	]
 }
 
 ARMCore.prototype.barrelShiftImmediate = function(shiftType, immediate, rm) {
@@ -440,13 +426,12 @@ ARMCore.prototype.barrelShiftImmediate = function(shiftType, immediate, rm) {
 }
 
 ARMCore.prototype.compileArm = function(instruction) {
-	var cond = (instruction & 0xF0000000) >>> 28;
 	var op = this.badOp(instruction);
 	var i = instruction & 0x0E000000;
 	var cpu = this;
 	var gprs = this.gprs;
 
-	var condOp = this.generateCond(cond);
+	var condOp = this.conds[(instruction & 0xF0000000) >>> 28];
 	if ((instruction & 0x0FFFFFF0) == 0x012FFF10) {
 		// BX
 		var rm = instruction & 0xF;
@@ -2015,7 +2000,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 					immediate |= 0xFFFFFF00;
 				}
 				immediate <<= 1;
-				var condOp = this.generateCond(cond);
+				var condOp = this.conds[cond];
 				op = this.thumbCompiler.constructB1(immediate, condOp);
 				op.writesPC = true;
 			}
