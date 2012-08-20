@@ -159,6 +159,47 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.constructSMLAL = function(rd, rn, rs, rm, s, condOp) {
+		var SHIFT_32 = 1/0x100000000;
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			cpu.cycles += 6; // TODO: better timing
+			var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
+			var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
+			var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
+			gprs[rn] += mid & 0xFFFFFFFF;
+			gprs[rd] += Math.floor(hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32);
+			if (s) {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
+			}
+		};
+	};
+
+	this.constructSMULL = function(rd, rn, rs, rm, s, condOp) {
+		var SHIFT_32 = 1/0x100000000;
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			cpu.cycles += 5; // TODO: better timing
+			var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
+			var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
+			gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
+			gprs[rd] = Math.floor(hi * SHIFT_32 + lo * SHIFT_32);
+			if (s) {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
+			}
+		};
+	};
+
 	this.constructSTM = function(rs, address, condOp) {
 		var gprs = cpu.gprs;
 		var mmu = cpu.mmu;
@@ -185,6 +226,47 @@ ARMCoreArm = function (cpu) {
 				}
 			}
 			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
+	this.constructUMLAL = function(rd, rn, rs, rm, s, condOp) {
+		var SHIFT_32 = 1/0x100000000;
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			cpu.cycles += 6; // TODO: better timing
+			var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
+			var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
+			var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
+			gprs[rn] += mid & 0xFFFFFFFF;
+			gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) >>> 0;
+			if (s) {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
+			}
+		};
+	};
+
+	this.constructUMULL = function(rd, rn, rs, rm, s, condOp) {
+		var SHIFT_32 = 1/0x100000000;
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			cpu.cycles += 5; // TODO: better timing
+			var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
+			var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
+			gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
+			gprs[rd] = (hi * SHIFT_32 + lo * SHIFT_32) >>> 0;
+			if (s) {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
+			}
 		};
 	};
 };

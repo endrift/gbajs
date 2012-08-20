@@ -1006,7 +1006,6 @@ ARMCore.prototype.compileArm = function(instruction) {
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
 		// Single data swap
 	} else {
-		var SHIFT_32 = 1/0x100000000;
 		switch (i) {
 		case 0x00000000:
 			if ((instruction & 0x010000F0) == 0x00000090) {
@@ -1027,77 +1026,19 @@ ARMCore.prototype.compileArm = function(instruction) {
 					break;
 				case 0x00800000:
 					// UMULL
-					op = function() {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						if (condOp && !condOp()) {
-							return;
-						}
-						cpu.cycles += 5; // TODO: better timing
-						var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
-						var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
-						gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
-						gprs[rd] = (hi * SHIFT_32 + lo * SHIFT_32) >>> 0;
-						if (s) {
-							cpu.cpsrN = gprs[rd] & 0x80000000;
-							cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
-						}
-					};
+					op = this.armCompiler.constructUMULL(rd, rn, rs, rm, s, condOp);
 					break;
 				case 0x00A00000:
 					// UMLAL
-					op = function() {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						if (condOp && !condOp()) {
-							return;
-						}
-						cpu.cycles += 6; // TODO: better timing
-						var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
-						var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
-						var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
-						gprs[rn] += mid & 0xFFFFFFFF;
-						gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) >>> 0;
-						if (s) {
-							cpu.cpsrN = gprs[rd] & 0x80000000;
-							cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
-						}
-					};
+					op = this.armCompiler.constructUMLAL(rd, rn, rs, rm, s, condOp);
 					break;
 				case 0x00C00000:
 					// SMULL
-					op = function() {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						if (condOp && !condOp()) {
-							return;
-						}
-						cpu.cycles += 5; // TODO: better timing
-						var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
-						var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
-						gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
-						gprs[rd] = Math.floor(hi * SHIFT_32 + lo * SHIFT_32);
-						if (s) {
-							cpu.cpsrN = gprs[rd] & 0x80000000;
-							cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
-						}
-					};
+					op = this.armCompiler.constructSMULL(rd, rn, rs, rm, s, condOp);
 					break;
 				case 0x00E00000:
 					// SMLAL
-					op = function() {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						if (condOp && !condOp()) {
-							return;
-						}
-						cpu.cycles += 6; // TODO: better timing
-						var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
-						var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
-						var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
-						gprs[rn] += mid & 0xFFFFFFFF;
-						gprs[rd] += Math.floor(hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32);
-						if (s) {
-							cpu.cpsrN = gprs[rd] & 0x80000000;
-							cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
-						}
-					};
+					op = this.armCompiler.constructSMLAL(rd, rn, rs, rm, s, condOp);
 					break;
 				}
 				op.touchesPC = rd == this.PC;
