@@ -471,96 +471,30 @@ ARMCore.prototype.compileArm = function(instruction) {
 			if (instruction & 0x02000000) {
 				var immediate = instruction & 0x000000FF;
 				var rotate = (instruction & 0x00000F00) >> 7;
-				shiftOp = function() {
-					if (rotate == 0) {
-						cpu.shifterOperand = immediate;
-						cpu.shifterCarryOut = cpu.cpsrC;
-					} else {
-						cpu.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
-						cpu.shifterCarryOut = cpu.shifterOperand & 0x80000000;
-					}
-				};
+				if (!rotate) {
+					shiftOp = this.armCompiler.constructAddressingMode1Immediate(immediate);
+				} else {
+					shiftOp = this.armCompiler.constructAddressingMode1ImmediateRotate(immediate, rotate);
+				}
 			} else if (instruction & 0x00000010) {
 				var rs = (instruction & 0x00000F00) >> 8;
 				shiftsRs = true;
 				switch (shiftType) {
 				case 0x00000000:
 					// LSL
-					shiftOp = function() {
-						++cpu.cycles;
-						var shift = gprs[rs] & 0xFF;
-						if (shift == 0) {
-							cpu.shifterOperand = gprs[rm];
-							cpu.shifterCarryOut = cpu.cpsrC;
-						} else if (shift < 32) {
-							cpu.shifterOperand = gprs[rm] << shift;
-							cpu.shifterCarryOut = gprs[rm] & (1 << (32 - shift));
-						} else if (shift == 32) {
-							cpu.shifterOperand = 0;
-							cpu.shifterCarryOut = gprs[rm] & 1;
-						} else {
-							cpu.shifterOperand = 0;
-							cpu.shifterCarryOut = 0;
-						}
-					};
+					shiftOp = this.armCompiler.constructAddressingMode1LSL(rs, rm);
 					break;
 				case 0x00000020:
 					// LSR
-					shiftOp = function() {
-						++cpu.cycles;
-						var shift = gprs[rs] & 0xFF;
-						if (shift == 0) {
-							cpu.shifterOperand = gprs[rm];
-							cpu.shifterCarryOut = cpu.cpsrC;
-						} else if (shift < 32) {
-							cpu.shifterOperand = gprs[rm] >>> shift;
-							cpu.shifterCarryOut = gprs[rm] & (1 << (shift - 1));
-						} else if (shift == 32) {
-							cpu.shifterOperand = 0;
-							cpu.shifterCarryOut = gprs[rm] & 0x80000000;
-						} else {
-							cpu.shifterOperand = 0;
-							cpu.shifterCarryOut = 0;
-						}
-					};
+					shiftOp = this.armCompiler.constructAddressingMode1LSR(rs, rm);
 					break;
 				case 0x00000040:
 					// ASR
-					shiftOp = function() {
-						++cpu.cycles;
-						var shift = gprs[rs] & 0xFF;
-						if (shift == 0) {
-							cpu.shifterOperand = gprs[rm];
-							cpu.shifterCarryOut = cpu.cpsrC;
-						} else if (shift < 32) {
-							cpu.shifterOperand = gprs[rm] >> shift;
-							cpu.shifterCarryOut = gprs[rm] & (1 << (shift - 1));
-						} else if (gprs[rm] & 0x80000000) {
-							cpu.shifterOperand = 0xFFFFFFFF;
-							cpu.shifterCarryOut = 0x80000000;
-						} else {
-							cpu.shifterOperand = 0;
-							cpu.shifterCarryOut = 0;
-						}
-					};
+					shiftOp = this.armCompiler.constructAddressingMode1ASR(rs, rm);
 					break;
 				case 0x00000060:
 					// ROR
-					shiftOp = function() {
-						++cpu.cycles;
-						var shift = gprs[rs] & 0xFF;
-						var rotate = shift & 0x1F;
-						if (shift == 0) {
-							cpu.shifterOperand = gprs[rm];
-							cpu.shifterCarryOut = cpu.cpsrC;
-						} else if (rotate) {
-							cpu.shifterOperand = (gprs[rm] >>> rotate) | (gprs[rm] << (32 - rotate));
-							cpu.shifterCarryOut = gprs[rm] & (1 << (rotate - 1));
-						} else {
-							cpu.shifterOperand = gprs[rm];
-							cpu.shifterCarryOut = gprs[rm] & 0x80000000;
-						}
-					};
+					shiftOp = this.armCompiler.constructAddressingMode1ROR(rs, rm);
 					break;
 				}
 			} else {

@@ -1,4 +1,100 @@
 ARMCoreArm = function (cpu) {
+	this.constructAddressingMode1ASR = function(rs, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			++cpu.cycles;
+			var shift = gprs[rs] & 0xFF;
+			if (shift == 0) {
+				cpu.shifterOperand = gprs[rm];
+				cpu.shifterCarryOut = cpu.cpsrC;
+			} else if (shift < 32) {
+				cpu.shifterOperand = gprs[rm] >> shift;
+				cpu.shifterCarryOut = gprs[rm] & (1 << (shift - 1));
+			} else if (gprs[rm] & 0x80000000) {
+				cpu.shifterOperand = 0xFFFFFFFF;
+				cpu.shifterCarryOut = 0x80000000;
+			} else {
+				cpu.shifterOperand = 0;
+				cpu.shifterCarryOut = 0;
+			}
+		};
+	};
+
+	this.constructAddressingMode1Immediate = function(immediate) {
+		return function() {
+			cpu.shifterOperand = immediate;
+			cpu.shifterCarryOut = cpu.cpsrC;
+		};
+	};
+
+	this.constructAddressingMode1ImmediateRotate = function(immediate, rotate) {
+		return function() {
+			cpu.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
+			cpu.shifterCarryOut = cpu.shifterOperand & 0x80000000;
+		}
+	};
+
+	this.constructAddressingMode1LSL = function(rs, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			++cpu.cycles;
+			var shift = gprs[rs] & 0xFF;
+			if (shift == 0) {
+				cpu.shifterOperand = gprs[rm];
+				cpu.shifterCarryOut = cpu.cpsrC;
+			} else if (shift < 32) {
+				cpu.shifterOperand = gprs[rm] << shift;
+				cpu.shifterCarryOut = gprs[rm] & (1 << (32 - shift));
+			} else if (shift == 32) {
+				cpu.shifterOperand = 0;
+				cpu.shifterCarryOut = gprs[rm] & 1;
+			} else {
+				cpu.shifterOperand = 0;
+				cpu.shifterCarryOut = 0;
+			}
+		};
+	};
+
+	this.constructAddressingMode1LSR = function(rs, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			++cpu.cycles;
+			var shift = gprs[rs] & 0xFF;
+			if (shift == 0) {
+				cpu.shifterOperand = gprs[rm];
+				cpu.shifterCarryOut = cpu.cpsrC;
+			} else if (shift < 32) {
+				cpu.shifterOperand = gprs[rm] >>> shift;
+				cpu.shifterCarryOut = gprs[rm] & (1 << (shift - 1));
+			} else if (shift == 32) {
+				cpu.shifterOperand = 0;
+				cpu.shifterCarryOut = gprs[rm] & 0x80000000;
+			} else {
+				cpu.shifterOperand = 0;
+				cpu.shifterCarryOut = 0;
+			}
+		};
+	};
+
+	this.constructAddressingMode1ROR = function(rs, rm) {
+		var gprs = cpu.gprs;
+		return function() {
+			++cpu.cycles;
+			var shift = gprs[rs] & 0xFF;
+			var rotate = shift & 0x1F;
+			if (shift == 0) {
+				cpu.shifterOperand = gprs[rm];
+				cpu.shifterCarryOut = cpu.cpsrC;
+			} else if (rotate) {
+				cpu.shifterOperand = (gprs[rm] >>> rotate) | (gprs[rm] << (32 - rotate));
+				cpu.shifterCarryOut = gprs[rm] & (1 << (rotate - 1));
+			} else {
+				cpu.shifterOperand = gprs[rm];
+				cpu.shifterCarryOut = gprs[rm] & 0x80000000;
+			}
+		};
+	};
+
 	this.constructB = function(immediate, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
