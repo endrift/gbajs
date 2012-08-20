@@ -95,6 +95,109 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.constructADC = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
+			gprs[rd] = (gprs[rn] >>> 0) + shifterOperand;
+		};
+	};
+
+	this.constructADCS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var shifterOperand = (cpu.shifterOperand >>> 0) + !!cpu.cpsrC;
+			var d = (gprs[rn] >>> 0) + shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
+				cpu.cpsrC = d > 0xFFFFFFFF;
+				cpu.cpsrV = (gprs[rn] & 0x80000000) == (shifterOperand & 0x80000000) &&
+							(gprs[rn] & 0x80000000) != (d & 0x80000000) &&
+							(shifterOperand & 0x80000000) != (d & 0x80000000);
+			}
+			gprs[rd] = d;
+		};
+	};
+
+	this.constructADD = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = (gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
+		};
+	};
+
+	this.constructADDS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var d = (gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
+				cpu.cpsrC = d > 0xFFFFFFFF;
+				cpu.cpsrV = (gprs[rn] & 0x80000000) == (cpu.shifterOperand & 0x80000000) &&
+							(gprs[rn] & 0x80000000) != (d & 0x80000000) &&
+							(cpu.shifterOperand & 0x80000000) != (d & 0x80000000);
+			}
+			gprs[rd] = d;
+		};
+	};
+
+	this.constructAND = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] & cpu.shifterOperand;
+		};
+	};
+
+	this.constructANDS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] & cpu.shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+				cpu.cpsrC = cpu.shifterCarryOut;
+			}
+		};
+	};
+
 	this.constructB = function(immediate, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -105,6 +208,37 @@ ARMCoreArm = function (cpu) {
 			gprs[cpu.PC] += immediate;
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
+	this.constructBIC = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] & ~cpu.shifterOperand;
+		};
+	};
+
+	this.constructBICS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] & ~cpu.shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+				cpu.cpsrC = cpu.shifterCarryOut;
+			}
 		};
 	};
 
@@ -133,6 +267,72 @@ ARMCoreArm = function (cpu) {
 			gprs[cpu.PC] += immediate;
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
+	this.constructCMN = function(rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var aluOut = (gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
+			cpu.cpsrN = aluOut & 0x80000000;
+			cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
+			cpu.cpsrC = aluOut > 0xFFFFFFFF;
+			cpu.cpsrV = (gprs[rn] & 0x80000000) == (cpu.shifterOperand & 0x80000000) &&
+						(gprs[rn] & 0x80000000) != (aluOut & 0x80000000) &&
+						(cpu.shifterOperand & 0x80000000) != (aluOut & 0x80000000);
+		};
+	};
+
+	this.constructCMP = function(rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var aluOut = gprs[rn] - cpu.shifterOperand;
+			cpu.cpsrN = aluOut & 0x80000000;
+			cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
+			cpu.cpsrC = (gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
+			cpu.cpsrV = (gprs[rn] & 0x80000000) != (cpu.shifterOperand & 0x80000000) &&
+						(gprs[rn] & 0x80000000) != (aluOut & 0x80000000);
+		};
+	};
+
+	this.constructEOR = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] ^ cpu.shifterOperand;
+		};
+	};
+
+	this.constructEORS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] ^ cpu.shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+				cpu.cpsrC = cpu.shifterCarryOut;
+			}
 		};
 	};
 
@@ -176,6 +376,37 @@ ARMCoreArm = function (cpu) {
 			if (s) {
 				cpu.cpsrN = gprs[rd] & 0x80000000;
 				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+			}
+		};
+	};
+
+	this.constructMOV = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = cpu.shifterOperand;
+		};
+	};
+
+	this.constructMOVS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = cpu.shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+				cpu.cpsrC = cpu.shifterCarryOut;
 			}
 		};
 	};
@@ -255,6 +486,174 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.constructMVN = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = ~cpu.shifterOperand;
+		};
+	};
+
+	this.constructMVNS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = ~cpu.shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+				cpu.cpsrC = cpu.shifterCarryOut;
+			}
+		};
+	};
+
+	this.constructORR = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] | cpu.shifterOperand;
+		}
+	};
+
+	this.constructORRS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] | cpu.shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+				cpu.cpsrC = cpu.shifterCarryOut;
+			}
+		};
+	};
+
+	this.constructRSB = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = cpu.shifterOperand - gprs[rn];
+		};
+	};
+
+	this.constructRSBS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var d = cpu.shifterOperand - gprs[rn];
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
+				cpu.cpsrC = (cpu.shifterOperand >>> 0) >= (gprs[rn] >>> 0);
+				cpu.cpsrV = (cpu.shifterOperand & 0x80000000) != (gprs[rn] & 0x80000000) &&
+							(cpu.shifterOperand & 0x80000000) != (d & 0x80000000);
+			}
+			gprs[rd] = d;
+		};
+	};
+
+	this.constructRSC = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var n = (gprs[rn] >>> 0) + !cpu.cpsrC;
+			gprs[rd] = (cpu.shifterOperand >>> 0) - n;
+		};
+	};
+
+	this.constructRSCS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var n = (gprs[rn] >>> 0) + !cpu.cpsrC;
+			var d = (cpu.shifterOperand >>> 0) - n;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
+				cpu.cpsrC = d > 0xFFFFFFFF;
+				cpu.cpsrV = (cpu.shifterOperand & 0x80000000) != (n & 0x80000000) &&
+							(cpu.shifterOperand & 0x80000000) != (d & 0x80000000);
+			}
+			gprs[rd] = d;
+		};
+	};
+
+	this.constructSBC = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
+			gprs[rd] = (gprs[rn] >>> 0) - shifterOperand;
+		};
+	};
+
+	this.constructSBCS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var shifterOperand = (cpu.shifterOperand >>> 0) + !cpu.cpsrC;
+			var d = (gprs[rn] >>> 0) - shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
+				cpu.cpsrC = d > 0xFFFFFFFF;
+				cpu.cpsrV = (gprs[rn] & 0x80000000) != (shifterOperand & 0x80000000) &&
+							(gprs[rn] & 0x80000000) != (d & 0x80000000);
+			}
+			gprs[rd] = d;
+		};
+	};
+
 	this.constructSMLAL = function(rd, rn, rs, rm, s, condOp) {
 		var SHIFT_32 = 1/0x100000000;
 		var gprs = cpu.gprs;
@@ -322,6 +721,70 @@ ARMCoreArm = function (cpu) {
 				}
 			}
 			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
+	this.constructSUB = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			gprs[rd] = gprs[rn] - cpu.shifterOperand;
+		};
+	};
+
+	this.constructSUBS = function(rd, rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var d = gprs[rn] - cpu.shifterOperand;
+			if (rd == cpu.PC && cpu.hasSPSR()) {
+				cpu.unpackCPSR(cpu.spsr);
+			} else {
+				cpu.cpsrN = d & 0x80000000;
+				cpu.cpsrZ = !(d & 0xFFFFFFFF);
+				cpu.cpsrC = (gprs[rn] >>> 0) >= (cpu.shifterOperand >>> 0);
+				cpu.cpsrV = (gprs[rn] & 0x80000000) != (cpu.shifterOperand & 0x80000000) &&
+							(gprs[rn] & 0x80000000) != (d & 0x80000000);
+			}
+			gprs[rd] = d;
+		};
+	};
+
+	this.constructTEQ = function(rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var aluOut = gprs[rn] ^ cpu.shifterOperand;
+			cpu.cpsrN = aluOut & 0x80000000;
+			cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
+			cpu.cpsrC = cpu.shifterCarryOut;
+		};
+	};
+
+	this.constructTST = function(rn, shiftOp, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			shiftOp();
+			var aluOut = gprs[rn] & cpu.shifterOperand;
+			cpu.cpsrN = aluOut & 0x80000000;
+			cpu.cpsrZ = !(aluOut & 0xFFFFFFFF);
+			cpu.cpsrC = cpu.shifterCarryOut;
 		};
 	};
 
