@@ -1019,47 +1019,11 @@ ARMCore.prototype.compileArm = function(instruction) {
 				switch (instruction & 0x00E00000) {
 				case 0x00000000:
 					// MUL
-					op = function() {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						if (condOp && !condOp()) {
-							return;
-						}
-						cpu.cycles += 4; // TODO: better timing
-						if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
-							// Our data type is a double--we'll lose bits if we do it all at once!
-							var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) & 0xFFFFFFFF;
-							var lo = ((gprs[rm] & 0x0000FFFF) * gprs[rs]) & 0xFFFFFFFF;
-							gprs[rd] = (hi + lo) & 0xFFFFFFFF;
-						} else {
-							gprs[rd] = gprs[rm] * gprs[rs];
-						}
-						if (s) {
-							cpu.cpsrN = gprs[rd] & 0x80000000;
-							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
-						}
-					};
+					op = this.armCompiler.constructMUL(rd, rs, rm, s, condOp);
 					break;
 				case 0x00200000:
 					// MLA
-					op = function() {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						if (condOp && !condOp()) {
-							return;
-						}
-						cpu.cycles += 5; // TODO: better timing
-						if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
-							// Our data type is a double--we'll lose bits if we do it all at once!
-							var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) & 0xFFFFFFFF;
-							var lo = ((gprs[rm] & 0x0000FFFF) * gprs[rs]) & 0xFFFFFFFF;
-							gprs[rd] = (hi + lo + gprs[rn]) & 0xFFFFFFFF;
-						} else {
-							gprs[rd] = gprs[rm] * gprs[rs] + gprs[rn];
-						}
-						if (s) {
-							cpu.cpsrN = gprs[rd] & 0x80000000;
-							cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
-						}
-					};
+					op = this.armCompiler.constructMLA(rd, rn, rs, rm, s, condOp);
 					break;
 				case 0x00800000:
 					// UMULL

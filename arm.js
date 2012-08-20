@@ -61,6 +61,29 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.constructMLA = function(rd, rn, rs, rm, s, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			cpu.cycles += 5; // TODO: better timing
+			if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
+				// Our data type is a double--we'll lose bits if we do it all at once!
+				var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) & 0xFFFFFFFF;
+				var lo = ((gprs[rm] & 0x0000FFFF) * gprs[rs]) & 0xFFFFFFFF;
+				gprs[rd] = (hi + lo + gprs[rn]) & 0xFFFFFFFF;
+			} else {
+				gprs[rd] = gprs[rm] * gprs[rs] + gprs[rn];
+			}
+			if (s) {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
+			}
+		};
+	};
+
 	this.constructMRS = function(rd, r, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -109,6 +132,29 @@ ARMCoreArm = function (cpu) {
 					cpu.cpsrI = operand & 0x00000080;
 					cpu.cpsrF = operand & 0x00000040;
 				}
+			}
+		};
+	};
+
+	this.constructMUL = function(rd, rs, rm, s, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			cpu.cycles += 4; // TODO: better timing
+			if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
+				// Our data type is a double--we'll lose bits if we do it all at once!
+				var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) & 0xFFFFFFFF;
+				var lo = ((gprs[rm] & 0x0000FFFF) * gprs[rs]) & 0xFFFFFFFF;
+				gprs[rd] = (hi + lo) & 0xFFFFFFFF;
+			} else {
+				gprs[rd] = gprs[rm] * gprs[rs];
+			}
+			if (s) {
+				cpu.cpsrN = gprs[rd] & 0x80000000;
+				cpu.cpsrZ = !(gprs[rd] & 0xFFFFFFFF);
 			}
 		};
 	};
