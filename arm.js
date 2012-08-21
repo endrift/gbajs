@@ -672,8 +672,8 @@ ARMCoreArm = function (cpu) {
 			}
 			var addr = address();
 			var m, i;
-			for (m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
-				if (rs & m) {
+			for (m = rs, i = 0; m; m >>= 1, ++i) {
+				if (m & 1) {
 					mmu.waitSeq32(addr);
 					gprs[i] = mmu.load32(addr);
 					addr += 4;
@@ -1059,16 +1059,16 @@ ARMCoreArm = function (cpu) {
 			}
 			var addr = address();
 			var m, i;
-			for (m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
-				if (rs & m) {
+			for (m = rs, i = 0; m; m >>= 1, ++i) {
+				if (m & 1) {
 					mmu.wait32(addr);
 					mmu.store32(addr, gprs[i]);
 					addr += 4;
 					break;
 				}
 			}
-			for (m <<= 1, ++i; i < 16; m <<= 1, ++i) {
-				if (rs & m) {
+			for (m >>= 1, ++i; m; m >>= 1, ++i) {
+				if (m & 1) {
 					mmu.waitSeq32(addr);
 					mmu.store32(addr, gprs[i]);
 					addr += 4;
