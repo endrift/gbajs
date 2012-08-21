@@ -711,6 +711,48 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.constructLDRH = function(rd, address, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			var addr = address();
+			cpu.mmu.wait32(addr);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.loadU16(addr);
+		};
+	};
+
+	this.constructLDRSB = function(rd, address, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			var addr = address();
+			cpu.mmu.wait32(addr);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.load8(addr);
+		};
+	};
+
+	this.constructLDRSH = function(rd, address, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			var addr = address();
+			cpu.mmu.wait32(addr);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.load16(addr);
+		};
+	};
+
 	this.constructMLA = function(rd, rn, rs, rm, s, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -1101,6 +1143,20 @@ ARMCoreArm = function (cpu) {
 			}
 			var addr = address();
 			cpu.mmu.store8(addr, gprs[rd]);
+			cpu.mmu.wait32(addr);
+			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
+	this.constructSTRH = function(rd, address, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(gprs[cpu.PC]);
+				return;
+			}
+			var addr = address();
+			cpu.mmu.store16(addr, gprs[rd]);
 			cpu.mmu.wait32(addr);
 			cpu.mmu.wait32(gprs[cpu.PC]);
 		};
