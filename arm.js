@@ -404,6 +404,23 @@ ARMCoreArm = function (cpu) {
 		return this.addressingMode2RegisterShifted[(instruction & 0x01A00000) >> 21](rn, shiftOp, condOp);
 	};
 
+	this.constructAddressingMode4 = function(immediate, rn) {
+		var gprs = cpu.gprs;
+		return function() {
+			var addr = gprs[rn] + immediate;
+			return addr;
+		}
+	};
+
+	this.constructAddressingMode4Writeback = function(immediate, offset, rn) {
+		var gprs = cpu.gprs;
+		return function() {
+			var addr = gprs[rn] + immediate;
+			gprs[rn] += offset;
+			return addr;
+		}
+	};
+
 	this.constructADC = function(rd, rn, shiftOp, condOp) {
 		var gprs = cpu.gprs;
 		return function() {

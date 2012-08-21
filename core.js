@@ -891,12 +891,10 @@ ARMCore.prototype.compileArm = function(instruction) {
 					}
 				}
 			}
-			address = function() {
-				var addr = gprs[rn] + immediate;
-				if (w) {
-					gprs[rn] += offset;
-				}
-				return addr;
+			if (w) {
+				address = this.armCompiler.constructAddressingMode4Writeback(immediate, offset, rn);
+			} else {
+				address = this.armCompiler.constructAddressingMode4(immediate, rn);
 			}
 			if (load) {
 				// LDM
