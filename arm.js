@@ -95,7 +95,7 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
-	this.addressingMode2Immediate = [
+	this.addressingMode23Immediate = [
 		// 000x0
 		function(rn, offset, condOp) {
 			var gprs = cpu.gprs;
@@ -191,7 +191,7 @@ ARMCoreArm = function (cpu) {
 		null,
 	];
 
-	this.addressingMode2Register = [
+	this.addressingMode23Register = [
 		// I00x0
 		function(rn, rm, condOp) {
 			var gprs = cpu.gprs;
@@ -389,14 +389,14 @@ ARMCoreArm = function (cpu) {
 		null,
 	];
 
-	this.constructAddressingMode2Immediate = function(instruction, immediate, condOp) {
+	this.constructAddressingMode23Immediate = function(instruction, immediate, condOp) {
 		var rn = (instruction & 0x000F0000) >> 16;
-		return this.addressingMode2Immediate[(instruction & 0x01A00000) >> 21](rn, immediate, condOp);
+		return this.addressingMode23Immediate[(instruction & 0x01A00000) >> 21](rn, immediate, condOp);
 	};
 
-	this.constructAddressingMode2Register = function(instruction, rm, condOp) {
+	this.constructAddressingMode23Register = function(instruction, rm, condOp) {
 		var rn = (instruction & 0x000F0000) >> 16;
-		return this.addressingMode2Register[(instruction & 0x01A00000) >> 21](rn, rm, condOp);
+		return this.addressingMode23Register[(instruction & 0x01A00000) >> 21](rn, rm, condOp);
 	};
 
 	this.constructAddressingMode2RegisterShifted = function(instruction, shiftOp, condOp) {

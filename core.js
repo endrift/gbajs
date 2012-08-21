@@ -660,96 +660,19 @@ ARMCore.prototype.compileArm = function(instruction) {
 			} else {
 				// Halfword and signed byte data transfer
 				var load = instruction & 0x00100000;
-				var rn = (instruction & 0x000F0000) >> 16;
 				var rd = (instruction & 0x0000F000) >> 12;
 				var hiOffset = (instruction & 0x00000F00) >> 4;
 				var loOffset = rm = instruction & 0x0000000F;
 				var h = instruction & 0x00000020;
 				var s = instruction & 0x00000040;
-				var w = instruction & 0x00200000;
 				var i = instruction & 0x00400000;
-				var u = instruction & 0x00800000;
-				var p = instruction & 0x01000000;
 
 				var address;
 				if (i) {
 					var immediate = loOffset | hiOffset;
-					if (p) {
-						if (u) {
-							address = function() {
-								var addr = gprs[rn] + immediate;
-								if (w && (!condOp || condOp())) {
-									gprs[rn] = addr;
-								}
-								return addr;
-							};
-						} else {
-							address = function() {
-								var addr = gprs[rn] - immediate;
-								if (w && (!condOp || condOp())) {
-									gprs[rn] = addr;
-								}
-								return addr;
-							};
-						}
-					} else {
-						if (u) {
-							address = function() {
-								var addr = gprs[rn];
-								if (!condOp || condOp()) {
-									gprs[rn] += immediate;
-								}
-								return addr;
-							};
-						} else {
-							address = function() {
-								var addr = gprs[rn];
-								if (!condOp || condOp()) {
-									gprs[rn] -= immediate;
-								}
-								return addr;
-							};
-						}
-					}
+					address = this.armCompiler.constructAddressingMode23Immediate(instruction, immediate, condOp);
 				} else {
-					var rn = (instruction & 0x000F0000) >> 16;
-					if (p) {
-						if (u) {
-							address = function() {
-								var addr = gprs[rn] + gprs[rm];
-								if (w && (!condOp || condOp())) {
-									gprs[rn] = addr;
-								}
-								return addr;
-							};
-						} else {
-							address = function() {
-								var addr = gprs[rn] - gprs[rm];
-								if (w && (!condOp || condOp())) {
-									gprs[rn] = addr;
-								}
-								return addr;
-							};
-						}
-					} else {
-						if (u) {
-							address = function() {
-								var addr = gprs[rn];
-								if (!condOp || condOp()) {
-									gprs[rn] += gprs[rm];
-								}
-								return addr;
-							};
-						} else {
-							address = function() {
-								var addr = gprs[rn];
-								if (!condOp || condOp()) {
-									gprs[rn] -= gprs[rm];
-								}
-								return addr;
-							};
-						}
-					}
+					address = this.armCompiler.constructAddressingMode23Register(instruction, rm, condOp);
 				}
 				address.writesPC = w && rn == this.PC;
 
@@ -832,12 +755,12 @@ ARMCore.prototype.compileArm = function(instruction) {
 					var shiftOp = this.barrelShiftImmediate(shiftType, shiftImmediate, rm);
 					address = this.armCompiler.constructAddressingMode2RegisterShifted(instruction, shiftOp, condOp);
 				} else {
-					address = this.armCompiler.constructAddressingMode2Register(instruction, rm, condOp);
+					address = this.armCompiler.constructAddressingMode23Register(instruction, rm, condOp);
 				}
 			} else {
 				// Immediate
 				var offset = instruction & 0x00000FFF;
-				address = this.armCompiler.constructAddressingMode2Immediate(instruction, offset, condOp);
+				address = this.armCompiler.constructAddressingMode23Immediate(instruction, offset, condOp);
 			}
 			if (load) {
 				if (b) {
