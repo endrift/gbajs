@@ -1196,6 +1196,21 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.constructSWI = function(immediate) {
+		var gprs = cpu.gprs;
+		return function() {
+			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(gprs[cpu.PC]);
+				return;
+			}
+			cpu.irq.swi32(immediate);
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			// Wait on BIOS
+			cpu.mmu.wait32(0);
+			cpu.mmu.waitSeq32(0);
+		};
+	};
+
 	this.constructTEQ = function(rn, shiftOp, condOp) {
 		var gprs = cpu.gprs;
 		return function() {

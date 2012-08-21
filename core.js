@@ -819,18 +819,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 			if ((instruction & 0x0F000000) == 0x0F000000) {
 				// SWI
 				var immediate = (instruction & 0x00FFFFFF);
-				op = function() {
-					if (condOp && !condOp()) {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						return;
-					}
-					cpu.irq.swi32(immediate);
-					cpu.mmu.waitSeq32(gprs[cpu.PC]);
-					// Wait on BIOS
-					// FIXME: Is this correct?
-					cpu.mmu.wait32(0);
-					cpu.mmu.waitSeq32(0);
-				}
+				op = this.armCompiler.constructSWI(immediate);
 				op.writesPC = false;
 			}
 			break;
