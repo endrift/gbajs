@@ -666,6 +666,34 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.constructLDR = function(rd, address, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(gprs[cpu.PC]);
+				return;
+			}
+			var addr = address();
+			cpu.mmu.wait32(addr);
+			cpu.mmu.wait32(gprs[cpu.PC]);
+			gprs[rd] = cpu.mmu.load32(addr);
+		};
+	};
+
+	this.constructLDRB = function(rd, address, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			if (condOp && !condOp()) {
+				return;
+			}
+			var addr = address();
+			cpu.mmu.wait32(addr);
+			++cpu.cycles;
+			gprs[rd] = cpu.mmu.loadU8(addr);
+		};
+	};
+
 	this.constructMLA = function(rd, rn, rs, rm, s, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
@@ -1029,6 +1057,34 @@ ARMCoreArm = function (cpu) {
 					addr += 4;
 				}
 			}
+			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
+	this.constructSTR = function(rd, address, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(gprs[cpu.PC]);
+				return;
+			}
+			var addr = address();
+			cpu.mmu.store32(addr, gprs[rd]);
+			cpu.mmu.wait32(addr);
+			cpu.mmu.wait32(gprs[cpu.PC]);
+		};
+	};
+
+	this.constructSTRB = function(rd, address, condOp) {
+		var gprs = cpu.gprs;
+		return function() {
+			if (condOp && !condOp()) {
+				cpu.mmu.waitSeq32(gprs[cpu.PC]);
+				return;
+			}
+			var addr = address();
+			cpu.mmu.store8(addr, gprs[rd]);
+			cpu.mmu.wait32(addr);
 			cpu.mmu.wait32(gprs[cpu.PC]);
 		};
 	};

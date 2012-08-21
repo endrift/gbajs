@@ -842,54 +842,18 @@ ARMCore.prototype.compileArm = function(instruction) {
 			if (load) {
 				if (b) {
 					// LDRB
-					op = function() {
-						cpu.mmu.waitSeq32(gprs[cpu.PC]);
-						if (condOp && !condOp()) {
-							return;
-						}
-						var addr = address();
-						cpu.mmu.wait32(addr);
-						++cpu.cycles;
-						gprs[rd] = cpu.mmu.loadU8(addr);
-					};
+					op = this.armCompiler.constructLDRB(rd, address, condOp);
 				} else {
 					// LDR
-					op = function() {
-						if (condOp && !condOp()) {
-							cpu.mmu.waitSeq32(gprs[cpu.PC]);
-							return;
-						}
-						var addr = address();
-						cpu.mmu.wait32(addr);
-						cpu.mmu.wait32(gprs[cpu.PC]);
-						gprs[rd] = cpu.mmu.load32(addr);
-					};
+					op = this.armCompiler.constructLDR(rd, address, condOp);
 				}
 			} else {
 				if (b) {
 					// STRB
-					op = function() {
-						if (condOp && !condOp()) {
-							cpu.mmu.waitSeq32(gprs[cpu.PC]);
-							return;
-						}
-						var addr = address();
-						cpu.mmu.store8(addr, gprs[rd]);
-						cpu.mmu.wait32(addr);
-						cpu.mmu.wait32(gprs[cpu.PC]);
-					};
+					op = this.armCompiler.constructSTRB(rd, address, condOp);
 				} else {
 					// STR
-					op = function() {
-						if (condOp && !condOp()) {
-							cpu.mmu.waitSeq32(gprs[cpu.PC]);
-							return;
-						}
-						var addr = address();
-						cpu.mmu.store32(addr, gprs[rd]);
-						cpu.mmu.wait32(addr);
-						cpu.mmu.wait32(gprs[cpu.PC]);
-					};
+					op = this.armCompiler.constructSTR(rd, address, condOp);
 				}
 			}
 			op.writesPC = rd == this.PC || address.writesPC;
