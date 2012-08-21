@@ -95,6 +95,315 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
+	this.addressingMode2Immediate = [
+		// 000x0
+		function(rn, offset, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn];
+				if (!condOp || condOp()) {
+					gprs[rn] -= offset;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		// 000xW
+		null,
+
+		null,
+		null,
+
+		// 00Ux0
+		function(rn, offset, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn];
+				if (!condOp || condOp()) {
+					gprs[rn] += offset;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		// 00UxW
+		null,
+
+		null,
+		null,
+
+		// 0P0x0
+		function(rn, offset, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				return addr = gprs[rn] - offset;
+			};
+			address.writesPC = false;
+			return address;
+		},
+
+		// 0P0xW
+		function(rn, offset, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn] - offset;
+				if (!condOp || condOp()) {
+					gprs[rn] = addr;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		null,
+		null,
+
+		// 0PUx0
+		function(rn, offset, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				return addr = gprs[rn] + offset;
+			};
+			address.writesPC = false;
+			return address;
+		},
+
+		// 0PUxW
+		function(rn, offset, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn] + offset;
+				if (!condOp || condOp()) {
+					gprs[rn] = addr;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		null,
+		null,
+	];
+
+	this.addressingMode2Register = [
+		// I00x0
+		function(rn, rm, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn];
+				if (!condOp || condOp()) {
+					gprs[rn] -= gprs[rm];
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		// I00xW
+		null,
+
+		null,
+		null,
+
+		// I0Ux0
+		function(rn, rm, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn];
+				if (!condOp || condOp()) {
+					gprs[rn] += gprs[rm];
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		// I0UxW
+		null,
+
+		null,
+		null,
+
+		// IP0x0
+		function(rn, rm, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				return gprs[rn] - gprs[rm];
+			};
+			address.writesPC = false;
+			return address;
+		},
+
+		// IP0xW
+		function(rn, rm, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn] - gprs[rm];
+				if (!condOp || condOp()) {
+					gprs[rn] = addr;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		null,
+		null,
+
+		// IPUx0
+		function(rn, rm, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn] + gprs[rm];
+				return addr;
+			};
+			address.writesPC = false;
+			return address;
+		},
+
+		// IPUxW
+		function(rn, rm, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn] + gprs[rm];
+				if (!condOp || condOp()) {
+					gprs[rn] = addr;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		null,
+		null
+	];
+
+	this.addressingMode2RegisterShifted = [
+		// I00x0
+		function(rn, shiftOp, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn];
+				if (!condOp || condOp()) {
+					shiftOp();
+					gprs[rn] -= cpu.shifterOperand;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		// I00xW
+		null,
+
+		null,
+		null,
+
+		// I0Ux0
+		function(rn, shiftOp, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				var addr = gprs[rn];
+				if (!condOp || condOp()) {
+					shiftOp();
+					gprs[rn] += cpu.shifterOperand;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+		// I0UxW
+		null,
+
+		null,
+		null,
+
+		// IP0x0
+		function(rn, shiftOp, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				shiftOp();
+				return gprs[rn] - cpu.shifterOperand;
+			};
+			address.writesPC = false;
+			return address;
+		},
+
+		// IP0xW
+		function(rn, shiftOp, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				shiftOp();
+				var addr = gprs[rn] - cpu.shifterOperand;
+				if (!condOp || condOp()) {
+					gprs[rn] = addr;
+				}
+				return addr;
+			};
+			address.writesPC = rn == cpu.PC;
+			return address;
+		},
+
+		null,
+		null,
+
+		// IPUx0
+		function(rn, shiftOp, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				shiftOp();
+				return gprs[rn] + cpu.shifterOperand;
+			};
+			address.writesPC = false;
+			return address;
+		},
+
+		// IPUxW
+		function(rn, shiftOp, condOp) {
+			var gprs = cpu.gprs;
+			var address = function() {
+				shiftOp();
+				var addr = gprs[rn] + cpu.shifterOperand;
+				if (!condOp || condOp()) {
+					gprs[rn] = addr;
+				}
+				return addr;
+			};
+			address.writePC = rn == cpu.PC;
+			return address;
+		},
+
+		null,
+		null,
+	];
+
+	this.constructAddressingMode2Immediate = function(instruction, immediate, condOp) {
+		var rn = (instruction & 0x000F0000) >> 16;
+		return this.addressingMode2Immediate[(instruction & 0x01A00000) >> 21](rn, immediate, condOp);
+	};
+
+	this.constructAddressingMode2Register = function(instruction, rm, condOp) {
+		var rn = (instruction & 0x000F0000) >> 16;
+		return this.addressingMode2Register[(instruction & 0x01A00000) >> 21](rn, rm, condOp);
+	};
+
+	this.constructAddressingMode2RegisterShifted = function(instruction, shiftOp, condOp) {
+		var rn = (instruction & 0x000F0000) >> 16;
+		return this.addressingMode2RegisterShifted[(instruction & 0x01A00000) >> 21](rn, shiftOp, condOp);
+	};
+
 	this.constructADC = function(rd, rn, shiftOp, condOp) {
 		var gprs = cpu.gprs;
 		return function() {

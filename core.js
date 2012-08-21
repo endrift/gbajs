@@ -814,13 +814,9 @@ ARMCore.prototype.compileArm = function(instruction) {
 		case 0x04000000:
 		case 0x06000000:
 			// LDR/STR
-			var rn = (instruction & 0x000F0000) >> 16;
 			var rd = (instruction & 0x0000F000) >> 12;
 			var load = instruction & 0x00100000;
-			var w = instruction & 0x00200000;
 			var b = instruction & 0x00400000;
-			var u = instruction & 0x00800000;
-			var p = instruction & 0x01000000;
 			var i = instruction & 0x02000000;
 
 			var address = function() {
@@ -831,133 +827,17 @@ ARMCore.prototype.compileArm = function(instruction) {
 				var rm = instruction & 0x0000000F;
 				var shiftType = instruction & 0x00000060;
 				var shiftImmediate = (instruction & 0x00000F80) >> 7;
-				if (p) {
-					if (shiftType || shiftImmediate) {
-						var shiftOp = this.barrelShiftImmediate(shiftType, shiftImmediate, rm);
-						if (u) {
-							address = function() {
-								shiftOp();
-								var addr = gprs[rn] + cpu.shifterOperand;
-								if (w && (!condOp || condOp())) {
-									gprs[rn] = addr;
-								}
-								return addr;
-							}
-						} else {
-							address = function() {
-								shiftOp();
-								var addr = gprs[rn] - cpu.shifterOperand;
-								if (w && (!condOp || condOp())) {
-									gprs[rn] = addr;
-								}
-								return addr;
-							}
-						}
-					} else {
-						if (u) {
-							address = function() {
-								var addr = gprs[rn] + gprs[rm];
-								if (w && (!condOp || condOp())) {
-									gprs[rn] = addr;
-								}
-								return addr;
-							};
-						} else {
-							address = function() {
-								var addr = gprs[rn] - gprs[rm];
-								if (w && (!condOp || condOp())) {
-									gprs[rn] = addr;
-								}
-								return addr;
-							};
-						}
-						address.writesPC = w && rn == this.PC;
-					}
+				
+				if (shiftType || shiftImmediate) {
+					var shiftOp = this.barrelShiftImmediate(shiftType, shiftImmediate, rm);
+					address = this.armCompiler.constructAddressingMode2RegisterShifted(instruction, shiftOp, condOp);
 				} else {
-					if (shiftType || shiftImmediate) {
-						var shiftOp = this.barrelShiftImmediate(shiftType, shiftImmediate, rm);
-						if (u) {
-							address = function() {
-								var addr = gprs[rn];
-								if (!condOp || condOp()) {
-									shiftOp();
-									gprs[rn] += cpu.shifterOperand;
-								}
-								return addr;
-							}
-						} else {
-							address = function() {
-								var addr = gprs[rn];
-								if (!condOp || condOp()) {
-									shiftOp();
-									gprs[rn] -= cpu.shifterOperand;
-								}
-								return addr;
-							}
-						}
-					} else {
-						if (u) {
-							address = function() {
-								var addr = gprs[rn];
-								if (!condOp || condOp()) {
-									gprs[rn] += gprs[rm];
-								}
-								return addr;
-							};
-						} else {
-							address = function() {
-								var addr = gprs[rn];
-								if (!condOp || condOp()) {
-									gprs[rn] -= gprs[rm];
-								}
-								return addr;
-							};
-						}
-						address.writesPC = rn == this.PC;
-					}
+					address = this.armCompiler.constructAddressingMode2Register(instruction, rm, condOp);
 				}
 			} else {
 				// Immediate
 				var offset = instruction & 0x00000FFF;
-				if (p) {
-					if (u) {
-						address = function() {
-							var addr = gprs[rn] + offset;
-							if (w && (!condOp || condOp())) {
-								gprs[rn] = addr;
-							}
-							return addr;
-						};
-					} else {
-						address = function() {
-							var addr = gprs[rn] - offset;
-							if (w && (!condOp || condOp())) {
-								gprs[rn] = addr;
-							}
-							return addr;
-						};
-					}
-					address.writesPC = w && rn == this.PC;
-				} else if (!w) {
-					if (u) {
-						address = function() {
-							var addr = gprs[rn];
-							if (!condOp || condOp()) {
-								gprs[rn] += offset;
-							}
-							return addr;
-						};
-					} else {
-						address = function() {
-							var addr = gprs[rn];
-							if (!condOp || condOp()) {
-								gprs[rn] -= offset;
-							}
-							return addr;
-						};
-					}
-					address.writesPC = rn == this.PC;
-				}
+				address = this.armCompiler.constructAddressingMode2Immediate(instruction, offset, condOp);
 			}
 			if (load) {
 				if (b) {
