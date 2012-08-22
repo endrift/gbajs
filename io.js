@@ -335,16 +335,16 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	switch (offset) {
 	case this.WININ:
-		this.video.writeWindow(0, value);
+		this.video.renderPath.writeWindow(0, value);
 		break;
 	case this.WININ | 1:
-		this.video.writeWindow(1, value);
+		this.video.renderPath.writeWindow(1, value);
 		break;
 	case this.WINOUT:
-		this.video.writeWindow(2, value);
+		this.video.renderPath.writeWindow(2, value);
 		break;
 	case this.WINOUT | 1:
-		this.video.writeWindow(3, value);
+		this.video.renderPath.writeWindow(3, value);
 		break;
 	case this.SOUND1CNT_HI | 1:
 	case this.SOUND2CNT_LO | 1:
@@ -403,127 +403,127 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	switch (offset) {
 	// Video
 	case this.DISPCNT:
-		this.video.writeDisplayControl(value);
+		this.video.renderPath.writeDisplayControl(value);
 		break;
 	case this.DISPSTAT:
 		value &= this.video.DISPSTAT_MASK;
 		this.video.writeDisplayStat(value);
 		break;
 	case this.BG0CNT:
-		this.video.writeBackgroundControl(0, value);
+		this.video.renderPath.writeBackgroundControl(0, value);
 		break;
 	case this.BG1CNT:
-		this.video.writeBackgroundControl(1, value);
+		this.video.renderPath.writeBackgroundControl(1, value);
 		break;
 	case this.BG2CNT:
-		this.video.writeBackgroundControl(2, value);
+		this.video.renderPath.writeBackgroundControl(2, value);
 		break;
 	case this.BG3CNT:
-		this.video.writeBackgroundControl(3, value);
+		this.video.renderPath.writeBackgroundControl(3, value);
 		break;
 	case this.BG0HOFS:
-		this.video.writeBackgroundHOffset(0, value);
+		this.video.renderPath.writeBackgroundHOffset(0, value);
 		break;
 	case this.BG0VOFS:
-		this.video.writeBackgroundVOffset(0, value);
+		this.video.renderPath.writeBackgroundVOffset(0, value);
 		break;
 	case this.BG1HOFS:
-		this.video.writeBackgroundHOffset(1, value);
+		this.video.renderPath.writeBackgroundHOffset(1, value);
 		break;
 	case this.BG1VOFS:
-		this.video.writeBackgroundVOffset(1, value);
+		this.video.renderPath.writeBackgroundVOffset(1, value);
 		break;
 	case this.BG2HOFS:
-		this.video.writeBackgroundHOffset(2, value);
+		this.video.renderPath.writeBackgroundHOffset(2, value);
 		break;
 	case this.BG2VOFS:
-		this.video.writeBackgroundVOffset(2, value);
+		this.video.renderPath.writeBackgroundVOffset(2, value);
 		break;
 	case this.BG3HOFS:
-		this.video.writeBackgroundHOffset(3, value);
+		this.video.renderPath.writeBackgroundHOffset(3, value);
 		break;
 	case this.BG3VOFS:
-		this.video.writeBackgroundVOffset(3, value);
+		this.video.renderPath.writeBackgroundVOffset(3, value);
 		break;
 	case this.BG2X_LO:
-		this.video.writeBackgroundRefX(2, (this.registers[(offset >> 1) | 1] << 16) | value);
+		this.video.renderPath.writeBackgroundRefX(2, (this.registers[(offset >> 1) | 1] << 16) | value);
 		break;
 	case this.BG2X_HI:
-		this.video.writeBackgroundRefX(2, this.registers[(offset >> 1) ^ 1] | (value << 16));
+		this.video.renderPath.writeBackgroundRefX(2, this.registers[(offset >> 1) ^ 1] | (value << 16));
 		break;
 	case this.BG2Y_LO:
-		this.video.writeBackgroundRefY(2, (this.registers[(offset >> 1) | 1] << 16) | value);
+		this.video.renderPath.writeBackgroundRefY(2, (this.registers[(offset >> 1) | 1] << 16) | value);
 		break;
 	case this.BG2Y_HI:
-		this.video.writeBackgroundRefY(2, this.registers[(offset >> 1) ^ 1] | (value << 16));
+		this.video.renderPath.writeBackgroundRefY(2, this.registers[(offset >> 1) ^ 1] | (value << 16));
 		break;
 	case this.BG2PA:
-		this.video.writeBackgroundParamA(2, value);
+		this.video.renderPath.writeBackgroundParamA(2, value);
 		break;
 	case this.BG2PB:
-		this.video.writeBackgroundParamB(2, value);
+		this.video.renderPath.writeBackgroundParamB(2, value);
 		break;
 	case this.BG2PC:
-		this.video.writeBackgroundParamC(2, value);
+		this.video.renderPath.writeBackgroundParamC(2, value);
 		break;
 	case this.BG2PD:
-		this.video.writeBackgroundParamD(2, value);
+		this.video.renderPath.writeBackgroundParamD(2, value);
 		break;
 	case this.BG3X_LO:
-		this.video.writeBackgroundRefX(3, (this.registers[(offset >> 1) | 1] << 16) | value);
+		this.video.renderPath.writeBackgroundRefX(3, (this.registers[(offset >> 1) | 1] << 16) | value);
 		break;
 	case this.BG3X_HI:
-		this.video.writeBackgroundRefX(3, this.registers[(offset >> 1) ^ 1] | (value << 16));
+		this.video.renderPath.writeBackgroundRefX(3, this.registers[(offset >> 1) ^ 1] | (value << 16));
 		break;
 	case this.BG3Y_LO:
-		this.video.writeBackgroundRefY(3, (this.registers[(offset >> 1) | 1] << 16) | value);
+		this.video.renderPath.writeBackgroundRefY(3, (this.registers[(offset >> 1) | 1] << 16) | value);
 		break;
 	case this.BG3Y_HI:
-		this.video.writeBackgroundRefY(3, this.registers[(offset >> 1) ^ 1] | (value << 16));
+		this.video.renderPath.writeBackgroundRefY(3, this.registers[(offset >> 1) ^ 1] | (value << 16));
 		break;
 	case this.BG3PA:
-		this.video.writeBackgroundParamA(3, value);
+		this.video.renderPath.writeBackgroundParamA(3, value);
 		break;
 	case this.BG3PB:
-		this.video.writeBackgroundParamB(3, value);
+		this.video.renderPath.writeBackgroundParamB(3, value);
 		break;
 	case this.BG3PC:
-		this.video.writeBackgroundParamC(3, value);
+		this.video.renderPath.writeBackgroundParamC(3, value);
 		break;
 	case this.BG3PD:
-		this.video.writeBackgroundParamD(3, value);
+		this.video.renderPath.writeBackgroundParamD(3, value);
 		break;
 	case this.WIN0H:
-		this.video.writeWin0H(value);
+		this.video.renderPath.writeWin0H(value);
 		break;
 	case this.WIN1H:
-		this.video.writeWin1H(value);
+		this.video.renderPath.writeWin1H(value);
 		break;
 	case this.WIN0V:
-		this.video.writeWin0V(value);
+		this.video.renderPath.writeWin0V(value);
 		break;
 	case this.WIN1V:
-		this.video.writeWin1V(value);
+		this.video.renderPath.writeWin1V(value);
 		break;
 	case this.WININ:
 		value &= 0x3F3F;
-		this.video.writeWinIn(value);
+		this.video.renderPath.writeWinIn(value);
 		break;
 	case this.WINOUT:
 		value &= 0x3F3F;
-		this.video.writeWinOut(value);
+		this.video.renderPath.writeWinOut(value);
 		break;
 	case this.BLDCNT:
 		value &= 0x7FFF;
-		this.video.writeBlendControl(value);
+		this.video.renderPath.writeBlendControl(value);
 		break;
 	case this.BLDALPHA:
 		value &= 0x1F1F;
-		this.video.writeBlendAlpha(value);
+		this.video.renderPath.writeBlendAlpha(value);
 		break;
 	case this.BLDY:
 		value &= 0x001F;
-		this.video.writeBlendY(value);
+		this.video.renderPath.writeBlendY(value);
 		break;
 
 	// Sound
@@ -698,19 +698,19 @@ GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
 	switch (offset) {
 	case this.BG2X_LO:
 		value &= 0x0FFFFFFF;
-		this.video.writeBackgroundRefX(2, value);
+		this.video.renderPath.writeBackgroundRefX(2, value);
 		break;
 	case this.BG2Y_LO:
 		value &= 0x0FFFFFFF;
-		this.video.writeBackgroundRefY(2, value);
+		this.video.renderPath.writeBackgroundRefY(2, value);
 		break;
 	case this.BG3X_LO:
 		value &= 0x0FFFFFFF;
-		this.video.writeBackgroundRefX(3, value);
+		this.video.renderPath.writeBackgroundRefX(3, value);
 		break;
 	case this.BG3Y_LO:
 		value &= 0x0FFFFFFF;
-		this.video.writeBackgroundRefY(3, value);
+		this.video.renderPath.writeBackgroundRefY(3, value);
 		break;
 	case this.DMA0SAD_LO:
 		this.cpu.irq.dmaSetSourceAddress(0, value);

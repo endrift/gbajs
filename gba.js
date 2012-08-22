@@ -120,9 +120,9 @@ GameBoyAdvance.prototype.reset = function() {
 	this.video.clear();
 
 	this.mmu.mmap(this.mmu.REGION_IO, this.io);
-	this.mmu.mmap(this.mmu.REGION_PALETTE_RAM, this.video.palette);
-	this.mmu.mmap(this.mmu.REGION_VRAM, this.video.vram);
-	this.mmu.mmap(this.mmu.REGION_OAM, this.video.oam);
+	this.mmu.mmap(this.mmu.REGION_PALETTE_RAM, this.video.renderPath.palette);
+	this.mmu.mmap(this.mmu.REGION_VRAM, this.video.renderPath.vram);
+	this.mmu.mmap(this.mmu.REGION_OAM, this.video.renderPath.oam);
 
 	this.cpu.resetCPU(0x08000000);
 };
