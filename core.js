@@ -625,35 +625,58 @@ ARMCore.prototype.compileArm = function(instruction) {
 		case 0x00000000:
 			if ((instruction & 0x010000F0) == 0x00000090) {
 				// Multiplies
-				var s = instruction & 0x00100000;
 				var rd = (instruction & 0x000F0000) >> 16;
 				var rn = (instruction & 0x0000F000) >> 12;
 				var rs = (instruction & 0x00000F00) >> 8;
 				var rm = instruction & 0x0000000F;
-				switch (instruction & 0x00E00000) {
+				switch (instruction & 0x00FE00000) {
 				case 0x00000000:
 					// MUL
-					op = this.armCompiler.constructMUL(rd, rs, rm, s, condOp);
+					op = this.armCompiler.constructMUL(rd, rs, rm, condOp);
+					break;
+				case 0x00100000:
+					// MULS
+					op = this.armCompiler.constructMULS(rd, rs, rm, condOp);
 					break;
 				case 0x00200000:
 					// MLA
-					op = this.armCompiler.constructMLA(rd, rn, rs, rm, s, condOp);
+					op = this.armCompiler.constructMLA(rd, rn, rs, rm, condOp);
+					break
+				case 0x00300000:
+					// MLAS
+					op = this.armCompiler.constructMLAS(rd, rn, rs, rm, condOp);
 					break;
 				case 0x00800000:
 					// UMULL
-					op = this.armCompiler.constructUMULL(rd, rn, rs, rm, s, condOp);
+					op = this.armCompiler.constructUMULL(rd, rn, rs, rm, condOp);
+					break;
+				case 0x00900000:
+					// UMULLS
+					op = this.armCompiler.constructUMULLS(rd, rn, rs, rm, condOp);
 					break;
 				case 0x00A00000:
 					// UMLAL
-					op = this.armCompiler.constructUMLAL(rd, rn, rs, rm, s, condOp);
+					op = this.armCompiler.constructUMLAL(rd, rn, rs, rm, condOp);
+					break;
+				case 0x00B00000:
+					// UMLALS
+					op = this.armCompiler.constructUMLALS(rd, rn, rs, rm, condOp);
 					break;
 				case 0x00C00000:
 					// SMULL
-					op = this.armCompiler.constructSMULL(rd, rn, rs, rm, s, condOp);
+					op = this.armCompiler.constructSMULL(rd, rn, rs, rm, condOp);
+					break;
+				case 0x00D00000:
+					// SMULLS
+					op = this.armCompiler.constructSMULLS(rd, rn, rs, rm, condOp);
 					break;
 				case 0x00E00000:
 					// SMLAL
-					op = this.armCompiler.constructSMLAL(rd, rn, rs, rm, s, condOp);
+					op = this.armCompiler.constructSMLAL(rd, rn, rs, rm, condOp);
+					break;
+				case 0x00F00000:
+					// SMLALS
+					op = this.armCompiler.constructSMLALS(rd, rn, rs, rm, condOp);
 					break;
 				}
 				op.touchesPC = rd == this.PC;
