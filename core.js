@@ -569,19 +569,19 @@ ARMCore.prototype.compileArm = function(instruction) {
 				break;
 			case 0x01000000:
 				// TST
-				op = this.armCompiler.constructTST(rn, shiftOp, condOp);
+				op = this.armCompiler.constructTST(rd, rn, shiftOp, condOp);
 				break;
 			case 0x01200000:
 				// TEQ
-				op = this.armCompiler.constructTEQ(rn, shiftOp, condOp);
+				op = this.armCompiler.constructTEQ(rd, rn, shiftOp, condOp);
 				break;
 			case 0x01400000:
 				// CMP
-				op = this.armCompiler.constructCMP(rn, shiftOp, condOp);
+				op = this.armCompiler.constructCMP(rd, rn, shiftOp, condOp);
 				break;
 			case 0x01600000:
 				// CMN
-				op = this.armCompiler.constructCMN(rn, shiftOp, condOp);
+				op = this.armCompiler.constructCMN(rd, rn, shiftOp, condOp);
 				break;
 			case 0x01800000:
 				// ORR

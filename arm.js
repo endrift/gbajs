@@ -596,7 +596,7 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
-	this.constructCMN = function(rn, shiftOp, condOp) {
+	this.constructCMN = function(rd, rn, shiftOp, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
@@ -614,7 +614,7 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
-	this.constructCMP = function(rn, shiftOp, condOp) {
+	this.constructCMP = function(rd, rn, shiftOp, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
@@ -1274,7 +1274,7 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
-	this.constructTEQ = function(rn, shiftOp, condOp) {
+	this.constructTEQ = function(rn, rn, shiftOp, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
@@ -1289,7 +1289,7 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
-	this.constructTST = function(rn, shiftOp, condOp) {
+	this.constructTST = function(rd, rn, shiftOp, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
