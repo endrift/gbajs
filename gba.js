@@ -69,14 +69,10 @@ GameBoyAdvance.prototype.setCanvas = function(canvas) {
 		var targetContext = canvas.getContext('2d');
 		this.video.drawCallback = function() {
 			targetContext.drawImage(self.indirectCanvas, 0, 0, canvas.offsetWidth, canvas.offsetHeight);
-			self.finishFrame();
 		}
 	} else {
 		this.setCanvasDirect(canvas);
 		var self = this;
-		this.video.drawCallback = function() {
-			self.finishFrame();
-		}
 	}
 };
 
@@ -137,12 +133,15 @@ GameBoyAdvance.prototype.returnFalse = function() {
 	return false;
 };
 
-GameBoyAdvance.prototype.finishFrame = function() {
-	this.seenFrame = true;
-};
-
 GameBoyAdvance.prototype.waitFrame = function() {
-	return !this.seenFrame;
+	if (!this.video.inVblank) {
+		this.seenFrame = false;
+		return true;
+	} else {
+		var didSeeFrame = this.seenFrame;
+		this.seenFrame = true;
+		return didSeeFrame;
+	}
 };
 
 GameBoyAdvance.prototype.pause = function() {
@@ -152,7 +151,6 @@ GameBoyAdvance.prototype.pause = function() {
 };
 
 GameBoyAdvance.prototype.advanceFrame = function() {
-	this.seenFrame = false;
 	this.doStep = this.waitFrame;
 	this.step();
 	if (this.seenSave) {
