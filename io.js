@@ -335,16 +335,20 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	switch (offset) {
 	case this.WININ:
-		this.video.renderPath.writeWindow(0, value);
+		this.value & 0x3F;
+		this.video.renderPath.writeWinIn(value | (this.registers[offset >> 1] & 0xFF00));
 		break;
 	case this.WININ | 1:
-		this.video.renderPath.writeWindow(1, value);
+		this.value & 0x3F;
+		this.video.renderPath.writeWinIn((value << 8) | (this.registers[offset >> 1] & 0x00FF));
 		break;
 	case this.WINOUT:
-		this.video.renderPath.writeWindow(2, value);
+		this.value & 0x3F;
+		this.video.renderPath.writeWinOut(value | (this.registers[offset >> 1] & 0xFF00));
 		break;
 	case this.WINOUT | 1:
-		this.video.renderPath.writeWindow(3, value);
+		this.value & 0x3F;
+		this.video.renderPath.writeWinOut((value << 8) | (this.registers[offset >> 1] & 0x00FF));
 		break;
 	case this.SOUND1CNT_HI | 1:
 	case this.SOUND2CNT_LO | 1:

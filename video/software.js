@@ -46,6 +46,10 @@ MemoryAligned16.prototype.store32 = function(offset, value) {
 	this.store16(offset + 2, this.buffer[index + 1] = value >>> 16);
 };
 
+MemoryAligned16.prototype.insert = function(start, data) {
+	this.buffer.set(data, start);
+};
+
 function GameBoyAdvanceVRAM(size) {
 	MemoryAligned16.call(this, size);
 	this.vram = this.buffer;
@@ -72,6 +76,12 @@ function GameBoyAdvanceOAM(size) {
 };
 
 GameBoyAdvanceOAM.prototype = Object.create(MemoryAligned16.prototype);
+
+GameBoyAdvanceOAM.prototype.overwrite = function(memory) {
+	for (var i = 0; i < (this.buffer.byteLength >> 1); ++i) {
+		this.store16(i << 1, memory[i]);
+	}
+};
 
 GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 	var index = (offset & 0x3F8) >> 3;
@@ -162,6 +172,12 @@ function GameBoyAdvancePalette() {
 		this.colors[0] // Backdrop
 	];
 	this.blendY = 1;
+};
+
+GameBoyAdvancePalette.prototype.overwrite = function(memory) {
+	for (var i = 0; i < 512; ++i) {
+		this.store16(i << 1, memory[i]);
+	}
 };
 
 GameBoyAdvancePalette.prototype.loadU8 = function(offset) {
