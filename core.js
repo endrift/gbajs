@@ -842,7 +842,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 			if ((instruction & 0x0F000000) == 0x0F000000) {
 				// SWI
 				var immediate = (instruction & 0x00FFFFFF);
-				op = this.armCompiler.constructSWI(immediate);
+				op = this.armCompiler.constructSWI(immediate, condOp);
 				op.writesPC = false;
 			}
 			break;

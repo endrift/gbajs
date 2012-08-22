@@ -1259,7 +1259,7 @@ ARMCoreArm = function (cpu) {
 		};
 	};
 
-	this.constructSWI = function(immediate) {
+	this.constructSWI = function(immediate, condOp) {
 		var gprs = cpu.gprs;
 		return function() {
 			if (condOp && !condOp()) {
