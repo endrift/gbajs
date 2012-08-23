@@ -1387,7 +1387,7 @@ ARMCoreArm.prototype.constructUMLAL = function(rd, rn, rs, rm, condOp) {
 	};
 };
 
-ARMCoreArm.prototype.constructUMLALS = function(rd, rn, rs, rm, s, condOp) {
+ARMCoreArm.prototype.constructUMLALS = function(rd, rn, rs, rm, condOp) {
 	var cpu = this.cpu;
 	var SHIFT_32 = 1/0x100000000;
 	var gprs = cpu.gprs;
@@ -1407,7 +1407,7 @@ ARMCoreArm.prototype.constructUMLALS = function(rd, rn, rs, rm, s, condOp) {
 	};
 };
 
-ARMCoreArm.prototype.constructUMULL = function(rd, rn, rs, rm, s, condOp) {
+ARMCoreArm.prototype.constructUMULL = function(rd, rn, rs, rm, condOp) {
 	var cpu = this.cpu;
 	var SHIFT_32 = 1/0x100000000;
 	var gprs = cpu.gprs;
@@ -1421,9 +1421,24 @@ ARMCoreArm.prototype.constructUMULL = function(rd, rn, rs, rm, s, condOp) {
 		var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
 		gprs[rd] = (hi * SHIFT_32 + lo * SHIFT_32) >>> 0;
-		if (s) {
-			cpu.cpsrN = gprs[rd] & 0x80000000;
-			cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
+	};
+};
+
+ARMCoreArm.prototype.constructUMULLS = function(rd, rn, rs, rm, condOp) {
+	var cpu = this.cpu;
+	var SHIFT_32 = 1/0x100000000;
+	var gprs = cpu.gprs;
+	return function() {
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		if (condOp && !condOp()) {
+			return;
 		}
+		cpu.cycles += 5; // TODO: better timing
+		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
+		var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
+		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
+		gprs[rd] = (hi * SHIFT_32 + lo * SHIFT_32) >>> 0;
+		cpu.cpsrN = gprs[rd] & 0x80000000;
+		cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
 	};
 };
