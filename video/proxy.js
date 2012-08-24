@@ -52,12 +52,18 @@ MemoryProxy.prototype.store32 = function(offset, value) {
 function GameBoyAdvanceRenderProxy() {
 	this.worker = new Worker('video/worker.js');
 
+	this.currentFrame = 0;
+	this.lastSeen = 0;
+	this.lastSent = 0;
+	this.skipFrame = false;
+
 	this.dirty = {};
 	var self = this;
 	var handlers = {
 		finish: function(data) {
 			self.backing = data.backing;
 			self.caller.finishDraw(self.backing);
+			self.lastSeen = data.frame;
 		}
 	};
 	this.worker.onmessage = function(message) {
@@ -180,15 +186,23 @@ GameBoyAdvanceRenderProxy.prototype.setBacking = function(backing) {
 };
 
 GameBoyAdvanceRenderProxy.prototype.drawScanline = function(y) {
-	this.worker.postMessage({ type: 'scanline', y: y, dirty: this.dirty });
-	this.dirty = {};
+	if (!this.skipFrame) {
+		this.worker.postMessage({ type: 'scanline', y: y, dirty: this.dirty });
+		this.dirty = {};
+	}
 };
 
 GameBoyAdvanceRenderProxy.prototype.startDraw = function() {
-	// Nothing to do
+	++this.currentFrame;
 };
 
 GameBoyAdvanceRenderProxy.prototype.finishDraw = function(caller) {
 	this.caller = caller;
-	this.worker.postMessage({ type: 'finish' });
+	if (!this.skipFrame) {
+		this.worker.postMessage({ type: 'finish', frame: this.currentFrame });
+		this.lastSent = this.currentFrame;
+		this.skipFrame = true;
+	} else if (this.seenFrame == this.sendFrame) {
+		this.skipFrame = false;
+	}
 };

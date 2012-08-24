@@ -2,9 +2,10 @@ importScripts('software.js');
 
 var video = new GameBoyAdvanceSoftwareRenderer();
 var proxyBacking = null;
+var currentFrame = 0;
 
 self.finishDraw = function(pixelData) {
-	self.postMessage({ type: 'finish', backing: pixelData });
+	self.postMessage({ type: 'finish', backing: pixelData, frame: currentFrame });
 }
 
 function receiveDirty(dirty) {
@@ -142,6 +143,7 @@ var handlers = {
 	},
 
 	finish: function(data) {
+		currentFrame = data.frame;
 		video.finishDraw(self);
 	},
 };
