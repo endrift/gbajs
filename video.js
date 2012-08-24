@@ -1,5 +1,5 @@
 function GameBoyAdvanceVideo() {
-	this.renderPath = new GameBoyAdvanceRenderProxy();
+	this.renderPath = new GameBoyAdvanceSoftwareRenderer();
 
 	this.CYCLES_PER_PIXEL = 4;
 
