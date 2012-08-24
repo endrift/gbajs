@@ -1384,11 +1384,15 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 			this.setBlendEnabled(layer.index, this.target1[layer.index]);
 			layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
 		} else {
+			firstStart = 0;
 			firstEnd = this.HORIZONTAL_PIXELS;
 			lastStart = 0;
+			lastEnd = this.HORIZONTAL_PIXELS;
 			if (this.win0 && y >= this.win0Top && y < this.win0Bottom) {
 				firstEnd = Math.min(firstEnd, this.win0Left);
+				lastEnd = Math.min(lastEnd, this.win0Right);
 				lastStart = Math.max(lastStart, this.win0Right);
+				firstStart = Math.max(firstStart, this.win0Left);
 				if (this.windows[0].enabled[layer.index]) {
 					this.setBlendEnabled(layer.index, this.windows[0].special && this.target1[layer.index]);
 					layer.drawScanline(backing, layer, this.win0Left, this.win0Right);
@@ -1396,7 +1400,9 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 			}
 			if (this.win1 && y >= this.win1Top && y < this.win1Bottom) {
 				firstEnd = Math.min(firstEnd, this.win1Left);
+				lastEnd = Math.min(lastEnd, this.win1Right);
 				lastStart = Math.max(lastStart, this.win1Right);
+				firstStart = Math.max(firstStart, this.win1Left);
 				if (this.windows[1].enabled[layer.index]) {
 					this.setBlendEnabled(layer.index, this.windows[1].special && this.target1[layer.index]);
 					layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
@@ -1413,9 +1419,11 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 					if (firstEnd) {
 						layer.drawScanline(backing, layer, 0, firstEnd);
 					}
-					// TODO: middle region
 					if (lastStart < this.HORIZONTAL_PIXELS) {
 						layer.drawScanline(backing, layer, lastStart, this.HORIZONTAL_PIXELS);
+					}
+					if (lastEnd < firstStart) {
+						layer.drawScanline(backing, layer, lastEnd, firstStart);
 					}
 				}
 			}
