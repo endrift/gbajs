@@ -1344,7 +1344,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode4 = function(backing,
 
 	for (x = start; x < end; ++x) {
 		localX = bg.dx * x + bg.sx;
-		localY = bg.dy * x + bg.sy;
+		localY = 0 | bg.dy * x + bg.sy;
 		yBase = (localY << 2) & 0x7E0;
 		if (localX < 0 || localY < 0 || localX >= video.HORIZONTAL_PIXELS || localY >= video.VERTICAL_PIXELS) {
 			offset++;
