@@ -14,9 +14,9 @@
 <script src="js/savedata.js"></script>
 <script src="js/gba.js"></script>
 
-<script src="xhr.js"></script>
-<script src="console.js"></script>
-<link href="console.css" rel="stylesheet">
+<script src="resources/xhr.js"></script>
+<script src="resources/console.js"></script>
+<link href="resources/console.css" rel="stylesheet">
 <script>
 function runTest(r) {
 	core.setRom(r);
@@ -42,7 +42,7 @@ window.onload = function() {
 	gbaCon = new Console(core);
 	gbaCon.log("Logging begun!");
 	gbaCon.log("Loading BIOS...");
-	loadRom('bios.bin', function(bios) {
+	loadRom('resources/bios.bin', function(bios) {
 		core.setBios(bios);
 		gbaCon.log("BIOS loaded!");
 		gbaCon.memory.refreshAll();
