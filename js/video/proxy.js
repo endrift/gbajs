@@ -50,7 +50,7 @@ MemoryProxy.prototype.store32 = function(offset, value) {
 };
 
 function GameBoyAdvanceRenderProxy() {
-	this.worker = new Worker('video/worker.js');
+	this.worker = new Worker('js/video/worker.js');
 
 	this.currentFrame = 0;
 	this.lastSeen = 0;
@@ -201,8 +201,10 @@ GameBoyAdvanceRenderProxy.prototype.finishDraw = function(caller) {
 	if (!this.skipFrame) {
 		this.worker.postMessage({ type: 'finish', frame: this.currentFrame });
 		this.lastSent = this.currentFrame;
-		this.skipFrame = true;
-	} else if (this.seenFrame == this.sendFrame) {
+		if (this.lastSent - this.lastSeen > 2) {
+			this.skipFrame = true;
+		}
+	} else if (this.lastSeen - this.lastSent < 2) {
 		this.skipFrame = false;
 	}
 };
