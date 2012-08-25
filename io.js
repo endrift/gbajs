@@ -125,6 +125,8 @@ function GameBoyAdvanceIO() {
 	this.IME = 0x208;
 
 	this.DEFAULT_SOUNDBIAS = 0x200;
+	this.DEFAULT_BGPA = 1;
+	this.DEFAULT_BGPD = 1;
 };
 
 GameBoyAdvanceIO.prototype.setCPU = function(cpu) {
@@ -139,6 +141,10 @@ GameBoyAdvanceIO.prototype.clear = function() {
 	this.registers = new Uint16Array(this.cpu.mmu.SIZE_IO);
 
 	this.registers[this.SOUNDBIAS >> 1] = this.DEFAULT_SOUNDBIAS;
+	this.registers[this.BG2PA >> 1] = this.DEFAULT_BGPA;
+	this.registers[this.BG2PD >> 1] = this.DEFAULT_BGPD;
+	this.registers[this.BG3PA >> 1] = this.DEFAULT_BGPA;
+	this.registers[this.BG3PD >> 1] = this.DEFAULT_BGPD;
 };
 
 GameBoyAdvanceIO.prototype.load8 = function(offset) {
