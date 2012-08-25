@@ -573,12 +573,13 @@ GameBoyAdvanceOBJ.prototype.recalcSize = function() {
 	}
 };
 
-function GameBoyAdvanceOBJLayer(video) {
+function GameBoyAdvanceOBJLayer(video, index) {
 	this.video = video;
 	this.bg = false;
 	this.index = video.LAYER_OBJ;
-	this.priority = 0;
+	this.priority = index;
 	this.enabled = false;
+	this.objwin = 0;
 };
 
 GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, end) {
@@ -592,6 +593,12 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, 
 	for (var i = 0; i < objs.length; ++i) {
 		obj = objs[i];
 		if (obj.disable) {
+			continue;
+		}
+		if ((obj.mode & this.video.OBJWIN_MASK) != this.objwin) {
+			continue;
+		}
+		if (!(obj.mode & this.video.OBJWIN_MASK) && this.priority != obj.priority) {
 			continue;
 		}
 		if (obj.y < this.video.VERTICAL_PIXELS) {
@@ -658,7 +665,14 @@ GameBoyAdvanceSoftwareRenderer.prototype.clear = function(mmu) {
 	this.vram = new GameBoyAdvanceVRAM(mmu.SIZE_VRAM);
 	this.oam = new GameBoyAdvanceOAM(mmu.SIZE_OAM);
 	this.oam.video = this;
-	this.objLayer = new GameBoyAdvanceOBJLayer(this);
+	this.objLayers = [
+		new GameBoyAdvanceOBJLayer(this, 0),
+		new GameBoyAdvanceOBJLayer(this, 1),
+		new GameBoyAdvanceOBJLayer(this, 2),
+		new GameBoyAdvanceOBJLayer(this, 3)
+	];
+	this.objwinLayer = new GameBoyAdvanceOBJLayer(this, 4);
+	this.objwinLayer.objwin = this.OBJWIN_MASK;
 
 	// DISPCNT
 	this.backgroundMode = 0;
@@ -757,7 +771,18 @@ GameBoyAdvanceSoftwareRenderer.prototype.clear = function(mmu) {
 		function () { throw 'Unimplemented BG Mode 5'; }
 	];
 
-	this.drawLayers = [ this.bg[0], this.bg[1], this.bg[2], this.bg[3], this.objLayer, this.drawBackdrop ];
+	this.drawLayers = [
+		this.bg[0],
+		this.bg[1],
+		this.bg[2],
+		this.bg[3],
+		this.objLayers[0],
+		this.objLayers[1],
+		this.objLayers[2],
+		this.objLayers[3],
+		this.objwinLayer,
+		this.drawBackdrop
+	];
 
 	this,objwinActive = false;
 	this.alphaEnabled = false;
@@ -808,10 +833,14 @@ GameBoyAdvanceSoftwareRenderer.prototype.writeDisplayControl = function(value) {
 	this.bg[1].enabled = value & 0x0200;
 	this.bg[2].enabled = value & 0x0400;
 	this.bg[3].enabled = value & 0x0800;
-	this.objLayer.enabled = value & 0x1000;
+	this.objLayers[0].enabled = value & 0x1000;
+	this.objLayers[1].enabled = value & 0x1000;
+	this.objLayers[2].enabled = value & 0x1000;
+	this.objLayers[3].enabled = value & 0x1000;
 	this.win0 = value & 0x2000;
 	this.win1 = value & 0x4000;
 	this.objwin = value & 0x8000;
+	this.objwinLayer.enabled = value & 0x1000 && value & 0x8000;
 
 	// Total hack so we can store both things that would set it to 256-color mode in the same variable
 	this.bg[2].multipalette &= ~0x0001;
@@ -1017,13 +1046,14 @@ GameBoyAdvanceSoftwareRenderer.prototype.resetLayers = function() {
 };
 
 GameBoyAdvanceSoftwareRenderer.prototype.layerComparator = function(a, b) {
-	if (a.bg && !b.bg) {
-		return 1;
-	} else if (!a.bg && b.bg) {
-		return -1;
-	}
 	var diff = b.priority - a.priority;
 	if (!diff) {
+		if (a.bg && !b.bg) {
+			return -1;
+		} else if (!a.bg && b.bg) {
+			return 1;
+		}
+
 		return b.index - a.index;
 	}
 	return diff;
