@@ -450,7 +450,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 				tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4), this.tileBase + (tileOffset << 1) + ((localX & 0x01F8) >> 2), localYLo << 1);
 			}
 		}
-		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask);
+		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask, false);
 		offset++;
 	}
 };
@@ -515,7 +515,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 			tileOffset = (localY & 0x01F8) << 2;
 		}
 		tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), (localY & 0x7) << paletteShift);
-		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask);
+		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask, false);
 		offset++;
 	}
 };
@@ -1086,18 +1086,20 @@ GameBoyAdvanceSoftwareRenderer.prototype.accessTile = function(base, tile, y) {
 	return this.vram.load32(offset);
 }
 
-GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, offset, backing, mask) {
+GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, offset, backing, mask, raw) {
 	var index;
-	if (this.multipalette) {
-		index = (row >> (x << 3)) & 0xFF;
-	} else {
-		index = (row >> (x << 2)) & 0xF;
-	}
-	// Index 0 is transparent
-	if (!index) {
-		return;
-	} else if (!this.multipalette) {
-		index |= map.palette;
+	if (!raw) {
+		if (this.multipalette) {
+			index = (row >> (x << 3)) & 0xFF;
+		} else {
+			index = (row >> (x << 2)) & 0xF;
+		}
+		// Index 0 is transparent
+		if (!index) {
+			return;
+		} else if (!this.multipalette) {
+			index |= map.palette;
+		}
 	}
 
 	var stencil = video.WRITTEN_MASK;
@@ -1117,7 +1119,7 @@ GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, o
 		}
 	}
 
-	var pixel = video.palette.accessColor(layer, index);
+	var pixel = raw ? row : video.palette.accessColor(layer, index);
 	var highPriority = (mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK);
 	// Backgrounds can draw over each other, too.
 	if ((mask & video.PRIORITY_MASK) == (oldStencil & video.PRIORITY_MASK)) {
@@ -1238,7 +1240,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode0 = function(backing,
 		if (map.hflip) {
 			localXLo = 7 - localXLo;
 		}
-		bg.pushPixel(index, map, video, tileRow, localXLo, offset, backing, mask);
+		bg.pushPixel(index, map, video, tileRow, localXLo, offset, backing, mask, false);
 		offset++;
 	}
 };
@@ -1283,7 +1285,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode2 = function(backing,
 		yBase = ((localY << 1) & 0x7F0) << size;
 		video.accessMapMode1(screenBase, size, localX, yBase, map);
 		color = this.vram.loadU8(charBase + (map.tile << 6) + ((localY & 0x7) << 3) + (localX & 0x7));
-		bg.pushPixel(index, map, video, color, 0, offset, backing, mask);
+		bg.pushPixel(index, map, video, color, 0, offset, backing, mask, false);
 		offset++;
 	}
 };
@@ -1313,8 +1315,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode3 = function(backing,
 			continue;
 		}
 		color = this.vram.loadU16(((localY * video.HORIZONTAL_PIXELS) + localX) << 1);
-		backing.color[offset] = color;
-		backing.stencil[offset] = video.WRITTEN_MASK;
+		bg.pushPixel(index, map, video, color, 0, offset, backing, mask, true);
 		offset++;
 	}
 };
@@ -1350,7 +1351,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode4 = function(backing,
 			continue;
 		}
 		color = this.vram.loadU8(charBase + (localY * video.HORIZONTAL_PIXELS) + localX);
-		bg.pushPixel(index, map, video, color, 0, offset, backing, mask);
+		bg.pushPixel(index, map, video, color, 0, offset, backing, mask, false);
 		offset++;
 	}
 };
