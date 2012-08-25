@@ -1320,7 +1320,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode4 = function(backing,
 			offset++;
 			continue;
 		}
-		color = this.vram.loadU8(charBase + ((localY & 0x7) << 3) + localX);
+		color = this.vram.loadU8(charBase + (localY * video.HORIZONTAL_PIXELS) + localX);
 		bg.pushPixel(index, map, video, color, 0, offset, backing, mask);
 		offset++;
 	}
