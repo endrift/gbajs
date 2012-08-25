@@ -53,6 +53,7 @@ function GameBoyAdvance() {
 
 	this.seenFrame = false;
 	this.seenSave = false;
+	this.lastVblank = 0;
 
 	this.interval = null;
 	this.reportFPS = null;
@@ -134,10 +135,13 @@ GameBoyAdvance.prototype.returnFalse = function() {
 };
 
 GameBoyAdvance.prototype.waitFrame = function() {
-	if (!this.video.inVblank) {
+	if (this.seenFrame && (this.cpu.cycles - this.lastVblank >= this.video.TOTAL_LENGTH)) {
 		this.seenFrame = false;
 		return true;
 	} else {
+		if (!this.seenFrame) {
+			this.lastVblank = this.cpu.cycles;
+		}
 		var didSeeFrame = this.seenFrame;
 		this.seenFrame = true;
 		return didSeeFrame;
