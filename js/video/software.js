@@ -1265,7 +1265,6 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode3 = function(backing,
 	var offset = start;
 	var localX;
 	var localY;
-	var charBase = bg.charBase;
 	var index = bg.index;
 	var map = video.sharedMap;
 	var color;
@@ -1283,7 +1282,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode3 = function(backing,
 			offset++;
 			continue;
 		}
-		color = this.vram.loadU16(charBase + (((localY * video.HORIZONTAL_PIXELS) + localX) << 1));
+		color = this.vram.loadU16(((localY * video.HORIZONTAL_PIXELS) + localX) << 1);
 		backing.color[offset] = color;
 		backing.stencil[offset] = video.WRITTEN_MASK;
 		offset++;
@@ -1297,7 +1296,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode4 = function(backing,
 	var offset = start;
 	var localX;
 	var localY;
-	var charBase = bg.charBase;
+	var charBase = 0;
 	if (video.displayFrameSelect) {
 		charBase += 0xA000;
 	}
