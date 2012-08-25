@@ -384,7 +384,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	var underflow;
 	var offset;
 	var mask = this.mode | video.target2[video.LAYER_OBJ] | (this.priority << 1);
-	if (this.blendMode == 0x10) {
+	if (this.mode == 0x10) {
 		mask |= video.TARGET1_MASK;
 	}
 	if (video.blendMode == 1 && video.alphaEnabled) {
@@ -461,7 +461,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 	var underflow;
 	var offset;
 	var mask = this.mode | video.target2[video.LAYER_OBJ] | (this.priority << 1);
-	if (this.blendMode == 0x10) {
+	if (this.mode == 0x10) {
 		mask |= video.TARGET1_MASK;
 	}
 	if (video.blendMode == 1 && video.alphaEnabled) {
@@ -991,10 +991,11 @@ GameBoyAdvanceSoftwareRenderer.prototype.writeBlendControl = function(value) {
 	}
 };
 
-GameBoyAdvanceSoftwareRenderer.prototype.setBlendEnabled = function(layer, enabled) {
+GameBoyAdvanceSoftwareRenderer.prototype.setBlendEnabled = function(layer, enabled, override) {
 	this.alphaEnabled = false;
+	this.blendEnabled = override;
 	if (enabled) {
-		switch (this.blendMode) {
+		switch (override) {
 		case 1:
 			// Alpha
 			this.alphaEnabled = enabled;
@@ -1107,19 +1108,30 @@ GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, o
 	if (video.objwinActive) {
 		if (oldStencil & video.OBJWIN_MASK) {
 			if (video.windows[3].enabled[layer]) {
-				video.setBlendEnabled(layer, video.windows[3].special);
+				video.setBlendEnabled(layer, video.windows[3].special, video.blendMode);
 				stencil |= video.OBJWIN_MASK;
 			} else {
 				return;
 			}
 		} else if (video.windows[2].enabled[layer]) {
-			video.setBlendEnabled(layer, video.windows[2].special);
+			video.setBlendEnabled(layer, video.windows[2].special, video.blendMode);
 		} else {
 			return;
 		}
 	}
 
+	var blend;
+	if (mask & video.TARGET1_MASK) {
+		blend = video.blendEnabled;
+		video.setBlendEnabled(layer, true, 1);
+	}
+
 	var pixel = raw ? row : video.palette.accessColor(layer, index);
+
+	if (mask & video.TARGET1_MASK) {
+		blend = video.blendEnabled;
+		video.setBlendEnabled(layer, true, blend);
+	}
 	var highPriority = (mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK);
 	// Backgrounds can draw over each other, too.
 	if ((mask & video.PRIORITY_MASK) == (oldStencil & video.PRIORITY_MASK)) {
@@ -1146,6 +1158,9 @@ GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, o
 		}
 	} else {
 		return;
+	}
+	if (mask & video.TARGET1_MASK && blend != 1) {
+		stencil &= ~video.TARGET1_MASK;
 	}
 
 	if (mask & video.OBJWIN_MASK) {
@@ -1381,7 +1396,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 		}
 		this.objwinActive = false;
 		if (!(this.win0 || this.win1 || this.objwin)) {
-			this.setBlendEnabled(layer.index, this.target1[layer.index]);
+			this.setBlendEnabled(layer.index, this.target1[layer.index], this.blendMode);
 			layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
 		} else {
 			firstStart = 0;
@@ -1394,7 +1409,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 				lastStart = Math.max(lastStart, this.win0Right);
 				firstStart = Math.max(firstStart, this.win0Left);
 				if (this.windows[0].enabled[layer.index]) {
-					this.setBlendEnabled(layer.index, this.windows[0].special && this.target1[layer.index]);
+					this.setBlendEnabled(layer.index, this.windows[0].special && this.target1[layer.index], this.blendMode);
 					layer.drawScanline(backing, layer, this.win0Left, this.win0Right);
 				}
 			}
@@ -1404,7 +1419,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 				lastStart = Math.max(lastStart, this.win1Right);
 				firstStart = Math.max(firstStart, this.win1Left);
 				if (this.windows[1].enabled[layer.index]) {
-					this.setBlendEnabled(layer.index, this.windows[1].special && this.target1[layer.index]);
+					this.setBlendEnabled(layer.index, this.windows[1].special && this.target1[layer.index], this.blendMode);
 					layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
 				}
 			}
@@ -1412,7 +1427,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 			if (this.windows[2].enabled[layer.index] || (this.objwin && this.windows[3].enabled[layer.index])) {
 				// WINOUT/OBJWIN
 				this.objwinActive = this.objwin;
-				this.setBlendEnabled(layer.index, this.windows[2].special); // Window 3 handled in pushPixel
+				this.setBlendEnabled(layer.index, this.windows[2].special, this.blendMode); // Window 3 handled in pushPixel
 				if (firstEnd > lastStart) {
 					layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
 				} else {
@@ -1428,7 +1443,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 				}
 			}
 
-			this.setBlendEnabled(this.LAYER_BACKDROP, this.target1[this.LAYER_BACKDROP] && this.windows[2].special);
+			this.setBlendEnabled(this.LAYER_BACKDROP, this.target1[this.LAYER_BACKDROP] && this.windows[2].special, this.blendMode);
 		}
 		if (layer.bg) {
 			layer.sx += layer.dmx;
