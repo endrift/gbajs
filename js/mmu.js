@@ -534,6 +534,8 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var destRegion = info.nextDest >>> this.BASE_OFFSET;
 	var sourceBlock = this.memory[sourceRegion];
 	var destBlock = this.memory[destRegion];
+	var sourceView = null;
+	var destView = null;
 	var word;
 
 	var endPage = (info.nextDest + wordsRemaining * width) >> this.ICACHE_PAGE_BITS;
@@ -541,10 +543,16 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		this.icache[i] = null;
 	}
 
+	if (destRegion == this.REGION_WORKING_RAM || destRegion == this.REGION_WORKING_IRAM) {
+		destView = destBlock.view;
+	}
+
+	if (sourceRegion == this.REGION_WORKING_RAM || sourceRegion == this.REGION_WORKING_IRAM || sourceRegion == this.REGION_CART0 || sourceRegion == this.REGION_CART1) {
+		sourceView = sourceBlock.view;
+	}
+
 	if (sourceBlock && destBlock) {
-		if (sourceBlock.view && destBlock.view) {
-			var sourceView = sourceBlock.view;
-			var destView = destBlock.view;
+		if (sourceView && destView) {
 			if (width == 4) {
 				source &= 0xFFFFFFFC;
 				dest &= 0xFFFFFFFC;
@@ -562,8 +570,7 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 					dest += destOffset;
 				}
 			}
-		} else if (sourceBlock.view) {
-			var sourceView = sourceBlock.view;
+		} else if (sourceView) {
 			if (width == 4) {
 				source &= 0xFFFFFFFC;
 				dest &= 0xFFFFFFFC;
