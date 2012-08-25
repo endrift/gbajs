@@ -542,21 +542,62 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	}
 
 	if (sourceBlock && destBlock) {
-		if (width == 4) {
-			source &= 0xFFFFFFFC;
-			dest &= 0xFFFFFFFC;
-			while (wordsRemaining--) {
-				word = sourceBlock.load32(source);
-				destBlock.store32(dest, word);
-				source += sourceOffset;
-				dest += destOffset;
+		if (sourceBlock.view && destBlock.view) {
+			var sourceView = sourceBlock.view;
+			var destView = destBlock.view;
+			if (width == 4) {
+				source &= 0xFFFFFFFC;
+				dest &= 0xFFFFFFFC;
+				while (wordsRemaining--) {
+					word = sourceView.getInt32(source);
+					destView.setInt32(dest, word);
+					source += sourceOffset;
+					dest += destOffset;
+				}
+			} else {
+				while (wordsRemaining--) {
+					word = sourceView.getUint16(source);
+					destView.setUint16(dest, word);
+					source += sourceOffset;
+					dest += destOffset;
+				}
+			}
+		} else if (sourceBlock.view) {
+			var sourceView = sourceBlock.view;
+			if (width == 4) {
+				source &= 0xFFFFFFFC;
+				dest &= 0xFFFFFFFC;
+				while (wordsRemaining--) {
+					word = sourceView.getInt32(source, true);
+					destBlock.store32(dest, word);
+					source += sourceOffset;
+					dest += destOffset;
+				}
+			} else {
+				while (wordsRemaining--) {
+					word = sourceView.getUint16(source, true);
+					destBlock.store16(dest, word);
+					source += sourceOffset;
+					dest += destOffset;
+				}
 			}
 		} else {
-			while (wordsRemaining--) {
-				word = sourceBlock.loadU16(source);
-				destBlock.store16(dest, word);
-				source += sourceOffset;
-				dest += destOffset;
+			if (width == 4) {
+				source &= 0xFFFFFFFC;
+				dest &= 0xFFFFFFFC;
+				while (wordsRemaining--) {
+					word = sourceBlock.load32(source);
+					destBlock.store32(dest, word);
+					source += sourceOffset;
+					dest += destOffset;
+				}
+			} else {
+				while (wordsRemaining--) {
+					word = sourceBlock.loadU16(source);
+					destBlock.store16(dest, word);
+					source += sourceOffset;
+					dest += destOffset;
+				}
 			}
 		}
 	} else {
