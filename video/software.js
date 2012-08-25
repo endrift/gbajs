@@ -752,7 +752,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.clear = function(mmu) {
 		this.drawScanlineBGMode0,
 		this.drawScanlineBGMode2, // Modes 1 and 2 are identical for layers 2 and 3
 		this.drawScanlineBGMode2,
-		function () { throw 'Unimplemented BG Mode 3'; },
+		this.drawScanlineBGMode3,
 		this.drawScanlineBGMode4,
 		function () { throw 'Unimplemented BG Mode 5'; }
 	];
@@ -1254,6 +1254,38 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode2 = function(backing,
 		video.accessMapMode1(screenBase, size, localX, yBase, map);
 		color = this.vram.loadU8(charBase + (map.tile << 6) + ((localY & 0x7) << 3) + (localX & 0x7));
 		bg.pushPixel(index, map, video, color, 0, offset, backing, mask);
+		offset++;
+	}
+};
+
+GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode3 = function(backing, bg, start, end) {
+	var video = this.video;
+	var x;
+	var y = video.vcount;
+	var offset = start;
+	var localX;
+	var localY;
+	var charBase = bg.charBase;
+	var index = bg.index;
+	var map = video.sharedMap;
+	var color;
+	var mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+	if (video.blendMode == 1 && video.alphaEnabled) {
+		mask |= video.target1[index];
+	}
+
+	var yBase;
+
+	for (x = start; x < end; ++x) {
+		localX = bg.dx * x + bg.sx;
+		localY = bg.dy * x + bg.sy;
+		if (localX < 0 || localY < 0 || localX >= video.HORIZONTAL_PIXELS || localY >= video.VERTICAL_PIXELS) {
+			offset++;
+			continue;
+		}
+		color = this.vram.loadU16(charBase + (((localY * video.HORIZONTAL_PIXELS) + localX) << 1));
+		backing.color[offset] = color;
+		backing.stencil[offset] = video.WRITTEN_MASK;
 		offset++;
 	}
 };
