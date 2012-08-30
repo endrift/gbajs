@@ -332,6 +332,7 @@ ARMCoreThumb.prototype.constructLDR3 = function(rd, immediate) {
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		cpu.mmu.wait32(gprs[cpu.PC]);
+		++cpu.cycles;
 		gprs[rd] = cpu.mmu.load32((gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
 	};
 };
@@ -646,7 +647,7 @@ ARMCoreThumb.prototype.constructROR = function(rd, rm) {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		var rs = gprs[rm] & 0xFF;
 		if (rs) {
-			var r4 = rs & 0x0F;
+			var r4 = rs & 0x1F;
 			if (r4 > 0) {
 				cpu.cpsrC = gprs[rd] & (1 << (r4 - 1));
 				gprs[rd] = (gprs[rd] >>> r4) | (gprs[rd] << (32 - r4));
@@ -686,6 +687,7 @@ ARMCoreThumb.prototype.constructSTMIA = function(rn, rs) {
 				cpu.mmu.wait32(address);
 				cpu.mmu.store32(address, gprs[i]);
 				address += 4;
+				break;
 			}
 		}
 		for (m <<= 1, ++i; i < 8; m <<= 1, ++i) {
