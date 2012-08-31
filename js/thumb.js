@@ -694,7 +694,7 @@ ARMCoreThumb.prototype.constructSTMIA = function(rn, rs) {
 			if (rs & m) {
 				cpu.mmu.waitSeq32(address);
 				cpu.mmu.store32(address, gprs[i]);
-				address -= 4;
+				address += 4;
 			}
 		}
 		gprs[rn] = address;
