@@ -36,19 +36,31 @@ MemoryView.prototype.store32 = function(offset, value) {
 	this.view.setInt32(offset & this.mask, value, true);
 };
 
+MemoryView.prototype.invalidatePage = function(address) {};
+
 MemoryView.prototype.replaceData = function(memory, offset) {
 	this.buffer = memory;
 	this.view = new DataView(this.buffer, typeof(offset) === "number" ? offset : 0);
 };
 
-function MemoryBlock(size) {
+function MemoryBlock(size, cacheBits) {
 	MemoryView.call(this, new ArrayBuffer(size));
+	this.ICACHE_PAGE_BITS = cacheBits;
+	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
+	this.icache = new Array(size >> (this.ICACHE_PAGE_BITS + 1));
 };
 
 MemoryBlock.prototype = Object.create(MemoryView.prototype);
 
+MemoryBlock.prototype.invalidatePage = function(address) {
+	this.icache[address >> this.ICACHE_PAGE_BITS] = null;
+};
+
 function ROMView(rom, offset) {
 	MemoryView.call(this, rom, offset);
+	this.ICACHE_PAGE_BITS = 10;
+	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
+	this.icache = new Array(rom.byteLength >> (this.ICACHE_PAGE_BITS + 1));
 	this.mask = 0x01FFFFFF;
 };
 
@@ -60,8 +72,13 @@ ROMView.prototype.store16 = function(offset, value) {};
 
 ROMView.prototype.store32 = function(offset, value) {};
 
+ROMView.prototype.invalidate = function(address) {};
+
 function BIOSView(rom, offset) {
 	MemoryView.call(this, rom, offset);
+	this.ICACHE_PAGE_BITS = 16;
+	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
+	this.icache = new Array(1);
 };
 
 BIOSView.prototype = Object.create(ROMView.prototype);
@@ -119,6 +136,8 @@ DummyMemory.prototype.store8 = function(offset, value) {};
 DummyMemory.prototype.store16 = function(offset, value) {};
 
 DummyMemory.prototype.store32 = function(offset, value) {};
+
+DummyMemory.prototype.invalidatePage = function(address) {};
 
 function BadMemory(mmu, cpu) {
 	this.cpu = cpu;
@@ -241,8 +260,8 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.memory = [
 		null,
 		new DummyMemory(), // Unused
-		new MemoryBlock(this.SIZE_WORKING_RAM),
-		new MemoryBlock(this.SIZE_WORKING_IRAM),
+		new MemoryBlock(this.SIZE_WORKING_RAM, 9),
+		new MemoryBlock(this.SIZE_WORKING_IRAM, 7),
 		null, // This is owned by GameBoyAdvanceIO
 		null, // This is owned by GameBoyAdvancePalette
 		null, // This is owned by GameBoyAdvanceVRAM
@@ -260,8 +279,6 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	for (var i = 16; i < 256; ++i) {
 		this.memory[i] = badMemory;
 	}
-
-	this.icache = [];
 
 	this.waitstates = this.WAITSTATES.slice(0);
 	this.waitstatesSeq = this.WAITSTATES_SEQ.slice(0);
@@ -437,22 +454,22 @@ GameBoyAdvanceMMU.prototype.store8 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFF;
 	var memory = this.memory[offset >>> this.BASE_OFFSET];
 	memory.store8(maskedOffset, value);
-	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
+	memory.invalidatePage(maskedOffset);
 };
 
 GameBoyAdvanceMMU.prototype.store16 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFE;
 	var memory = this.memory[offset >>> this.BASE_OFFSET];
 	memory.store16(maskedOffset, value);
-	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
+	memory.invalidatePage(maskedOffset);
 };
 
 GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	var maskedOffset = offset & 0x00FFFFFC;
 	var memory = this.memory[offset >>> this.BASE_OFFSET];
 	memory.store32(maskedOffset, value);
-	this.icache[offset >> this.ICACHE_PAGE_BITS] = null;
-	this.icache[(offset + 2) >> this.ICACHE_PAGE_BITS] = null;
+	memory.invalidatePage(maskedOffset);
+	memory.invalidatePage(maskedOffset + 2);
 };
 
 GameBoyAdvanceMMU.prototype.wait = function(memory) {
@@ -469,6 +486,23 @@ GameBoyAdvanceMMU.prototype.waitSeq = function(memory) {
 
 GameBoyAdvanceMMU.prototype.waitSeq32 = function(memory) {
 	this.cpu.cycles += 1 + this.waitstatesSeq32[memory >>> this.BASE_OFFSET];
+};
+
+GameBoyAdvanceMMU.prototype.addressToPage = function(region, address) {
+	return address >> this.memory[region].ICACHE_PAGE_BITS;
+};
+
+GameBoyAdvanceMMU.prototype.accessPage = function(region, pageId) {
+	var memory = this.memory[region];
+	var page = memory.icache[pageId];
+	if (!page) {
+		page = {
+			thumb: new Array(1 << (memory.ICACHE_PAGE_BITS)),
+			arm: new Array(1 << memory.ICACHE_PAGE_BITS - 1)
+		}
+		memory.icache[pageId] = page;
+	}
+	return page;
 };
 
 GameBoyAdvanceMMU.prototype.scheduleDma = function(number, info) {
@@ -538,9 +572,9 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var destView = null;
 	var word;
 
-	var endPage = (info.nextDest + wordsRemaining * width) >> this.ICACHE_PAGE_BITS;
-	for (var i = info.nextDest >> this.ICACHE_PAGE_BITS; i <= endPage; ++i) {
-		this.icache[i] = null;
+	var endPage = (info.nextDest + wordsRemaining * width) >> destBlock.ICACHE_PAGE_BITS;
+	for (var i = info.nextDest >> destBlock.ICACHE_PAGE_BITS; i <= endPage; ++i) {
+		destBlock.invalidatePage(i << destBlock.ICACHE_PAGE_BITS);
 	}
 
 	if (destRegion == this.REGION_WORKING_RAM || destRegion == this.REGION_WORKING_IRAM) {

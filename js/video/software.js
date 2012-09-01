@@ -50,6 +50,8 @@ MemoryAligned16.prototype.insert = function(start, data) {
 	this.buffer.set(data, start);
 };
 
+MemoryAligned16.prototype.invalidatePage = function(address) {};
+
 function GameBoyAdvanceVRAM(size) {
 	MemoryAligned16.call(this, size);
 	this.vram = this.buffer;
@@ -207,6 +209,8 @@ GameBoyAdvancePalette.prototype.store32 = function(offset, value) {
 	this.store16(offset, value & 0xFFFF);
 	this.store16(offset + 2, value >> 16);
 };
+
+GameBoyAdvancePalette.prototype.invalidatePage = function(address) {};
 
 GameBoyAdvancePalette.prototype.convert16To32 = function(value, input) {
 	var r = (value & 0x001F) << 3;

@@ -762,6 +762,8 @@ GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
 	this.registers[(offset >> 1) + 1] = value >>> 16;
 };
 
+GameBoyAdvanceIO.prototype.invalidatePage = function(address) {};
+
 GameBoyAdvanceIO.prototype.STUB_REG = function(type, offset) {
 	this.core.STUB('Unimplemented ' + type + ' register write: ' + offset.toString(16));
 };

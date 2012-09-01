@@ -160,6 +160,8 @@ FlashSavedata.prototype.store32 = function(offset, value) {
 	throw new Error("Unaligned save to flash!");
 };
 
+FlashSavedata.prototype.invalidatePage = function(address) {};
+
 FlashSavedata.prototype.replaceData = function(memory) {
 	var bank = this.view === this.bank1;
 	MemoryView.prototype.replaceData.call(this, memory, 0);
@@ -295,6 +297,8 @@ EEPROMSavedata.prototype.store16 = function(offset, value) {
 EEPROMSavedata.prototype.store32 = function(offset, value) {
 	throw new Error("Unsupported 32-bit access!");
 };
+
+EEPROMSavedata.prototype.invalidatePage = function(address) {};
 
 EEPROMSavedata.prototype.replaceData = function(memory) {
 	MemoryView.prototype.replaceData.call(this, memory, 0);

@@ -125,25 +125,26 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 ARMCore.prototype.fetchPage = function(address) {
 	// FIXME: because this page held onto, it won't get invalidated if we're using it, even if
 	// someone else writes over the instructions
-	var pageId = address >> this.mmu.ICACHE_PAGE_BITS;
-	if (pageId == this.pageId) {
-		return;
-	}
-	this.pageId = pageId;
-	this.page = this.mmu.icache[pageId];
-	if (!this.page) {
-		this.page = {
-			thumb: new Array(1 << (this.mmu.ICACHE_PAGE_BITS)),
-			arm: new Array(1 << this.mmu.ICACHE_PAGE_BITS - 1)
+	var region = address >> this.mmu.BASE_OFFSET;
+	var pageId = this.mmu.addressToPage(region, address & this.mmu.OFFSET_MASK);
+	if (region == this.pageRegion) {
+		if (pageId == this.pageId) {
+			return;
 		}
-		this.mmu.icache[pageId] = this.page;
+		this.pageId = pageId;
+	} else {
+		this.pageMask = this.mmu.memory[region].PAGE_MASK;
+		this.pageRegion = region;
+		this.pageId = pageId;
 	}
+
+	this.page = this.mmu.accessPage(region, pageId);
 };
 
 ARMCore.prototype.loadInstructionArm = function(address) {
 	var next = null;
 	this.fetchPage(address);
-	var offset = (address & this.mmu.PAGE_MASK) >> 2;
+	var offset = (address & this.pageMask) >> 2;
 	next = this.page.arm[offset];
 	if (next) {
 		return next;
@@ -158,7 +159,7 @@ ARMCore.prototype.loadInstructionArm = function(address) {
 ARMCore.prototype.loadInstructionThumb = function(address) {
 	var next = null;
 	this.fetchPage(address);
-	var offset = (address & this.mmu.PAGE_MASK) >> 1;
+	var offset = (address & this.pageMask) >> 1;
 	next = this.page.thumb[offset];
 	if (next) {
 		return next;

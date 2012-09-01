@@ -49,6 +49,8 @@ MemoryProxy.prototype.store32 = function(offset, value) {
 	return this.blocks[offset >> this.blockSize].store32(offset & this.mask, value);
 };
 
+MemoryProxy.prototype.invalidatePage = function(address) {};
+
 function GameBoyAdvanceRenderProxy() {
 	this.worker = new Worker('js/video/worker.js');
 
