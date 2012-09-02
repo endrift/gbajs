@@ -53,7 +53,7 @@ function MemoryBlock(size, cacheBits) {
 MemoryBlock.prototype = Object.create(MemoryView.prototype);
 
 MemoryBlock.prototype.invalidatePage = function(address) {
-	this.icache[address >> this.ICACHE_PAGE_BITS] = null;
+	this.icache[(address & this.mask) >> this.ICACHE_PAGE_BITS] = null;
 };
 
 function ROMView(rom, offset) {
