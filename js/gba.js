@@ -57,6 +57,11 @@ function GameBoyAdvance() {
 
 	this.interval = null;
 	this.reportFPS = null;
+
+	window.requestAnimationFrame = window.requestAnimationFrame ||
+		window.webkitRequestAnimationFrame ||
+		window.mozRequestAnimationFrame ||
+		window.msRequestAnimationFrame;
 };
 
 GameBoyAdvance.prototype.setCanvas = function(canvas) {
@@ -135,23 +140,15 @@ GameBoyAdvance.prototype.returnFalse = function() {
 };
 
 GameBoyAdvance.prototype.waitFrame = function() {
-	if (this.seenFrame && (this.cpu.cycles - this.lastVblank >= this.video.TOTAL_LENGTH)) {
-		this.seenFrame = false;
-		return true;
-	} else {
-		if (!this.seenFrame) {
-			this.lastVblank = this.cpu.cycles;
-		}
-		var didSeeFrame = this.seenFrame;
-		this.seenFrame = true;
-		return didSeeFrame;
+	if (this.cpu.cycles - this.lastVblank >= this.video.TOTAL_LENGTH) {
+		this.lastVblank = this.cpu.cycles;
+		return false;
 	}
+	return true;
 };
 
 GameBoyAdvance.prototype.pause = function() {
 	this.paused = true;
-	clearInterval(this.interval);
-	this.interval = false;
 };
 
 GameBoyAdvance.prototype.advanceFrame = function() {
@@ -188,29 +185,31 @@ GameBoyAdvance.prototype.runStable = function() {
 				start = Date.now();
 				self.advanceFrame();
 				++frames;
-				if (frames == 20) {
+				if (frames == 60) {
 					self.reportFPS((frames * 1000) / timer);
 					frames = 0;
 					timer = 0;
 				}
+				if (!self.paused) {
+					requestAnimationFrame(runFunc);
+				}
 			} catch(exception) {
 				self.ERROR(exception);
-				clearInterval(self.interval);
-				this.interval = null;
 			}
 		};
 	} else {
 		runFunc = function() {
 			try {
 				self.advanceFrame();
+				if (!self.paused) {
+					requestAnimationFrame(runFunc);
+				}
 			} catch(exception) {
 				self.ERROR(exception);
-				clearInterval(self.interval);
-				this.interval = null;
 			}
 		};
 	}
-	this.interval = setInterval(runFunc, 1000/60);
+	requestAnimationFrame(runFunc);
 };
 
 GameBoyAdvance.prototype.setSavedata = function(data) {
