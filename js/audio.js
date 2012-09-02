@@ -63,6 +63,12 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 		}
 	}
 
+	this.waveBanks = new Uint8Array(32);
+	this.channel3Dimenstion = 0;
+	this.channel3SelectedBank = 0;
+	this.channel3Volume = 0;
+	this.channel3Interval = 0;
+
 	this.nextEvent = 0;
 
 	this.nextSample = 0;

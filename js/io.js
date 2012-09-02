@@ -58,6 +58,14 @@ function GameBoyAdvanceIO() {
 	this.SOUNDCNT_HI = 0x082;
 	this.SOUNDCNT_X = 0x084;
 	this.SOUNDBIAS = 0x088;
+	this.WAVE_RAM0_LO = 0x090;
+	this.WAVE_RAM0_HI = 0x092;
+	this.WAVE_RAM1_LO = 0x094;
+	this.WAVE_RAM1_HI = 0x096;
+	this.WAVE_RAM2_LO = 0x098;
+	this.WAVE_RAM2_HI = 0x09A;
+	this.WAVE_RAM3_LO = 0x09C;
+	this.WAVE_RAM3_HI = 0x09E;
 	this.FIFO_A_LO = 0x0A0;
 	this.FIFO_A_HI = 0x0A2;
 	this.FIFO_B_LO = 0x0A4;
