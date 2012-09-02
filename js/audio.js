@@ -4,9 +4,9 @@ function GameBoyAdvanceAudio() {
 		this.context = new webkitAudioContext();
 		this.bufferSize = 0;
 		if (this.context.sampleRate >= 44100) {
-			this.bufferSize = 1024;
+			this.bufferSize = 2048;
 		} else {
-			this.bufferSize = 512;
+			this.bufferSize = 1024;
 		}
 		this.buffers = [new Float32Array(this.bufferSize << 2), new Float32Array(this.bufferSize << 2)];
 		this.sampleMask = (this.bufferSize << 2) - 1;
@@ -330,7 +330,7 @@ GameBoyAdvanceAudio.prototype.writeWaveData = function(offset, data, width) {
 
 GameBoyAdvanceAudio.prototype.setChannel4Enabled = function(enable) {
 	if (!this.enableChannel4 && enable) {
-		this.channel4.nextEvent = this.cpu.cycles;
+		this.channel4.next = this.cpu.cycles;
 		this.enableChannel4 = enable;
 		this.nextEvent = this.cpu.cycles;
 		this.updateEnvelope(this.channel4);
