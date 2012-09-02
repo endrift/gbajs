@@ -121,18 +121,25 @@ GameBoyAdvanceAudio.prototype.updateTimers = function() {
 		this.updateSquareChannel(channel, cycles);
 	}
 
-	if (this.enableChannel3 && cycles >= this.channel3Next) {
-		var sample = this.waveData[this.channel3Pointer >> 1];
-		this.channel3Sample = (((sample >> ((this.channel3Pointer & 1) << 2)) & 0xF) - 0x8) / 8;
-		this.channel3Pointer = (this.channel3Pointer + 1);
-		if (this.channel3Dimension && this.channel3Pointer >= 64) {
-			this.channel3Pointer -= 64;
-		} else if (!this.channel3Bank && this.channel3Pointer >= 32) {
-			this.channel3Pointer -= 32;
-		} else if (this.channel3Pointer >= 64) {
-			this.channel3Pointer -= 32;
+	if (this.enableChannel3 && this.channel3Write) {
+		if (cycles >= this.channel3Next) {
+			var sample = this.waveData[this.channel3Pointer >> 1];
+			this.channel3Sample = (((sample >> ((this.channel3Pointer & 1) << 2)) & 0xF) - 0x8) / 8;
+			this.channel3Pointer = (this.channel3Pointer + 1);
+			this.channel3Next += this.channel3Interval;
+			if (this.channel3Dimension && this.channel3Pointer >= 64) {
+				this.channel3Pointer -= 64;
+			} else if (!this.channel3Bank && this.channel3Pointer >= 32) {
+				this.channel3Pointer -= 32;
+			} else if (this.channel3Pointer >= 64) {
+				this.channel3Pointer -= 32;
+			}
 		}
-		this.channel3Next += this.channel3Interval;
+		if (this.channel3Interval) {
+			if (this.nextEvent > this.channel3Next) {
+				this.nextEvent = this.channel3Next;
+			}
+		}
 	}
 
 	if (this.enableChannel4) {
@@ -292,7 +299,13 @@ GameBoyAdvanceAudio.prototype.updateSquareChannel = function(channel, cycles) {
 GameBoyAdvanceAudio.prototype.writeChannel3Lo = function(value) {
 	this.channel3Dimension = value & 0x20;
 	this.channel3Bank = value & 0x40;
-	this.enableChannel3 = value & 0x80;
+	var enable = value & 0x80;
+	if (!this.channel3Write && enable) {
+		this.channel3Write = enable;
+		this.resetChannel3();
+	} else {
+		this.channel3Write = enable;
+	}
 };
 
 GameBoyAdvanceAudio.prototype.writeChannel3Hi = function(value) {
@@ -318,6 +331,12 @@ GameBoyAdvanceAudio.prototype.writeChannel3Hi = function(value) {
 
 GameBoyAdvanceAudio.prototype.writeChannel3X = function(value) {
 	this.channel3Interval = this.cpuFrequency * (2048 - (value & 0x7FF)) / 2097152;
+	if (this.channel3Write) {
+		this.resetChannel3();
+	}
+};
+
+GameBoyAdvanceAudio.prototype.resetChannel3 = function() {
 	this.channel3Next = this.cpu.cycles;
 	this.nextEvent = this.channel3Next;
 	this.updateTimers();
