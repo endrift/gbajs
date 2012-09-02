@@ -83,6 +83,7 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	}
 
 	this.video.updateTimers(this.cpu);
+	this.audio.updateTimers();
 	if (this.timersEnabled) {
 		// TODO: ensure incrementing only on read and overflow
 		var timer = this.timers[0];
@@ -510,6 +511,13 @@ GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
 	test = this.video.nextEvent;
 	if (!this.nextEvent || test < this.nextEvent) {
 		this.nextEvent = test;
+	}
+
+	if (this.audio.enabled) {
+		test = this.audio.nextEvent;
+		if (!this.nextEvent || test < this.nextEvent) {
+			this.nextEvent = test;
+		}
 	}
 
 	if (this.timersEnabled) {
