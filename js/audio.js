@@ -181,7 +181,17 @@ GameBoyAdvanceAudio.prototype.writeSoundControlLo = function(value) {
 };
 
 GameBoyAdvanceAudio.prototype.writeSoundControlHi = function(value) {
-	this.soundRatio = ((value & 0x0003) + 1) * 0.25;
+	switch (value & 0x0003) {
+	case 0:
+		this.soundRatio = 0.25;
+		break;
+	case 1:
+		this.soundRatio = 0.50;
+		break;
+	case 2:
+		this.soundRatio = 1;
+		break;
+	}
 	this.ratioChannelA = (((value & 0x0004) >> 2) + 1) * 0.5;
 	this.ratioChannelB = (((value & 0x0008) >> 3) + 1) * 0.5;
 
@@ -412,9 +422,6 @@ GameBoyAdvanceAudio.prototype.appendToFifoA = function(value) {
 		value >>= 8;
 		this.fifoA.push(b / 0x80000000);
 	}
-	while (this.fifoA.length >= 32) {
-		this.fifoA.shift();
-	}
 };
 
 GameBoyAdvanceAudio.prototype.appendToFifoB = function(value) {
@@ -423,9 +430,6 @@ GameBoyAdvanceAudio.prototype.appendToFifoB = function(value) {
 		b = (value & 0xFF) << 24;
 		value >>= 8;
 		this.fifoB.push(b / 0x80000000);
-	}
-	while (this.fifoB.length >= 32) {
-		this.fifoB.shift();
 	}
 };
 
