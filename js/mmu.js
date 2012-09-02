@@ -653,13 +653,9 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 		                                               : this.waitstatesSeq[sourceRegion] + this.waitstatesSeq[destRegion]);
 	}
 
-	// FIXME: Games just seem to want to trample their RAM by incrementing these addresses during
-	// sound FIFO DMAs...investigate further
-	if (!(info.timing == this.DMA_TIMING_CUSTOM && (number == 1 || number == 2))) {
-		info.nextSource = source | (sourceRegion << this.BASE_OFFSET);
-		info.nextDest = dest | (destRegion << this.BASE_OFFSET);
-		info.nextCount = wordsRemaining;
-	}
+	info.nextSource = source | (sourceRegion << this.BASE_OFFSET);
+	info.nextDest = dest | (destRegion << this.BASE_OFFSET);
+	info.nextCount = wordsRemaining;
 
 	if (!info.repeat) {
 		info.enable = false;
