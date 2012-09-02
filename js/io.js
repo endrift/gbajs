@@ -560,15 +560,15 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.SOUND3CNT_LO:
 		value &= 0x00E0;
-		this.STUB_REG('sound', offset);
+		this.audio.writeChannel3Lo(value);
 		break;
 	case this.SOUND3CNT_HI:
 		value &= 0xE0FF;
-		this.STUB_REG('sound', offset);
+		this.audio.writeChannel3Hi(value);
 		break;
 	case this.SOUND3CNT_X:
 		value &= 0xC7FF;
-		this.STUB_REG('sound', offset);
+		this.audio.writeChannel3X(value);
 		break;
 	case this.SOUND4CNT_LO:
 		value &= 0xFF3F;
@@ -589,6 +589,16 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.SOUNDCNT_X:
 		value &= 0x0080;
 		this.audio.writeEnable(value);
+		break;
+	case this.WAVE_RAM0_LO:
+	case this.WAVE_RAM0_HI:
+	case this.WAVE_RAM1_LO:
+	case this.WAVE_RAM1_HI:
+	case this.WAVE_RAM2_LO:
+	case this.WAVE_RAM2_HI:
+	case this.WAVE_RAM3_LO:
+	case this.WAVE_RAM3_HI:
+		this.audio.writeWaveData(offset - this.WAVE_RAM0_LO, value, 2);
 		break;
 
 	// DMA

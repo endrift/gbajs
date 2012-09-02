@@ -43,8 +43,6 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 
 	this.soundRatio = 1;
 
-	this.channel1Sample = 0;
-
 	this.squareChannels = new Array();
 	for (var i = 0; i < 2; ++i) {
 		this.squareChannels[i] = {
@@ -63,11 +61,14 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 		}
 	}
 
-	this.waveBanks = new Uint8Array(32);
+	this.waveData = new Uint8Array(32);
 	this.channel3Dimenstion = 0;
-	this.channel3SelectedBank = 0;
+	this.channel3Bank = 0;
 	this.channel3Volume = 0;
 	this.channel3Interval = 0;
+	this.channel3Next = 0;
+	this.channel3Pointer =0;
+	this.channel3Sample = 0;
 
 	this.nextEvent = 0;
 
@@ -98,6 +99,20 @@ GameBoyAdvanceAudio.prototype.updateTimers = function() {
 	channel = this.squareChannels[1];
 	if (channel.enabled) {
 		this.updateSquareChannel(channel, cycles);
+	}
+
+	if (this.enableChannel3 && cycles >= this.channel3Next) {
+		var sample = this.waveData[this.channel3Pointer >> 1];
+		this.channel3Sample = (((sample >> ((this.channel3Pointer & 1) << 2)) & 0xF) - 0x8) / 8;
+		this.channel3Pointer = (this.channel3Pointer + 1);
+		if (this.channel3Dimension && this.channel3Pointer >= 64) {
+			this.channel3Pointer -= 64;
+		} else if (!this.channel3Bank && this.channel3Pointer >= 32) {
+			this.channel3Pointer -= 32;
+		} else if (this.channel3Pointer >= 64) {
+			this.channel3Pointer -= 32;
+		}
+		this.channel3Next += this.channel3Interval;
 	}
 
 	if (cycles >= this.nextSample) {
@@ -248,6 +263,49 @@ GameBoyAdvanceAudio.prototype.updateSquareChannel = function(channel, cycles) {
 	}
 };
 
+GameBoyAdvanceAudio.prototype.writeChannel3Lo = function(value) {
+	this.channel3Dimension = value & 0x20;
+	this.channel3Bank = value & 0x40;
+	this.enableChannel3 = value & 0x80;
+};
+
+GameBoyAdvanceAudio.prototype.writeChannel3Hi = function(value) {
+	var length = value & 0xFF;
+	var volume = (value >> 13) & 0x7;
+	switch (volume) {
+	case 0:
+		this.channel3Volume = 0;
+		break;
+	case 1:
+		this.channel3Volume = 1;
+		break;
+	case 2:
+		this.channel3Volume = 0.5;
+		break;
+	case 3:
+		this.channel3Volume = 0.25;
+		break;
+	default:
+		this.channel3Volume = 0.75;
+	}
+};
+
+GameBoyAdvanceAudio.prototype.writeChannel3X = function(value) {
+	this.channel3Interval = this.cpuFrequency * (2048 - (value & 0x7FF)) / 2097152;
+	this.channel3Next = this.cpu.cycles;
+	this.nextEvent = this.channel3Next;
+	this.updateTimers();
+	this.core.irq.pollNextEvent();
+};
+
+GameBoyAdvanceAudio.prototype.writeWaveData = function(offset, data, width) {
+	if (width == 2) {
+		this.waveData[offset] = (data >> 8) & 0xFF;
+		++offset;
+	}
+	this.waveData[offset] = data & 0xFF;
+};
+
 GameBoyAdvanceAudio.prototype.appendToFifoA = function(value) {
 	this.fifoA.push(value);
 	this.fifoA.shift();
@@ -288,6 +346,11 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	if (channel.enabled) {
 		sample += channel.sample * this.soundRatio;
 	}
+
+	if (this.enableChannel3) {
+		sample += this.channel3Sample * this.soundRatio * this.channel3Volume;
+	}
+
 	var samplePointer = this.samplePointer;
 	this.buffers[0][samplePointer] = sample;
 	this.buffers[1][samplePointer] = sample;
