@@ -1,5 +1,5 @@
 function GameBoyAdvanceAudio() {
-	if (webkitAudioContext) {
+	if (window.webkitAudioContext) {
 		var self = this;
 		this.context = new webkitAudioContext();
 		this.bufferSize = 0;
@@ -79,7 +79,11 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.samplePointer = 0;
 
 	this.cpuFrequency = this.core.irq.FREQUENCY;
-	this.sampleInterval = this.cpuFrequency / this.context.sampleRate;
+	if (this.context) {
+		this.sampleInterval = this.cpuFrequency / this.context.sampleRate;
+	} else {
+		this.sampleInterval = this.cpuFrequency;
+	}
 
 	this.writeSquareChannelFC(0, 0);
 	this.writeSquareChannelFC(1, 0);
@@ -391,8 +395,10 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	}
 
 	var samplePointer = this.samplePointer;
-	this.buffers[0][samplePointer] = sample;
-	this.buffers[1][samplePointer] = sample;
+	if (this.buffers) {
+		this.buffers[0][samplePointer] = sample;
+		this.buffers[1][samplePointer] = sample;
+	}
 	this.samplePointer = (samplePointer + 1) & this.sampleMask;
 };
 
