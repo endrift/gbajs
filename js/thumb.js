@@ -291,14 +291,16 @@ ARMCoreThumb.prototype.constructLDMIA = function(rn, rs) {
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		var address = gprs[rn];
+		var total = 0;
 		var m, i;
 		for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 			if (rs & m) {
-				cpu.mmu.waitSeq32(address);
 				gprs[i] = cpu.mmu.load32(address);
 				address += 4;
+				++total;
 			}
 		}
+		cpu.mmu.waitMulti32(address, total);
 		gprs[rn] = address;
 	};
 };
@@ -591,19 +593,23 @@ ARMCoreThumb.prototype.constructPOP = function(rs, r) {
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		var address = gprs[cpu.SP];
+		var total = 0;
 		var m, i;
 		for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 			if (rs & m) {
 				cpu.mmu.waitSeq32(address);
 				gprs[i] = cpu.mmu.load32(address);
 				address += 4;
+				++total;
 			}
 		}
 		if (r) {
 			cpu.mmu.waitSeq32(address);
 			gprs[cpu.PC] = cpu.mmu.load32(address) & 0xFFFFFFFE;
 			address += 4;
+			++total;
 		}
+		cpu.mmu.waitMulti32(address, total);
 		gprs[cpu.SP] = address;
 		++cpu.cycles;
 	};
@@ -613,29 +619,31 @@ ARMCoreThumb.prototype.constructPUSH = function(rs, r) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		var address = gprs[cpu.SP] - 4;
+		var total = 0;
 		if (r) {
-			cpu.mmu.waitSeq32(address);
 			cpu.mmu.store32(address, gprs[cpu.LR]);
 			address -= 4;
+			++total;
 		}
 		var m, i;
 		for (m = 0x80, i = 7; m; m >>= 1, --i) {
 			if (rs & m) {
-				cpu.mmu.wait32(address);
 				cpu.mmu.store32(address, gprs[i]);
 				address -= 4;
+				++total;
 				break;
 			}
 		}
 		for (m >>= 1, --i; m; m >>= 1, --i) {
 			if (rs & m) {
-				cpu.mmu.waitSeq32(address);
 				cpu.mmu.store32(address, gprs[i]);
 				address -= 4;
+				++total;
 			}
 		}
+		cpu.mmu.waitMulti32(address, total);
+		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		gprs[cpu.SP] = address + 4;
 	};
 };
@@ -681,22 +689,24 @@ ARMCoreThumb.prototype.constructSTMIA = function(rn, rs) {
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		var address = gprs[rn];
+		var total = 0;
 		var m, i;
 		for (m = 0x01, i = 0; i < 8; m <<= 1, ++i) {
 			if (rs & m) {
-				cpu.mmu.wait32(address);
 				cpu.mmu.store32(address, gprs[i]);
 				address += 4;
+				++total;
 				break;
 			}
 		}
 		for (m <<= 1, ++i; i < 8; m <<= 1, ++i) {
 			if (rs & m) {
-				cpu.mmu.waitSeq32(address);
 				cpu.mmu.store32(address, gprs[i]);
 				address += 4;
+				++total;
 			}
 		}
+		cpu.mmu.waitMulti32(address, total);
 		gprs[rn] = address;
 	};
 };

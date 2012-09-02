@@ -699,14 +699,16 @@ ARMCoreArm.prototype.constructLDM = function(rs, address, condOp) {
 			return;
 		}
 		var addr = address();
+		var total = 0;
 		var m, i;
 		for (m = rs, i = 0; m; m >>= 1, ++i) {
 			if (m & 1) {
-				mmu.waitSeq32(addr);
 				gprs[i] = mmu.load32(addr);
 				addr += 4;
+				++total;
 			}
 		}
+		mmu.waitMulti32(address, total);
 		++cpu.cycles;
 	};
 };
@@ -1224,22 +1226,24 @@ ARMCoreArm.prototype.constructSTM = function(rs, address, condOp) {
 			return;
 		}
 		var addr = address();
+		var total = 0;
 		var m, i;
 		for (m = rs, i = 0; m; m >>= 1, ++i) {
 			if (m & 1) {
-				mmu.wait32(addr);
 				mmu.store32(addr, gprs[i]);
 				addr += 4;
+				++total;
 				break;
 			}
 		}
 		for (m >>= 1, ++i; m; m >>= 1, ++i) {
 			if (m & 1) {
-				mmu.waitSeq32(addr);
 				mmu.store32(addr, gprs[i]);
 				addr += 4;
+				++total;
 			}
 		}
+		cpu.mmu.waitMulti32(address, total);
 		cpu.mmu.wait32(gprs[cpu.PC]);
 	};
 };

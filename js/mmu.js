@@ -488,6 +488,16 @@ GameBoyAdvanceMMU.prototype.waitSeq32 = function(memory) {
 	this.cpu.cycles += 1 + this.waitstatesSeq32[memory >>> this.BASE_OFFSET];
 };
 
+GameBoyAdvanceMMU.prototype.waitMulti = function(memory, seq) {
+	this.cpu.cycles += 1 + this.waitstates[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += (1 + this.waitstatesSeq[memory >>> this.BASE_OFFSET]) * (seq - 1);
+};
+
+GameBoyAdvanceMMU.prototype.waitMulti32 = function(memory, seq) {
+	this.cpu.cycles += 1 + this.waitstates32[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += (1 + this.waitstatesSeq32[memory >>> this.BASE_OFFSET]) * (seq - 1);
+};
+
 GameBoyAdvanceMMU.prototype.addressToPage = function(region, address) {
 	return address >> this.memory[region].ICACHE_PAGE_BITS;
 };

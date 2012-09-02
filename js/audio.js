@@ -155,6 +155,10 @@ GameBoyAdvanceAudio.prototype.updateTimers = function() {
 	}
 
 	this.nextEvent = Math.ceil(this.nextEvent);
+	if (this.nextEvent < cycles) {
+		// STM instructions may take a long time
+		this.updateTimers();
+	}
 };
 
 GameBoyAdvanceAudio.prototype.writeEnable = function(value) {
