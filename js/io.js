@@ -544,7 +544,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND2CNT_LO:
-		this.audio.writeChannel2DLE(value);
+		this.audio.writeSquareChannelDLE(1, value);
 		break;
 	case this.SOUND1CNT_X:
 		value &= 0xC7FF;
@@ -552,7 +552,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		break;
 	case this.SOUND2CNT_HI:
 		value &= 0xC7FF;
-		this.audio.writeChannel2FC(value);
+		this.audio.writeSquareChannelFC(1, value);
 		break;
 	case this.SOUND3CNT_LO:
 		value &= 0x00E0;
