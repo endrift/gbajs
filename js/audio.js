@@ -72,6 +72,7 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.cpuFrequency = this.core.irq.FREQUENCY;
 	this.sampleInterval = this.cpuFrequency / this.context.sampleRate;
 
+	this.writeSquareChannelFC(0, 0);
 	this.writeSquareChannelFC(1, 0);
 };
 
@@ -83,7 +84,12 @@ GameBoyAdvanceAudio.prototype.updateTimers = function() {
 
 	this.nextEvent += this.sampleInterval;
 
-	var channel = this.squareChannels[1];
+	var channel = this.squareChannels[0];
+	if (channel.enabled) {
+		this.updateSquareChannel(channel, cycles);
+	}
+
+	channel = this.squareChannels[1];
 	if (channel.enabled) {
 		this.updateSquareChannel(channel, cycles);
 	}
@@ -110,7 +116,7 @@ GameBoyAdvanceAudio.prototype.writeSoundControlLo = function(value) {
 	var enabledLeft = (value >> 8) & 0xF;
 	var enabledRight = (value >> 12) & 0xF;
 
-	this.enableChannel1 = (enabledLeft | enabledRight) & 0x1;
+	this.setSquareChannelEnabled(this.squareChannels[0], (enabledLeft | enabledRight) & 0x1);
 	this.setSquareChannelEnabled(this.squareChannels[1], (enabledLeft | enabledRight) & 0x2);
 	this.enableChannel3 = (enabledLeft | enabledRight) & 0x4;
 	this.enableChannel4 = (enabledLeft | enabledRight) & 0x8;
@@ -266,6 +272,11 @@ GameBoyAdvanceAudio.prototype.scheduleFIFODma = function(number, info) {
 GameBoyAdvanceAudio.prototype.sample = function() {
 	var sample = 0;
 	var channel;
+
+	channel = this.squareChannels[0];
+	if (channel.enabled) {
+		sample += channel.sample * this.soundRatio;
+	}
 
 	channel = this.squareChannels[1];
 	if (channel.enabled) {

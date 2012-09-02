@@ -342,22 +342,19 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	switch (offset) {
 	case this.WININ:
 		this.value & 0x3F;
-		this.video.renderPath.writeWinIn(value | (this.registers[offset >> 1] & 0xFF00));
 		break;
 	case this.WININ | 1:
 		this.value & 0x3F;
-		this.video.renderPath.writeWinIn((value << 8) | (this.registers[offset >> 1] & 0x00FF));
 		break;
 	case this.WINOUT:
 		this.value & 0x3F;
-		this.video.renderPath.writeWinOut(value | (this.registers[offset >> 1] & 0xFF00));
 		break;
 	case this.WINOUT | 1:
 		this.value & 0x3F;
-		this.video.renderPath.writeWinOut((value << 8) | (this.registers[offset >> 1] & 0x00FF));
 		break;
 	case this.SOUND1CNT_HI | 1:
 	case this.SOUND2CNT_LO | 1:
+		break;
 	case this.SOUND3CNT_HI:
 	case this.SOUND4CNT_LO | 1:
 		this.STUB_REG('sound', offset);
@@ -365,7 +362,6 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	case this.SOUND1CNT_X | 1:
 	case this.SOUND2CNT_HI | 1:
 		value &= 0xC7;
-		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND1CNT_LO:
 		value &= 0x7F;
@@ -386,9 +382,9 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 		break;
 	case this.SOUNDCNT_LO | 1:
 		this.STUB_REG('sound', offset);
+		break;
 	case this.SOUNDCNT_X:
 		value &= 0x80;
-		this.audio.writeEnable(value);
 		break;
 	case this.SOUNDBIAS | 1:
 		value &= 0xC3;
@@ -406,7 +402,7 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 		value &= 0x00FF;
 		value |= (this.registers[offset >> 1] & 0xFF00);
 	}
-	this.registers[offset >> 1] = value;
+	this.store16(offset & 0xFFFFFFE, value);
 };
 
 GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
@@ -541,14 +537,14 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.SOUND1CNT_LO:
 		value &= 0x007F;
 	case this.SOUND1CNT_HI:
-		this.STUB_REG('sound', offset);
-		break;
-	case this.SOUND2CNT_LO:
-		this.audio.writeSquareChannelDLE(1, value);
+		this.audio.writeSquareChannelDLE(0, value);
 		break;
 	case this.SOUND1CNT_X:
 		value &= 0xC7FF;
-		this.STUB_REG('sound', offset);
+		this.audio.writeSquareChannelFC(0, value);
+		break;
+	case this.SOUND2CNT_LO:
+		this.audio.writeSquareChannelDLE(1, value);
 		break;
 	case this.SOUND2CNT_HI:
 		value &= 0xC7FF;
