@@ -49,12 +49,15 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 
 	this.channel2Sample = 0;
 	this.channel2Duty = 0.5;
+	this.channel2Increment = 0;
+	this.channel2Step = 0;
 	this.channel2InitialVolume = 0;
 	this.channel2Volume = 0;
 	this.channel2Interval = 0;
 
 	this.channel2Raise = 0;
 	this.channel2Lower = 0;
+	this.channel2NextStep = 0;
 
 	this.nextEvent = 0;
 
@@ -77,27 +80,15 @@ GameBoyAdvanceAudio.prototype.updateTimers = function() {
 	this.nextEvent += this.sampleInterval;
 
 	if (this.enableChannel2) {
-		if (cycles >= this.channel2Raise) {
-			this.channel2Sample = this.channel2Volume;
-			this.channel2Lower = this.channel2Raise + this.channel2Duty * this.channel2Interval;
-			this.channel2Raise += this.channel2Interval;
-		}
-		if (cycles >= this.channel2Lower) {
-			this.channel2Sample = -this.channel2Volume;
-			this.channel2Lower += this.channel2Interval;
-		}
-		if (this.nextEvent > this.channel2Raise) {
-			this.nextEvent = this.channel2Raise;
-		}
-		if (this.nextEvent > this.channel2Lower) {
-			this.nextEvent = this.channel2Lower;
-		}
+		this.updateChannel2(cycles);
 	}
 
 	if (cycles >= this.nextSample) {
 		this.sample();
 		this.nextSample += this.sampleInterval;
 	}
+
+	this.nextEvent = Math.ceil(this.nextEvent);
 };
 
 GameBoyAdvanceAudio.prototype.writeEnable = function(value) {
@@ -115,7 +106,7 @@ GameBoyAdvanceAudio.prototype.writeSoundControlLo = function(value) {
 	var enabledRight = (value >> 12) & 0xF;
 
 	this.enableChannel1 = (enabledLeft | enabledRight) & 0x1;
-	this.resetChannel2((enabledLeft | enabledRight) & 0x2);
+	this.setChannel2Enabled((enabledLeft | enabledRight) & 0x2);
 	this.enableChannel3 = (enabledLeft | enabledRight) & 0x4;
 	this.enableChannel4 = (enabledLeft | enabledRight) & 0x8;
 
@@ -144,11 +135,21 @@ GameBoyAdvanceAudio.prototype.writeSoundControlHi = function(value) {
 	}
 };
 
-GameBoyAdvanceAudio.prototype.resetChannel2 = function(enable) {
+GameBoyAdvanceAudio.prototype.resetChannel2 = function() {
+	if (this.channel2Step) {
+		this.channel2NextStep = this.cpu.cycles + this.channel2Step;
+		this.updateTimers();
+		this.core.irq.pollNextEvent();
+	}
+};
+
+GameBoyAdvanceAudio.prototype.setChannel2Enabled = function(enable) {
 	if (!this.enableChannel2 && enable) {
 		this.channel2Raise = this.cpu.cycles;
 		this.channel2Lower = this.channel2Raise + this.channel2Duty * this.channel2Interval;
 		this.nextEvent = this.cpu.cycles;
+		this.updateTimers();
+		this.core.irq.pollNextEvent();
 	}
 
 	this.enableChannel2 = enable;
@@ -170,16 +171,59 @@ GameBoyAdvanceAudio.prototype.writeChannel2DLE = function(value) {
 		this.channel2Duty = 0.75;
 		break;
 	}
+	if (value & 0x0800) {
+		this.channel2Increment = 1 / 15;
+	} else {
+		this.channel2Increment = -1 / 15;
+	}
 	this.channel2InitialVolume = ((value >> 12) & 0xF) / 15;
-	this.channel2Volume = this.channel2InitialVolume;
+
+	this.channel2Step = this.cpuFrequency * (((value >> 8) & 0x7) / 64);
+	this.resetChannel2();
 };
 
 GameBoyAdvanceAudio.prototype.writeChannel2FC = function(value) {
 	var frequency = 131072 / (2048 - (value & 2047));
 	this.channel2Interval = this.cpuFrequency / frequency;
 
-	if (value & 0x1000) {
+	if (value & 0x8000) {
+		this.resetChannel2();
 		this.channel2Volume = this.channel2InitialVolume;
+	}
+};
+
+GameBoyAdvanceAudio.prototype.updateChannel2 = function(cycles) {
+	if (cycles >= this.channel2Raise) {
+		this.channel2Sample = this.channel2Volume;
+		this.channel2Lower = this.channel2Raise + this.channel2Duty * this.channel2Interval;
+		this.channel2Raise += this.channel2Interval;
+	}
+	if (cycles >= this.channel2Lower) {
+		this.channel2Sample = -this.channel2Volume;
+		this.channel2Lower += this.channel2Interval;
+	}
+
+	if (this.channel2Step) {
+		if (cycles >= this.channel2NextStep) {
+			this.channel2Volume += this.channel2Increment;
+			if (this.channel2Volume > 1) {
+				this.channel2Volume = 1;
+			} else if (this.channel2Volume < 0) {
+				this.channel2Volume = 0;
+			}
+			this.channel2NextStep += this.channel2Step;
+		}
+
+		if (this.nextEvent > this.channel2NextStep) {
+			this.nextEvent = this.channel2NextStep;
+		}
+	}
+
+	if (this.nextEvent > this.channel2Raise) {
+		this.nextEvent = this.channel2Raise;
+	}
+	if (this.nextEvent > this.channel2Lower) {
+		this.nextEvent = this.channel2Lower;
 	}
 };
 
