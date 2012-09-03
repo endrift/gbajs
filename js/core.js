@@ -71,7 +71,6 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 	];
 	this.spsr = 0;
 	this.bankedSPSRs = new Int32Array(6);
-	this.irqPending = 0;
 
 	this.cycles = 0;
 
@@ -246,6 +245,8 @@ ARMCore.prototype.unpackCPSR = function(spsr) {
 	this.cpsrZ = spsr & 0x40000000;
 	this.cpsrC = spsr & 0x20000000;
 	this.cpsrV = spsr & 0x10000000;
+
+	this.irq.testIRQ();
 };
 
 ARMCore.prototype.hasSPSR = function() {
@@ -254,11 +255,8 @@ ARMCore.prototype.hasSPSR = function() {
 
 ARMCore.prototype.raiseIRQ = function() {
 	if (this.cpsrI) {
-		this.irqPending = true;
 		return;
 	}
-	this.irqPending = false;
-
 	var cpsr = this.packCPSR();
 	var instructionWidth = this.instructionWidth;
 	this.switchMode(this.MODE_IRQ);

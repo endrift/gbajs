@@ -75,11 +75,17 @@ function GameBoyAdvanceInterruptHandler() {
 	}
 
 	this.nextEvent = 0;
+	this.springIRQ = false;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	if (this.nextEvent > this.cpu.cycles) {
 		return;
+	}
+
+	if (this.springIRQ) {
+		this.cpu.raiseIRQ();
+		this.springIRQ = false;
 	}
 
 	this.video.updateTimers(this.cpu);
@@ -481,7 +487,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 GameBoyAdvanceInterruptHandler.prototype.masterEnable = function(value) {
 	this.enable = value;
 
-	if (this.enable && this.enabledIRQs && this.interruptFlags) {
+	if (this.enable && this.enabledIRQs & this.interruptFlags) {
 		this.cpu.raiseIRQ();
 	}
 };
@@ -499,7 +505,7 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 
 	this.dismissIRQs(~value);
 
-	if (this.enable && this.enabledIRQs && this.interruptFlags) {
+	if (this.enable && this.enabledIRQs & this.interruptFlags) {
 		this.cpu.raiseIRQ();
 	}
 };
@@ -573,7 +579,7 @@ GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
 
 GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
 	var timer;
-	var irqPending = this.video.hblankIRQ || this.video.vblankIRQ || this.video.vcounterIRQ;
+	var irqPending = this.testIRQ() || this.video.hblankIRQ || this.video.vblankIRQ || this.video.vcounterIRQ;
 	if (this.timersEnabled) {
 		timer = this.timers[0];
 		irqPending = irqPending || timer.doIrq;
@@ -603,14 +609,20 @@ GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {
 	}
 };
 
-GameBoyAdvanceInterruptHandler.prototype.raiseIRQ = function(irqType) {
-	if (!(this.enabledIRQs & 1 << irqType)) {
-		return;
+GameBoyAdvanceInterruptHandler.prototype.testIRQ = function() {
+	if (this.enable && this.enabledIRQs & this.interruptFlags) {
+		this.springIRQ = true;
+		this.nextEvent = this.cpu.cycles;
+		return true;
 	}
+	return false;
+};
+
+GameBoyAdvanceInterruptHandler.prototype.raiseIRQ = function(irqType) {
 	this.interruptFlags |= 1 << irqType;
 	this.io.registers[this.io.IF >> 1] = this.interruptFlags;
 
-	if (this.enable && this.enabledIRQs & this.interruptFlags) {
+	if (this.enable && (this.enabledIRQs & 1 << irqType)) {
 		this.cpu.raiseIRQ();
 	}
 };
