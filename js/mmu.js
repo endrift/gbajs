@@ -68,11 +68,23 @@ ROMView.prototype = Object.create(MemoryView.prototype);
 
 ROMView.prototype.store8 = function(offset, value) {};
 
-ROMView.prototype.store16 = function(offset, value) {};
+ROMView.prototype.store16 = function(offset, value) {
+	if (offset < 0xCA && offset >= 0xC4) {
+		if (!this.gpio) {
+			this.gpio = this.mmu.allocGPIO(this);
+		}
+		this.gpio.store16(offset, value);
+	}
+};
 
-ROMView.prototype.store32 = function(offset, value) {};
-
-ROMView.prototype.invalidate = function(address) {};
+ROMView.prototype.store32 = function(offset, value) {
+	if (offset < 0xCA && offset >= 0xC4) {
+		if (!this.gpio) {
+			this.gpio = this.mmu.allocGPIO(this);
+		}
+		this.gpio.store32(offset, value);
+	}
+};
 
 function BIOSView(rom, offset) {
 	MemoryView.call(this, rom, offset);
@@ -81,7 +93,7 @@ function BIOSView(rom, offset) {
 	this.icache = new Array(1);
 };
 
-BIOSView.prototype = Object.create(ROMView.prototype);
+BIOSView.prototype = Object.create(MemoryView.prototype);
 
 BIOSView.prototype.load8 = function(offset) {
 	if (offset >= this.buffer.byteLength) {
@@ -117,6 +129,12 @@ BIOSView.prototype.load32 = function(offset) {
 	}
 	return this.view.getInt32(offset, true);
 };
+
+BIOSView.prototype.store8 = function(offset, value) {};
+
+BIOSView.prototype.store16 = function(offset, value) {};
+
+BIOSView.prototype.store32 = function(offset, value) {};
 
 function DummyMemory() {
 };
@@ -310,6 +328,7 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 	};
 
 	var lo = new ROMView(rom);
+	lo.mmu = this; // Needed for GPIO
 	this.memory[this.REGION_CART0] = lo;
 	this.memory[this.REGION_CART1] = lo;
 	this.memory[this.REGION_CART2] = lo;
@@ -721,4 +740,8 @@ GameBoyAdvanceMMU.prototype.saveNeedsFlush = function() {
 
 GameBoyAdvanceMMU.prototype.flushSave = function() {
 	this.save.writePending = false;
+};
+
+GameBoyAdvanceMMU.prototype.allocGPIO = function(rom) {
+	return new GameBoyAdvanceGPIO(this.core, rom);
 };
