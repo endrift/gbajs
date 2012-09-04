@@ -57,11 +57,16 @@ ul, ol, #registers {
 #console {
 	overflow-y: auto;
 	white-space: pre-wrap;
+	max-height: 100%;
+	margin: 0;
+}
+
+#consoleContainer {
 	margin: 0;
 	-webkit-box-flex: 1;
 	-moz-box-flex: 1;
-	max-height: 100%;
 	min-width: 300px;
+	display: block;
 	border-right: 1px solid #DADDE1;
 }
 
@@ -130,6 +135,10 @@ ul, ol, #registers {
 #memory {
 	-webkit-box-flex: 1;
 	-moz-box-flex: 1;
+}
+
+#consoleControls {
+	border-bottom: 1px solid #DADDE1;
 }
 
 #console li:before {

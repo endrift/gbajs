@@ -12,6 +12,7 @@
 <script src="js/irq.js"></script>
 <script src="js/keypad.js"></script>
 <script src="js/savedata.js"></script>
+<script src="js/gpio.js"></script>
 <script src="js/gba.js"></script>
 
 <script src="resources/xhr.js"></script>
@@ -29,6 +30,11 @@ function loadRomFromFile(romFile) {
 	reader.onload = function(e) { runTest(e.target.result); }
 	reader.readAsArrayBuffer(romFile);
 };
+
+function setLogLevel(level, enabled) {
+	core.logLevel &= ~level;
+	core.logLevel |= enabled && level;
+}
 
 var core = new GameBoyAdvance();
 var rom = null;
@@ -52,7 +58,15 @@ window.onload = function() {
 </head>
 <body>
 <section id="top">
-	<ul id="console"></ul>
+	<section id="consoleContainer">
+		<div id="consoleControls">
+			<label><input type="checkbox" checked onclick="setLogLevel(core.LOG_ERROR, this.checked)">ERROR</label>
+			<label><input type="checkbox" checked onclick="setLogLevel(core.LOG_WARN, this.checked)">WARN</label>
+			<label><input type="checkbox" onclick="setLogLevel(core.LOG_STUB, this.checked)">STUB</label>
+			<label><input type="checkbox" onclick="setLogLevel(core.LOG_INFO, this.checked)">INFO</label>
+		</div>
+		<ul id="console"></ul>
+	</section>
 	<section id="main">
 		<section id="display">
 			<canvas id="screen" width="240" height="160"></canvas>
