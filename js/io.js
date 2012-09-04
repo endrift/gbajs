@@ -365,7 +365,6 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 		break;
 	case this.SOUND3CNT_HI:
 	case this.SOUND4CNT_LO | 1:
-		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND1CNT_X | 1:
 	case this.SOUND2CNT_HI | 1:
@@ -373,23 +372,18 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 		break;
 	case this.SOUND1CNT_LO:
 		value &= 0x7F;
-		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND3CNT_LO:
 	case this.SOUND3CNT_HI | 1:
 		value &= 0xE0;
-		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUND4CNT_HI | 1:
 		value &= 0xC0;
-		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUNDCNT_LO:
 		value &= 0x77;
-		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUNDCNT_LO | 1:
-		this.STUB_REG('sound', offset);
 		break;
 	case this.SOUNDCNT_X:
 		value &= 0x80;
@@ -543,12 +537,15 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	// Sound
 	case this.SOUND1CNT_LO:
 		value &= 0x007F;
+		this.STUB_REG('sound', offset);
+		break;
 	case this.SOUND1CNT_HI:
 		this.audio.writeSquareChannelDLE(0, value);
 		break;
 	case this.SOUND1CNT_X:
 		value &= 0xC7FF;
 		this.audio.writeSquareChannelFC(0, value);
+		value &= ~0x8000;
 		break;
 	case this.SOUND2CNT_LO:
 		this.audio.writeSquareChannelDLE(1, value);
@@ -556,6 +553,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.SOUND2CNT_HI:
 		value &= 0xC7FF;
 		this.audio.writeSquareChannelFC(1, value);
+		value &= ~0x8000;
 		break;
 	case this.SOUND3CNT_LO:
 		value &= 0x00E0;
@@ -568,14 +566,16 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.SOUND3CNT_X:
 		value &= 0xC7FF;
 		this.audio.writeChannel3X(value);
+		value &= ~0x8000;
 		break;
 	case this.SOUND4CNT_LO:
 		value &= 0xFF3F;
 		this.audio.writeChannel4LE(value);
 		break;
 	case this.SOUND4CNT_HI:
-		value &= 0xE0FF;
+		value &= 0xC0FF;
 		this.audio.writeChannel4FC(value);
+		value &= ~0x8000;
 		break;
 	case this.SOUNDCNT_LO:
 		value &= 0xFF77;
