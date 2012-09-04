@@ -298,7 +298,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		var mod = (this.cpu.gprs[0] | 0) % (this.cpu.gprs[1] | 0);
 		this.cpu.gprs[0] = result | 0;
 		this.cpu.gprs[1] = mod | 0;
-		this.cpu.gprs[3] = Math.abs(mod | 0);
+		this.cpu.gprs[3] = Math.abs(result | 0);
 		break;
 	case 0x07:
 		// DivArm
@@ -306,7 +306,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		var mod = (this.cpu.gprs[1] | 0) % (this.cpu.gprs[0] | 0);
 		this.cpu.gprs[0] = result | 0;
 		this.cpu.gprs[1] = mod | 0;
-		this.cpu.gprs[3] = Math.abs(mod | 0);
+		this.cpu.gprs[3] = Math.abs(result | 0);
 		break;
 	case 0x08:
 		// Sqrt
