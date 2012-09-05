@@ -344,6 +344,9 @@ GameBoyAdvanceAudio.prototype.resetChannel3 = function() {
 };
 
 GameBoyAdvanceAudio.prototype.writeWaveData = function(offset, data, width) {
+	if (this.channel3Bank) {
+		offset += 16;
+	}
 	if (width == 2) {
 		this.waveData[offset] = (data >> 8) & 0xFF;
 		++offset;
