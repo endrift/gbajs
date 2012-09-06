@@ -599,19 +599,25 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 	var destBlock = this.memory[destRegion];
 	var sourceView = null;
 	var destView = null;
+	var sourceMask = 0xFFFFFFFF;
+	var destMask = 0xFFFFFFFF;
 	var word;
 
-	var endPage = (info.nextDest + wordsRemaining * width) >> destBlock.ICACHE_PAGE_BITS;
-	for (var i = info.nextDest >> destBlock.ICACHE_PAGE_BITS; i <= endPage; ++i) {
-		destBlock.invalidatePage(i << destBlock.ICACHE_PAGE_BITS);
+	if (destBlock.ICACHE_PAGE_BITS) {
+		var endPage = (dest + wordsRemaining * width) >> destBlock.ICACHE_PAGE_BITS;
+		for (var i = dest >> destBlock.ICACHE_PAGE_BITS; i <= endPage; ++i) {
+			destBlock.invalidatePage(i << destBlock.ICACHE_PAGE_BITS);
+		}
 	}
 
 	if (destRegion == this.REGION_WORKING_RAM || destRegion == this.REGION_WORKING_IRAM) {
 		destView = destBlock.view;
+		destMask = destBlock.mask;
 	}
 
 	if (sourceRegion == this.REGION_WORKING_RAM || sourceRegion == this.REGION_WORKING_IRAM || sourceRegion == this.REGION_CART0 || sourceRegion == this.REGION_CART1) {
 		sourceView = sourceBlock.view;
+		sourceMask = sourceBlock.mask;
 	}
 
 	if (sourceBlock && destBlock) {
@@ -620,15 +626,15 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 				source &= 0xFFFFFFFC;
 				dest &= 0xFFFFFFFC;
 				while (wordsRemaining--) {
-					word = sourceView.getInt32(source);
-					destView.setInt32(dest, word);
+					word = sourceView.getInt32(source & sourceMask);
+					destView.setInt32(dest & destMask, word);
 					source += sourceOffset;
 					dest += destOffset;
 				}
 			} else {
 				while (wordsRemaining--) {
-					word = sourceView.getUint16(source);
-					destView.setUint16(dest, word);
+					word = sourceView.getUint16(source & sourceMask);
+					destView.setUint16(dest & destMask, word);
 					source += sourceOffset;
 					dest += destOffset;
 				}
@@ -638,14 +644,14 @@ GameBoyAdvanceMMU.prototype.serviceDma = function(number, info) {
 				source &= 0xFFFFFFFC;
 				dest &= 0xFFFFFFFC;
 				while (wordsRemaining--) {
-					word = sourceView.getInt32(source, true);
+					word = sourceView.getInt32(source & sourceMask, true);
 					destBlock.store32(dest, word);
 					source += sourceOffset;
 					dest += destOffset;
 				}
 			} else {
 				while (wordsRemaining--) {
-					word = sourceView.getUint16(source, true);
+					word = sourceView.getUint16(source & sourceMask, true);
 					destBlock.store16(dest, word);
 					source += sourceOffset;
 					dest += destOffset;
