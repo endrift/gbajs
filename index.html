@@ -15,6 +15,7 @@
 <script src="js/irq.js"></script>
 <script src="js/keypad.js"></script>
 <script src="js/savedata.js"></script>
+<script src="js/gpio.js"></script>
 <script src="js/gba.js"></script>
 <script src="resources/xhr.js"></script>
 
@@ -59,9 +60,10 @@ window.onload = function() {
 			'Your browser does not appear to be supported. Is it out of date? ',
 			'Safari 5.1 does not contain the functionality needed for loading the ',
 			'game from your hard drive, and as such is unsupported. ',
-			'If you\'re using Firefox, you must wait for Firefox 15 to come out, ',
-			'or you can use the beta/aurora. However, using Safari or Chrome is ',
-			'highly recommended.'
+			'Likewise, Firefox 14 and below do not contain the functionality used ',
+			'for memory. Firefox 15 is now out, which supports this functionality.',
+			'However, using Safari or Chrome is highly recommended, and are required ',
+			'for sound support.'
 		].join(' ');
 	}
 }
@@ -192,29 +194,28 @@ document.addEventListener('webkitfullscreenchange', function() {
 			<li><a href="http://endrift.com/gbajs/compat.html">Compatibility list</a></li>
 		</ul>
 		<div id="stats">
-			<footer>Prototype version (2012-08-25)</footer>
+			<footer>Prototype version (2012-09-05)</footer>
 			<p><span id="fps">0</span> frames per second</p>
 		</div>
 	</header>
 	<dl>
 		<dt>How long did it take you to do this?</dt>
 		<dd>
-			I started in early July. As of the first prototype, it took me five weeks. I've put in
-			several hours per day since starting on this project, so that's a substantial number of
-			hours.
+			I started in early July. As of the first prototype, it took me five weeks. It's been
+			several more weeks since then, and I've put in several hours per day since starting on
+			this project, so that's a substantial number of hours.
 		</dd>
 		<dt>Why isn't it working?</dt>
 		<dd>
 			You need a very modern browser for this to work. It requires either a recent version of
-			Chrome (up-to-date preferably), Safari 6.0, or Firefox 15+ (the current version of
-			Firefox is 14, so you need either Beta or Aurora for it to work in Firefox). It might
-			work in IE 10, but definitely not before then, and it does not currently work in Opera.
+			Chrome (up-to-date preferably), Safari 6.0, or Firefox 15+. It might work in IE 10, but
+			definitely not before then, and it does not currently work in Opera.
 		</dd>
 		<dt>Why is there no sound?</dt>
 		<dd>
-			This is a very rough prototype. I haven't had enough time yet to start implementing
-			sound, and still have a good portion of graphics code left to implement. Check back at
-			the end of August to see more progress.
+			Firefox does not contain the functionality required to support sound without using a
+			plugin like Flash. It does not contain using Flash for sound, so you must use a browser
+			other than Firefox if you want sound.
 		</dd>
 		<dt>Why is it so slow?</dt>
 		<dd>
@@ -227,8 +228,9 @@ document.addEventListener('webkitfullscreenchange', function() {
 			Fortunately, browsers and hardware are getting faster all the time, so very soon it
 			will be fast enough to play games at full speed. Meanwhile, I'll do all I can to make
 			it faster without upgrading your hardware or software. Also, it just runs slowly in
-			Firefox in general. I haven't put the time into figuring out why, considering that it
-			only works in a pre-release version of the browser.
+			Firefox in general. I haven't put the time into figuring out why, but it's entirely
+			possible that Firefox just doesn't have the optimizations in place required to make
+			GBA.js run quickly.
 		</dd>
 		<dt>Why the Game Boy Advance?</dt>
 		<dd>
@@ -242,18 +244,17 @@ document.addEventListener('webkitfullscreenchange', function() {
 		</dd>
 		<dt>How good is compatibility?</dt>
 		<dd>
-			Currently, not all that great. But that's mostly because a lot of features haven't been
-			implemented yet. This is very much a work in progress and is currently in pre-alpha.
-			Once I've implemented more, like maybe SOUND, then maybe I'll call it alpha and start
-			working more on compatibility. A compatibility list can be found
+			Fairly decent! Most games run and are playable, although some will still crash at times
+			or lock up at specific points. Moreover, other minor bugs in graphics or sound are
+			still present, and I'm working on fixing those bugs. A compatibility list can be found
 			<a href="http://endrift.com/gbajs/compat.html">here</a>. Please report any bugs you
 			find on the <a href="http://github.com/jpfau/gbajs/issues">GitHub issue tracker</a>.
 			If you're feeling daring, you can also run the
-			<a href="http://endrift.com/gbajs/console.html">debug version</a>, and post any useful
-			information it spits out in a problem ticket.
+			<a href="console.html">debug version</a>, and post any useful information it spits out
+			in a problem ticket.
 		</dd>
 		<dt>So this is cool and all, but what's the point?</dt>
-		<dd>Point...?</dd>
+		<dd>There isn't really a point. I just wanted to make something cool.</dd>
 	</dl>
 	<footer>© 2012 <a href="http://endrift.com/">Jeffrey Pfau</a></footer>
 </aside>

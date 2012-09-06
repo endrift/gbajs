@@ -29,7 +29,6 @@ a:link, a:visited {
 
 #controls {
 	margin-top: 60px;
-	margin-bottom: -360px;
 	margin-right: 50%;
 	height: 0;
 }
@@ -216,7 +215,7 @@ ul#links li:not(:first-child)::before {
 }
 
 #instructions {
-	margin-top: 500px;
+	margin-top: 140px;
 	margin-bottom: -70px;
 	margin-right: 50%;
 	padding-right: 320px;
