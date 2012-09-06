@@ -3,6 +3,7 @@ function MemoryProxy(owner, size, blockSize) {
 	this.blocks = [];
 	this.blockSize = blockSize;
 	this.mask = (1 << blockSize) - 1;
+	this.size = size;
 	if (blockSize) {
 		for (var i = 0; i < (size >> blockSize); ++i) {
 			this.blocks.push(new MemoryBlock(1 << blockSize));
@@ -35,16 +36,25 @@ MemoryProxy.prototype.load32 = function(offset) {
 };
 
 MemoryProxy.prototype.store8 = function(offset, value) {
+	if (offset > this.size) {
+		return;
+	}
 	this.owner.memoryDirtied(this, offset >> this.blockSize);
 	return this.blocks[offset >> this.blockSize].store8(offset & this.mask, value);
 };
 
 MemoryProxy.prototype.store16 = function(offset, value) {
+	if (offset > this.size) {
+		return;
+	}
 	this.owner.memoryDirtied(this, offset >> this.blockSize);
 	return this.blocks[offset >> this.blockSize].store16(offset & this.mask, value);
 };
 
 MemoryProxy.prototype.store32 = function(offset, value) {
+	if (offset > this.size) {
+		return;
+	}
 	this.owner.memoryDirtied(this, offset >> this.blockSize);
 	return this.blocks[offset >> this.blockSize].store32(offset & this.mask, value);
 };
