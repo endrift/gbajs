@@ -28,7 +28,7 @@ MemoryView.prototype.loadU16 = function(offset) {
 };
 
 MemoryView.prototype.load32 = function(offset) {
-	return this.view.getInt32(offset & this.mask32, true);
+	return this.view.getInt32(offset & this.mask, true);
 };
 
 MemoryView.prototype.store8 = function(offset, value) {

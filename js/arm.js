@@ -703,7 +703,7 @@ ARMCoreArm.prototype.constructLDM = function(rs, address, condOp) {
 		var m, i;
 		for (m = rs, i = 0; m; m >>= 1, ++i) {
 			if (m & 1) {
-				gprs[i] = mmu.load32(addr);
+				gprs[i] = mmu.load32(addr & 0xFFFFFFFC);
 				addr += 4;
 				++total;
 			}
