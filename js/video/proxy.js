@@ -36,7 +36,7 @@ MemoryProxy.prototype.load32 = function(offset) {
 };
 
 MemoryProxy.prototype.store8 = function(offset, value) {
-	if (offset > this.size) {
+	if (offset >= this.size) {
 		return;
 	}
 	this.owner.memoryDirtied(this, offset >> this.blockSize);
@@ -44,7 +44,7 @@ MemoryProxy.prototype.store8 = function(offset, value) {
 };
 
 MemoryProxy.prototype.store16 = function(offset, value) {
-	if (offset > this.size) {
+	if (offset >= this.size) {
 		return;
 	}
 	this.owner.memoryDirtied(this, offset >> this.blockSize);
@@ -52,7 +52,7 @@ MemoryProxy.prototype.store16 = function(offset, value) {
 };
 
 MemoryProxy.prototype.store32 = function(offset, value) {
-	if (offset > this.size) {
+	if (offset >= this.size) {
 		return;
 	}
 	this.owner.memoryDirtied(this, offset >> this.blockSize);
