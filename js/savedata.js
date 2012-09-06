@@ -54,6 +54,8 @@ function FlashSavedata(size) {
 	this.pendingCommand = 0;
 };
 
+FlashSavedata.prototype = Object.create(MemoryView.prototype);
+
 FlashSavedata.prototype.load8 = function(offset) {
 	if (this.idMode && offset < 2) {
 		return (this.id >> (offset << 3)) & 0xFF;
@@ -160,8 +162,6 @@ FlashSavedata.prototype.store32 = function(offset, value) {
 	throw new Error("Unaligned save to flash!");
 };
 
-FlashSavedata.prototype.invalidatePage = function(address) {};
-
 FlashSavedata.prototype.replaceData = function(memory) {
 	var bank = this.view === this.bank1;
 	MemoryView.prototype.replaceData.call(this, memory, 0);
@@ -197,6 +197,8 @@ function EEPROMSavedata(size, mmu) {
 	this.COMMAND_READ_PENDING = 3;
 	this.COMMAND_READ = 4;
 };
+
+EEPROMSavedata.prototype = Object.create(MemoryView.prototype);
 
 EEPROMSavedata.prototype.load8 = function(offset) {
 	throw new Error("Unsupported 8-bit access!");
@@ -297,8 +299,6 @@ EEPROMSavedata.prototype.store16 = function(offset, value) {
 EEPROMSavedata.prototype.store32 = function(offset, value) {
 	throw new Error("Unsupported 32-bit access!");
 };
-
-EEPROMSavedata.prototype.invalidatePage = function(address) {};
 
 EEPROMSavedata.prototype.replaceData = function(memory) {
 	MemoryView.prototype.replaceData.call(this, memory, 0);

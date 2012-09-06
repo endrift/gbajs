@@ -2,38 +2,45 @@ function MemoryView(memory, offset) {
 	this.buffer = memory;
 	this.view = new DataView(this.buffer, typeof(offset) === "number" ? offset : 0);
 	this.mask = memory.byteLength - 1;
+	this.resetMask();
+};
+
+MemoryView.prototype.resetMask = function() {
+	this.mask8 = this.mask & 0xFFFFFFFF;
+	this.mask16 = this.mask & 0xFFFFFFFE;
+	this.mask32 = this.mask & 0xFFFFFFFC;
 };
 
 MemoryView.prototype.load8 = function(offset) {
-	return this.view.getInt8(offset & this.mask);
+	return this.view.getInt8(offset & this.mask8);
 };
 
 MemoryView.prototype.load16 = function(offset) {
-	return this.view.getInt16(offset & this.mask, true);
+	return this.view.getInt16(offset & this.mask16, true);
 };
 
 MemoryView.prototype.loadU8 = function(offset) {
-	return this.view.getUint8(offset & this.mask);
+	return this.view.getUint8(offset & this.mask8);
 };
 
 MemoryView.prototype.loadU16 = function(offset) {
-	return this.view.getUint16(offset & this.mask, true);
+	return this.view.getUint16(offset & this.mask16, true);
 };
 
 MemoryView.prototype.load32 = function(offset) {
-	return this.view.getInt32(offset & this.mask, true);
+	return this.view.getInt32(offset & this.mask32, true);
 };
 
 MemoryView.prototype.store8 = function(offset, value) {
-	this.view.setInt8(offset & this.mask, value);
+	this.view.setInt8(offset & this.mask8, value);
 };
 
 MemoryView.prototype.store16 = function(offset, value) {
-	this.view.setInt16(offset & this.mask, value, true);
+	this.view.setInt16(offset & this.mask16, value, true);
 };
 
 MemoryView.prototype.store32 = function(offset, value) {
-	this.view.setInt32(offset & this.mask, value, true);
+	this.view.setInt32(offset & this.mask32, value, true);
 };
 
 MemoryView.prototype.invalidatePage = function(address) {};
@@ -62,6 +69,7 @@ function ROMView(rom, offset) {
 	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
 	this.icache = new Array(rom.byteLength >> (this.ICACHE_PAGE_BITS + 1));
 	this.mask = 0x01FFFFFF;
+	this.resetMask();
 };
 
 ROMView.prototype = Object.create(MemoryView.prototype);
@@ -154,8 +162,6 @@ DummyMemory.prototype.store8 = function(offset, value) {};
 DummyMemory.prototype.store16 = function(offset, value) {};
 
 DummyMemory.prototype.store32 = function(offset, value) {};
-
-DummyMemory.prototype.invalidatePage = function(address) {};
 
 function BadMemory(mmu, cpu) {
 	this.cpu = cpu;
