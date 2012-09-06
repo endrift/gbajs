@@ -708,7 +708,7 @@ ARMCoreArm.prototype.constructLDM = function(rs, address, condOp) {
 				++total;
 			}
 		}
-		mmu.waitMulti32(address, total);
+		mmu.waitMulti32(addr, total);
 		++cpu.cycles;
 	};
 };
@@ -1243,7 +1243,7 @@ ARMCoreArm.prototype.constructSTM = function(rs, address, condOp) {
 				++total;
 			}
 		}
-		cpu.mmu.waitMulti32(address, total);
+		cpu.mmu.waitMulti32(addr, total);
 		cpu.mmu.wait32(gprs[cpu.PC]);
 	};
 };
