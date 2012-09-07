@@ -16,7 +16,8 @@ MemoryView.prototype.load8 = function(offset) {
 };
 
 MemoryView.prototype.load16 = function(offset) {
-	return this.view.getInt16(offset & this.mask16, true);
+	// Unaligned 16-bit loads are unpredictable...let's just pretend they work
+	return this.view.getInt16(offset & this.mask, true);
 };
 
 MemoryView.prototype.loadU8 = function(offset) {
@@ -24,11 +25,15 @@ MemoryView.prototype.loadU8 = function(offset) {
 };
 
 MemoryView.prototype.loadU16 = function(offset) {
-	return this.view.getUint16(offset & this.mask16, true);
+	// Unaligned 16-bit loads are unpredictable...let's just pretend they work
+	return this.view.getUint16(offset & this.mask, true);
 };
 
 MemoryView.prototype.load32 = function(offset) {
-	return this.view.getInt32(offset & this.mask, true);
+	// Unaligned 32-bit loads are "rotated" so they make some semblance of sense
+	var rotate = (offset & 3) << 3;
+	var mem = this.view.getInt32(offset & this.mask32, true);
+	return (mem >>> rotate) | (mem << (32 - rotate));
 };
 
 MemoryView.prototype.store8 = function(offset, value) {
