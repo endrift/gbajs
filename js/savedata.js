@@ -59,8 +59,10 @@ FlashSavedata.prototype = Object.create(MemoryView.prototype);
 FlashSavedata.prototype.load8 = function(offset) {
 	if (this.idMode && offset < 2) {
 		return (this.id >> (offset << 3)) & 0xFF;
-	} else {
+	} else if (offset < 0x10000) {
 		return this.bank.getInt8(offset);
+	} else {
+		return 0;
 	}
 };
 
