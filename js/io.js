@@ -263,7 +263,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 
 	case this.RCNT:
 		this.core.STUB('Reading from unimplemented RCNT');
-		return 0;
+		return 0x8000;
 	case this.SIOCNT:
 		this.core.STUB('Reading from unimplemented SIOCNT');
 		return 0;
