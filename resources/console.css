@@ -43,6 +43,7 @@ section {
 	-moz-box-orient: vertical;
 	min-width: 242px;
 	max-width: 410px;
+	text-align: center;
 }
 
 ul, ol, #registers {

@@ -114,6 +114,11 @@ function togglePause() {
 	}
 }
 
+function screenshot() {
+	var canvas = gba.indirectCanvas;
+	window.open(canvas.toDataURL('image/png'), 'screenshot');
+}
+
 document.addEventListener('webkitfullscreenchange', function() {
 	var canvas = document.getElementById('screen');
 	if (document.webkitIsFullScreen) {
@@ -169,6 +174,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 	<div id="ingame" class="hidden">
 		<button id="pause" class="bigbutton" onclick="togglePause()">PAUSE</button>
 		<button onclick="gba.downloadSavedata()">Download Savegame</button>
+		<button onclick="screenshot()">Screenshot</button>
 	</div>
 </section>
 <section id="instructions">

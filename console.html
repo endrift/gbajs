@@ -36,6 +36,11 @@ function setLogLevel(level, enabled) {
 	core.logLevel |= enabled && level;
 }
 
+function screenshot() {
+	var canvas = document.getElementById('screen');
+	window.open(canvas.toDataURL('image/png'), 'screenshot');
+};
+
 var core = new GameBoyAdvance();
 var rom = null;
 
@@ -88,6 +93,7 @@ window.onload = function() {
 			<input type="file" id="uploadSave" onchange="core.loadSavedataFromFile(this.files[0])" style="display: none">
 			<button onclick="core.downloadSavedata()">Download savedata</button>
 			<button onclick="core.storeSavedata()">Store savedata</button>
+			<button onclick="screenshot()">Take screenshot</button>
 		</section>
 		<section id="registers">
 			<div>
