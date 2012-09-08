@@ -37,6 +37,7 @@ a:link, a:visited {
 	opacity: 1;
 	-webkit-transition: opacity ease-out 0.6s;
 	-moz-transition: opacity ease-out 0.6s;
+	-o-transition: opacity ease-out 0.6s;
 }
 
 #controls button, #mapping td {
@@ -71,8 +72,10 @@ a:link, a:visited {
 	padding: 10px 15px;
 	background: -webkit-linear-gradient(left, rgba(0, 0, 0, 0.5) 0, rgba(0, 0, 0, 0.2) 12px, rgba(0, 0, 0, 0) 20px), #452e5c;
 	background: -moz-linear-gradient(left, rgba(0, 0, 0, 0.5) 0, rgba(0, 0, 0, 0.2) 12px, rgba(0, 0, 0, 0) 20px), #452e5c;
+	background: -o-linear-gradient(left, rgba(0, 0, 0, 0.5) 0, rgba(0, 0, 0, 0.2) 12px, rgba(0, 0, 0, 0) 20px), #452e5c;
 	-webkit-transition: width ease-out 0.5s, padding ease-out 0.5s;
 	-moz-transition: width ease-out 0.5s, padding ease-out 0.5s;
+	-o-transition: width ease-out 0.5s, padding ease-out 0.5s;
 	z-index: 15;
 }
 
@@ -102,10 +105,22 @@ a:link, a:visited {
 	-moz-transform-origin: 100% 100%;
 	-moz-transform: rotate(-90deg);
 	-moz-transition: right ease-out 0.5s;
+	-o-transform-origin: 100% 100%;
+	-o-transform: rotate(-90deg);
+	-o-transition: right ease-out 0.5s;
 }
 
 .hidden {
 	opacity: 0 !important;
+}
+
+input[type=file] {
+	opacity: 0 !important;
+	width: 0;
+	height: 0;
+	margin: 0;
+	padding: 0;
+	border: none;
 }
 
 #moreinfo:hover #rollover {

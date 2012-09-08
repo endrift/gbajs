@@ -27,6 +27,7 @@ try {
 	gba = new GameBoyAdvance();
 	gba.keypad.eatInput = true;
 	gba.setLogger(function(error) {
+		gba.pause();
 		var crash = document.createElement('img');
 		var screen = document.getElementById('screen');
 		crash.setAttribute('id', 'crash');
@@ -79,6 +80,7 @@ function fadeOut(id, nextId) {
 	}
 
 	e.addEventListener('webkitTransitionEnd', removeSelf, false);
+	e.addEventListener('oTransitionEnd', removeSelf, false);
 	e.addEventListener('transitionend', removeSelf, false);
 	e.setAttribute('class', 'hidden');
 }
@@ -167,9 +169,9 @@ document.addEventListener('webkitfullscreenchange', function() {
 <section id="controls">
 	<div id="preload">
 		<button class="bigbutton" id="select" onclick="document.getElementById('loader').click()">SELECT</button>
-		<input id="loader" type="file" onchange="run(this.files[0]);" style="display: none">
+		<input id="loader" type="file" onchange="run(this.files[0]);">
 		<button onclick="document.getElementById('saveloader').click()">Upload Savegame</button>
-		<input id="saveloader" type="file" onchange="uploadSavedataPending(this.files[0]);" style="display: none">
+		<input id="saveloader" type="file" onchange="uploadSavedataPending(this.files[0]);">
 	</div>
 	<div id="ingame" class="hidden">
 		<button id="pause" class="bigbutton" onclick="togglePause()">PAUSE</button>
@@ -214,8 +216,9 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<dt>Why isn't it working?</dt>
 		<dd>
 			You need a very modern browser for this to work. It requires either a recent version of
-			Chrome (up-to-date preferably), Safari 6.0, or Firefox 15+. It might work in IE 10, but
-			definitely not before then, and it does not currently work in Opera.
+			Chrome (up-to-date preferably), Safari 6.0, Firefox 15+ or Opera 12. It might work in
+			IE 10, but definitely not before then. It's also particularly slow in Firefox and
+			Opera, so using Safari or Chrome is highly recommended.
 		</dd>
 		<dt>Why is there no sound?</dt>
 		<dd>
