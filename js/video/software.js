@@ -1128,7 +1128,7 @@ GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, o
 	}
 
 	var blend;
-	if (mask & video.TARGET1_MASK) {
+	if ((mask & video.TARGET1_MASK) && (oldStencil & video.TARGET2_MASK)) {
 		blend = video.blendEnabled;
 		video.setBlendEnabled(layer, true, 1);
 	}
