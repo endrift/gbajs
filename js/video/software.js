@@ -1241,14 +1241,9 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode0 = function(backing,
 		} else {
 			if (!localXLo) {
 				video.accessMapMode0(screenBase, size, localX, yBase, map);
-				tileRow = video.accessTile(charBase, map.tile << 1, (!map.vflip ? localYLo : 7 - localYLo) << 1);
-				if (!tileRow) {
-					x += 3;
-					offset += 4;
-					continue;
-				}
-			} else if (!(localXLo & 0x3)) {
-				tileRow = video.accessTile(charBase + 4, map.tile << 1, (!map.vflip ? localYLo : 7 - localYLo) << 1);
+			}
+			if (!(localXLo & 0x3)) {
+				tileRow = video.accessTile(charBase + (!!(localX & 0x4) == !map.hflip ? 4 : 0), map.tile << 1, (!map.vflip ? localYLo : 7 - localYLo) << 1);
 				if (!tileRow) {
 					x += 3;
 					offset += 4;
