@@ -4,6 +4,7 @@ function MemoryProxy(owner, size, blockSize) {
 	this.blockSize = blockSize;
 	this.mask = (1 << blockSize) - 1;
 	this.size = size;
+	this.delay = 0;
 	if (blockSize) {
 		for (var i = 0; i < (size >> blockSize); ++i) {
 			this.blocks.push(new MemoryBlock(1 << blockSize));
@@ -75,7 +76,7 @@ function GameBoyAdvanceRenderProxy() {
 		finish: function(data) {
 			self.backing = data.backing;
 			self.caller.finishDraw(self.backing);
-			self.lastSeen = data.frame;
+			--self.delay;
 		}
 	};
 	this.worker.onmessage = function(message) {
@@ -212,11 +213,11 @@ GameBoyAdvanceRenderProxy.prototype.finishDraw = function(caller) {
 	this.caller = caller;
 	if (!this.skipFrame) {
 		this.worker.postMessage({ type: 'finish', frame: this.currentFrame });
-		this.lastSent = this.currentFrame;
-		if (this.lastSent - this.lastSeen > 2) {
+		++this.delay;
+		if (this.delay > 2) {
 			this.skipFrame = true;
 		}
-	} else if (this.lastSeen - this.lastSent < 2) {
+	} else if (this.delay == 0) {
 		this.skipFrame = false;
 	}
 };
