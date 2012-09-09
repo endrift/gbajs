@@ -96,6 +96,7 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 	case 0:
 		// Attribute 0
 		obj.y = value & 0x00FF;
+		var wasScalerot = obj.scalerot;
 		obj.scalerot = value & 0x0100;
 		if (obj.scalerot) {
 			obj.scalerotOam = this.scalerot[obj.scalerotParam];
@@ -106,8 +107,10 @@ GameBoyAdvanceOAM.prototype.store16 = function(offset, value) {
 		} else {
 			obj.doublesize = false;
 			obj.disable = value & 0x0200;
-			obj.hflip = obj.scalerotParam & 0x0008;
-			obj.vflip = obj.scalerotParam & 0x0010;
+			if (wasScalerot) {
+				obj.hflip = obj.scalerotParam & 0x0008;
+				obj.vflip = obj.scalerotParam & 0x0010;
+			}
 		}
 		obj.mode = (value & 0x0C00) >> 6; // This lines up with the stencil format
 		obj.mosaic = value & 0x1000;
