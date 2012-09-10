@@ -61,6 +61,7 @@ function GameBoyAdvance() {
 	window.requestAnimationFrame = window.requestAnimationFrame ||
 		window.webkitRequestAnimationFrame ||
 		window.mozRequestAnimationFrame ||
+		window.oRequestAnimationFrame ||
 		window.msRequestAnimationFrame;
 };
 
@@ -149,6 +150,10 @@ GameBoyAdvance.prototype.waitFrame = function() {
 
 GameBoyAdvance.prototype.pause = function() {
 	this.paused = true;
+	if (this.interval) {
+		clearInterval(this.interval);
+		this.interval = null;
+	}
 };
 
 GameBoyAdvance.prototype.advanceFrame = function() {
@@ -190,7 +195,7 @@ GameBoyAdvance.prototype.runStable = function() {
 					frames = 0;
 					timer = 0;
 				}
-				if (!self.paused) {
+				if (!self.paused && requestAnimationFrame) {
 					requestAnimationFrame(runFunc);
 				}
 			} catch(exception) {
@@ -201,7 +206,7 @@ GameBoyAdvance.prototype.runStable = function() {
 		runFunc = function() {
 			try {
 				self.advanceFrame();
-				if (!self.paused) {
+				if (!self.paused && requestAnimationFrame) {
 					requestAnimationFrame(runFunc);
 				}
 			} catch(exception) {
@@ -209,7 +214,11 @@ GameBoyAdvance.prototype.runStable = function() {
 			}
 		};
 	}
-	requestAnimationFrame(runFunc);
+	if (requestAnimationFrame) {
+		requestAnimationFrame(runFunc);
+	} else {
+		this.interval = setInterval(runFunc, 1000/60);
+	}
 };
 
 GameBoyAdvance.prototype.setSavedata = function(data) {
