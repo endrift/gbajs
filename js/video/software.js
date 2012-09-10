@@ -999,13 +999,12 @@ GameBoyAdvanceSoftwareRenderer.prototype.writeBlendControl = function(value) {
 };
 
 GameBoyAdvanceSoftwareRenderer.prototype.setBlendEnabled = function(layer, enabled, override) {
-	this.alphaEnabled = false;
+	this.alphaEnabled = override == 1;
 	this.blendEnabled = override;
 	if (enabled) {
 		switch (override) {
 		case 1:
 			// Alpha
-			this.alphaEnabled = enabled;
 			// Fall through
 		case 0:
 			// Normal
