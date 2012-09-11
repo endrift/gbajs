@@ -502,14 +502,18 @@ GameBoyAdvanceAudio.prototype.appendToFifoB = function(value) {
 
 GameBoyAdvanceAudio.prototype.sampleFifoA = function() {
 	if (!this.fifoA.length) {
-		this.core.mmu.serviceDma(this.dmaA, this.core.irq.dma[this.dmaA]);
+		var dma = this.core.irq.dma[this.dmaA];
+		dma.nextCount = 4;
+		this.core.mmu.serviceDma(this.dmaA, dma);
 	}
 	this.fifoASample = this.fifoA.shift();
 };
 
 GameBoyAdvanceAudio.prototype.sampleFifoB = function() {
 	if (!this.fifoB.length) {
-		this.core.mmu.serviceDma(this.dmaB, this.core.irq.dma[this.dmaB]);
+		var dma = this.core.irq.dma[this.dmaB];
+		dma.nextCount = 4;
+		this.core.mmu.serviceDma(this.dmaB, dma);
 	}
 	this.fifoBSample = this.fifoB.shift();
 };
