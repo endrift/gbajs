@@ -80,7 +80,7 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 	this.page = null;
 	this.pageId = 0;
 
-	this.instruction;
+	this.irq.clear();
 
 	var gprs = this.gprs;
 	var mmu = this.mmu;

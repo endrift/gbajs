@@ -235,6 +235,19 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	this.pollNextEvent();
 }
 
+GameBoyAdvanceInterruptHandler.prototype.clear = function() {
+	this.resetSP();
+};
+
+GameBoyAdvanceInterruptHandler.prototype.resetSP = function() {
+	this.cpu.switchMode(this.cpu.MODE_SUPERVISOR);
+	this.cpu.gprs[this.cpu.SP] = 0x3007FE0;
+	this.cpu.switchMode(this.cpu.MODE_IRQ);
+	this.cpu.gprs[this.cpu.SP] = 0x3007FA0;
+	this.cpu.switchMode(this.cpu.MODE_SYSTEM);
+	this.cpu.gprs[this.cpu.SP] = 0x3007F00;
+};
+
 GameBoyAdvanceInterruptHandler.prototype.swi32 = function(opcode) {
 	this.swi(opcode >> 16);
 };
@@ -248,12 +261,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		for (var i = 0x7E00; i < 0x8000; i += 4) {
 			mem.store32(i, 0);
 		}
-		this.cpu.switchMode(this.cpu.MODE_SUPERVISOR);
-		this.cpu.gprs[this.cpu.SP] = 0x3007FE0;
-		this.cpu.switchMode(this.cpu.MODE_IRQ);
-		this.cpu.gprs[this.cpu.SP] = 0x3007FA0;
-		this.cpu.switchMode(this.cpu.MODE_SYSTEM);
-		this.cpu.gprs[this.cpu.SP] = 0x3007F00;
+		this.resetSP();
 		if (!flag) {
 			this.cpu.gprs[this.cpu.LR] = 0x08000000;
 		} else {
