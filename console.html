@@ -84,9 +84,8 @@ window.onload = function() {
 			<button onclick="gbaCon.pause()">Pause</button>
 		</section>
 		<section id="loading">
-			<button onclick="loadRom('test.rom', runTest)">Load default</button>
-			<button onclick="document.getElementById('uploadRom').click()">Load custom</button>
-			<input type="file" id="uploadRom" onchange="loadRomFromFile(this.files[0])" style="display: none">
+			Load ROM:
+			<input type="file" id="uploadRom" onchange="loadRomFromFile(this.files[0])">
 		</section>
 		<section id="saving">
 			<button onclick="document.getElementById('uploadSave').click()">Load savedata</button>

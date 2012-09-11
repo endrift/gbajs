@@ -47,8 +47,8 @@ function GameBoyAdvance() {
 
 	this.reset();
 
-	this.keypad.registerKeyboardHandlers();
-	this.doStep = this.returnFalse;
+	this.keypad.registerHandlers();
+	this.doStep = this.waitFrame;
 	this.paused = false;
 
 	this.seenFrame = false;
@@ -136,10 +136,6 @@ GameBoyAdvance.prototype.step = function() {
 	}
 };
 
-GameBoyAdvance.prototype.returnFalse = function() {
-	return false;
-};
-
 GameBoyAdvance.prototype.waitFrame = function() {
 	if (this.cpu.cycles - this.lastVblank >= this.video.TOTAL_LENGTH) {
 		this.lastVblank = this.cpu.cycles;
@@ -157,7 +153,6 @@ GameBoyAdvance.prototype.pause = function() {
 };
 
 GameBoyAdvance.prototype.advanceFrame = function() {
-	this.doStep = this.waitFrame;
 	this.step();
 	if (this.seenSave) {
 		if (!this.mmu.saveNeedsFlush()) {

@@ -156,45 +156,7 @@ Console.prototype.run = function() {
 	regs.setAttribute('class', 'disabled');
 	mem.setAttribute('class', 'disabled');
 	var self = this;
-	var interval;
-	run = function() {
-		self.flushLog();
-		if (self.stillRunning) {
-			try {
-				if (self.breakpoints.length) {
-					var base = self.cpu.cycles;
-					while (self.cpu.cycles - base < 280896) {
-						self.cpu.step();
-						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
-							self.breakpointHit();
-							return;
-						}
-					}
-				} else {
-					var base = self.cpu.cycles;
-					while (self.cpu.cycles - base < 280896) {
-						self.cpu.step();
-					}
-				}
-			} catch (exception) {
-				clearInterval(interval);
-				var time = (Date.now() - start);
-				self.log("Exception hit after " + self.cpu.cycles + " cycles in " +  time + " milliseconds! (" + Math.floor(self.cpu.cycles / time * 100000 / self.gba.irq.FREQUENCY) + "% speed)");
-				self.log(exception);
-				if (exception.stack) {
-					var lines = exception.stack.split(/\n/);
-					for (var i = 0; i < lines.length; ++i) {
-						self.log(lines[i]);
-					}
-				}
-				self.pause();
-				throw exception;
-			}
-		} else {
-			clearInterval(interval);
-		}
-	}
-	interval = setInterval(run, 1000/60);
+	this.gba.runStable();
 }
 
 Console.prototype.runFrame = function() {
@@ -210,37 +172,15 @@ Console.prototype.runFrame = function() {
 	mem.setAttribute('class', 'disabled');
 	var self = this;
 	run = function() {
-		if (self.stillRunning) {
-			try {
-				if (self.breakpoints.length) {
-					var base = self.cpu.cycles;
-					base -= (base % 280896);
-					while (self.cpu.cycles - base < 280896) {
-						self.cpu.step();
-						if (self.breakpoints[self.cpu.gprs[self.cpu.PC]]) {
-							self.breakpointHit();
-							return;
-						}
-					}
-				} else {
-					var base = self.cpu.cycles;
-					while (self.cpu.cycles - base < 280896) {
-						self.cpu.step();
-					}
-				}
-			} catch (exception) {
-				self.log(exception);
-				throw exception;
-			} finally {
-				self.pause();
-			}
-		}
+		self.gba.step();
+		self.pause();
 	}
 	setTimeout(run, 0);
 }
 
 Console.prototype.pause = function() {
 	this.stillRunning = false;
+	this.gba.pause();
 	var regs = document.getElementById('registers');
 	var mem = document.getElementById('memory');
 	mem.removeAttribute('class');
@@ -257,6 +197,7 @@ Console.prototype.breakpointHit = function() {
 }
 
 Console.prototype.addBreakpoint = function(addr) {
+	this.gba.doStep = this.testBreakpoints;
 	this.breakpoints[addr] = true;
 	var bpLi = document.getElementById('bp' + addr);
 	if (!bpLi) {
@@ -274,6 +215,13 @@ Console.prototype.addBreakpoint = function(addr) {
 		document.getElementById('breakpointView').appendChild(bpLi);
 	}
 }
+
+Console.prototype.testBreakpoints = function() {
+	if (this.breakpoints[this.cpu.gprs[this.cpu.PC]]) {
+		return false;
+	}
+	return this.gba.waitFrame();
+};
 
 Memory = function(mmu) {
 	this.mmu = mmu;
