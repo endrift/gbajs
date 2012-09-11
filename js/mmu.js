@@ -149,31 +149,10 @@ BIOSView.prototype.store16 = function(offset, value) {};
 
 BIOSView.prototype.store32 = function(offset, value) {};
 
-function DummyMemory() {
-};
-
-DummyMemory.prototype.load8 = function(offset) {};
-
-DummyMemory.prototype.load16 = function(offset) {};
-
-DummyMemory.prototype.loadU8 = function(offset) {};
-
-DummyMemory.prototype.loadU16 = function(offset) {};
-
-DummyMemory.prototype.load32 = function(offset) {};
-
-DummyMemory.prototype.store8 = function(offset, value) {};
-
-DummyMemory.prototype.store16 = function(offset, value) {};
-
-DummyMemory.prototype.store32 = function(offset, value) {};
-
 function BadMemory(mmu, cpu) {
 	this.cpu = cpu;
 	this.mmu = mmu
 };
-
-BadMemory.prototype = Object.create(DummyMemory.prototype);
 
 BadMemory.prototype.load8 = function(offset) {
 	return this.mmu.load8(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x3);
@@ -199,6 +178,14 @@ BadMemory.prototype.load32 = function(offset) {
 		return halfword | (halfword << 16);
 	}
 };
+
+BadMemory.prototype.store8 = function(offset, value) {};
+
+BadMemory.prototype.store16 = function(offset, value) {};
+
+BadMemory.prototype.store32 = function(offset, value) {};
+
+BadMemory.prototype.invalidatePage = function(address) {};
 
 function GameBoyAdvanceMMU() {
 	this.REGION_BIOS = 0x0;
@@ -286,25 +273,25 @@ GameBoyAdvanceMMU.prototype.mmap = function(region, object) {
 }
 
 GameBoyAdvanceMMU.prototype.clear = function() {
+	var badMemory = new BadMemory(this, this.cpu);
 	this.memory = [
 		null,
-		new DummyMemory(), // Unused
+		badMemory, // Unused
 		new MemoryBlock(this.SIZE_WORKING_RAM, 9),
 		new MemoryBlock(this.SIZE_WORKING_IRAM, 7),
 		null, // This is owned by GameBoyAdvanceIO
 		null, // This is owned by GameBoyAdvancePalette
 		null, // This is owned by GameBoyAdvanceVRAM
 		null, // This is owned by GameBoyAdvanceOAM
-		new DummyMemory(),
-		new DummyMemory(),
-		new DummyMemory(),
-		new DummyMemory(),
-		new DummyMemory(),
-		new DummyMemory(),
-		new DummyMemory(),
-		new DummyMemory() // Unused
+		badMemory,
+		badMemory,
+		badMemory,
+		badMemory,
+		badMemory,
+		badMemory,
+		badMemory,
+		badMemory // Unused
 	];
-	var badMemory = new BadMemory(this, this.cpu);
 	for (var i = 16; i < 256; ++i) {
 		this.memory[i] = badMemory;
 	}
