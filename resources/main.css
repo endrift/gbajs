@@ -40,7 +40,7 @@ a:link, a:visited {
 	-o-transition: opacity ease-out 0.6s;
 }
 
-#controls button, #mapping td {
+#controls button, #mapping td, #sound {
 	background: transparent;
 	border: 0px solid rgba(192, 128, 192, 0.5);
 	border-top: 2px solid rgba(96, 48, 96, 0.8);
@@ -308,4 +308,12 @@ ul#links li:not(:first-child)::before {
 	border-top-left-radius: 0;
 	border-bottom-left-radius: 0;
 	border-left: 1px solid rgba(96, 48, 96, 0.8);
+}
+
+#sound {
+	float: right;
+}
+
+#sound p {
+	margin: 0;
 }

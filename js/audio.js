@@ -17,6 +17,7 @@ function GameBoyAdvanceAudio() {
 		this.context = null;
 	}
 
+	this.masterEnable = true;
 	this.masterVolume = 1.0;
 
 	this.SOUND_MAX = 0x400;
@@ -579,12 +580,19 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 GameBoyAdvanceAudio.audioProcess = function(self, audioProcessingEvent) {
 	var left = audioProcessingEvent.outputBuffer.getChannelData(0);
 	var right = audioProcessingEvent.outputBuffer.getChannelData(1);
-	var i;
-	for (i = 0; i < self.bufferSize; ++i) {
-		left[i] = self.buffers[0][self.outputPointer];
-		right[i] = self.buffers[1][self.outputPointer];
-		if (self.outputPointer != self.samplePointer) {
-			self.outputPointer = (self.outputPointer + 1) & self.sampleMask;
+	if (self.masterEnable) {
+		var i;
+		for (i = 0; i < self.bufferSize; ++i) {
+			left[i] = self.buffers[0][self.outputPointer];
+			right[i] = self.buffers[1][self.outputPointer];
+			if (self.outputPointer != self.samplePointer) {
+				self.outputPointer = (self.outputPointer + 1) & self.sampleMask;
+			}
+		}
+	} else {
+		for (i = 0; i < self.bufferSize; ++i) {
+			left[i] = 0;
+			right[i] = 0;
 		}
 	}
 };

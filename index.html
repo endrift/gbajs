@@ -53,6 +53,12 @@ window.onload = function() {
 		loadRom('resources/bios.bin', function(bios) {
 			gba.setBios(bios);
 		});
+
+		if (!gba.audio.context) {
+			// Remove the sound box if sound isn't available
+			var soundbox = document.getElementById('sound');
+			soundbox.parent.removeChild(soundbox);
+		}
 	} else {
 		var dead = document.getElementById('controls');
 		dead.parentElement.removeChild(dead);
@@ -121,6 +127,10 @@ function screenshot() {
 	window.open(canvas.toDataURL('image/png'), 'screenshot');
 }
 
+function setVolume(value) {
+	gba.audio.masterVolume = Math.pow(2, value) - 1;
+}
+
 document.addEventListener('webkitfullscreenchange', function() {
 	var canvas = document.getElementById('screen');
 	if (document.webkitIsFullScreen) {
@@ -177,6 +187,11 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<button id="pause" class="bigbutton" onclick="togglePause()">PAUSE</button>
 		<button onclick="gba.downloadSavedata()">Download Savegame</button>
 		<button onclick="screenshot()">Screenshot</button>
+		<div id="sound">
+			<p>Sound</p>
+			<input type="checkbox" checked onchange="gba.audio.masterEnable = this.checked">
+			<input type="range" min="0" max="1" value="1" step="any" onchange="setVolume(this.value)">
+		</div>
 	</div>
 </section>
 <section id="instructions">
