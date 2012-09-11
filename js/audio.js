@@ -42,8 +42,12 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.enableRightChannelB = false;
 	this.enableLeftChannelB = false;
 
-	this.masterVolumeLeft = 0;
-	this.masterVolumeRight = 0;
+	this.volumeLeft = 0;
+	this.volumeRight = 0;
+	this.ratioChannelA = 1;
+	this.ratioChannelB = 1;
+	this.enabledLeft = 0;
+	this.enabledRight = 0;
 
 	this.dmaA = -1;
 	this.dmaB = -1;
@@ -192,13 +196,13 @@ GameBoyAdvanceAudio.prototype.writeEnable = function(value) {
 GameBoyAdvanceAudio.prototype.writeSoundControlLo = function(value) {
 	this.masterVolumeLeft = value & 0x7;
 	this.masterVolumeRight = (value >> 4) & 0x7;
-	var enabledLeft = (value >> 8) & 0xF;
-	var enabledRight = (value >> 12) & 0xF;
+	this.enabledLeft = (value >> 8) & 0xF;
+	this.enabledRight = (value >> 12) & 0xF;
 
-	this.setSquareChannelEnabled(this.squareChannels[0], (enabledLeft | enabledRight) & 0x1);
-	this.setSquareChannelEnabled(this.squareChannels[1], (enabledLeft | enabledRight) & 0x2);
-	this.enableChannel3 = (enabledLeft | enabledRight) & 0x4;
-	this.setChannel4Enabled((enabledLeft | enabledRight) & 0x8);
+	this.setSquareChannelEnabled(this.squareChannels[0], (this.enabledLeft | this.enabledRight) & 0x1);
+	this.setSquareChannelEnabled(this.squareChannels[1], (this.enabledLeft | this.enabledRight) & 0x2);
+	this.enableChannel3 = (this.enabledLeft | this.enabledRight) & 0x4;
+	this.setChannel4Enabled((this.enabledLeft | this.enabledRight) & 0x8);
 
 	this.updateTimers();
 	this.core.irq.pollNextEvent();
@@ -537,42 +541,82 @@ GameBoyAdvanceAudio.prototype.scheduleFIFODma = function(number, info) {
 };
 
 GameBoyAdvanceAudio.prototype.sample = function() {
-	var sample = 0;
+	var sampleLeft = 0;
+	var sampleRight = 0;
+	var sample;
 	var channel;
 
 	// TODO: left and right
 	channel = this.squareChannels[0];
 	if (channel.enabled) {
-		sample += channel.sample * this.soundRatio * this.PSG_MAX;
+		sample = channel.sample * this.soundRatio * this.PSG_MAX;
+		if (this.enabledLeft & 0x1) {
+			sampleLeft += sample;
+		}
+		if (this.enabledRight & 0x1) {
+			sampleRight += sample;
+		}
 	}
 
 	channel = this.squareChannels[1];
 	if (channel.enabled) {
-		sample += channel.sample * this.soundRatio * this.PSG_MAX;
+		sample = channel.sample * this.soundRatio * this.PSG_MAX;
+		if (this.enabledLeft & 0x2) {
+			sampleLeft += sample;
+		}
+		if (this.enabledRight & 0x2) {
+			sampleRight += sample;
+		}
 	}
 
 	if (this.enableChannel3) {
-		sample += this.channel3Sample * this.soundRatio * this.channel3Volume * this.PSG_MAX;
+		sample = this.channel3Sample * this.soundRatio * this.channel3Volume * this.PSG_MAX;
+		if (this.enabledLeft & 0x4) {
+			sampleLeft += sample;
+		}
+		if (this.enabledRight & 0x4) {
+			sampleRight += sample;
+		}
 	}
 
 	if (this.enableChannel4) {
 		sample += this.channel4.sample * this.soundRatio * this.PSG_MAX;
+		if (this.enabledLeft & 0x8) {
+			sampleLeft += sample;
+		}
+		if (this.enabledRight & 0x8) {
+			sampleRight += sample;
+		}
 	}
 
 	if (this.enableChannelA) {
-		sample += this.fifoASample * this.FIFO_MAX;
+		sample = this.fifoASample * this.FIFO_MAX * this.ratioChannelA;
+		if (this.enableLeftChannelA) {
+			sampleLeft += sample;
+		}
+		if (this.enableRightChannelA) {
+			sampleRight += sample;
+		}
 	}
 
 	if (this.enableChannelB) {
-		sample += this.fifoBSample * this.FIFO_MAX;
+		sample = this.fifoBSample * this.FIFO_MAX * this.ratioChannelB;
+		if (this.enableLeftChannelB) {
+			sampleLeft += sample;
+		}
+		if (this.enableRightChannelB) {
+			sampleRight += sample;
+		}
 	}
 
 	var samplePointer = this.samplePointer;
-	sample += this.soundBias;
-	sample *= this.masterVolume / this.SOUND_MAX;
+	sampleLeft += this.soundBias;
+	sampleLeft *= this.masterVolume / this.SOUND_MAX;
+	sampleRight += this.soundBias;
+	sampleRight *= this.masterVolume / this.SOUND_MAX;
 	if (this.buffers) {
-		this.buffers[0][samplePointer] = sample;
-		this.buffers[1][samplePointer] = sample;
+		this.buffers[0][samplePointer] = sampleLeft;
+		this.buffers[1][samplePointer] = sampleRight;
 	}
 	this.samplePointer = (samplePointer + 1) & this.sampleMask;
 };
