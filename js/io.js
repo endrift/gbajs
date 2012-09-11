@@ -360,36 +360,31 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	case this.WINOUT | 1:
 		this.value & 0x3F;
 		break;
-	case this.SOUND1CNT_HI | 1:
-	case this.SOUND2CNT_LO | 1:
-		break;
-	case this.SOUND3CNT_HI:
-	case this.SOUND4CNT_LO | 1:
-		break;
-	case this.SOUND1CNT_X | 1:
-	case this.SOUND2CNT_HI | 1:
-		value &= 0xC7;
-		break;
 	case this.SOUND1CNT_LO:
-		value &= 0x7F;
-		break;
+	case this.SOUND1CNT_LO | 1:
+	case this.SOUND1CNT_HI:
+	case this.SOUND1CNT_HI | 1:
+	case this.SOUND1CNT_X:
+	case this.SOUND1CNT_X | 1:
+	case this.SOUND2CNT_LO:
+	case this.SOUND2CNT_LO | 1:
+	case this.SOUND2CNT_HI:
+	case this.SOUND2CNT_HI | 1:
 	case this.SOUND3CNT_LO:
+	case this.SOUND3CNT_LO | 1:
+	case this.SOUND3CNT_HI:
 	case this.SOUND3CNT_HI | 1:
-		value &= 0xE0;
-		break;
+	case this.SOUND3CNT_X:
+	case this.SOUND3CNT_X | 1:
+	case this.SOUND4CNT_LO:
+	case this.SOUND4CNT_LO | 1:
+	case this.SOUND4CNT_HI:
 	case this.SOUND4CNT_HI | 1:
-		value &= 0xC0;
-		break;
 	case this.SOUNDCNT_LO:
-		value &= 0x77;
-		break;
 	case this.SOUNDCNT_LO | 1:
-		break;
 	case this.SOUNDCNT_X:
-		value &= 0x80;
 		break;
 	case this.SOUNDBIAS | 1:
-		value &= 0xC3;
 		this.STUB_REG('sound', offset);
 		break;
 	default:
