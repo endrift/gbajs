@@ -16,6 +16,12 @@ function GameBoyAdvanceAudio() {
 	} else {
 		this.context = null;
 	}
+
+	this.masterVolume = 1.0;
+
+	this.SOUND_MAX = 0x400;
+	this.FIFO_MAX = 0x200;
+	this.PSG_MAX = 0x080;
 };
 
 GameBoyAdvanceAudio.prototype.clear = function() {
@@ -44,6 +50,7 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.soundTimerB = 0;
 
 	this.soundRatio = 1;
+	this.soundBias = 0x200;
 
 	this.squareChannels = new Array();
 	for (var i = 0; i < 2; ++i) {
@@ -448,11 +455,11 @@ GameBoyAdvanceAudio.prototype.writeChannelLE = function(channel, value) {
 	channel.end = this.cpu.cycles + this.cpuFrequency * ((value & 0x3F) / 256);
 
 	if (value & 0x0800) {
-		channel.increment = 1 / 15;
+		channel.increment = 1 / 16;
 	} else {
-		channel.increment = -1 / 15;
+		channel.increment = -1 / 16;
 	}
-	channel.initialVolume = ((value >> 12) & 0xF) / 15;
+	channel.initialVolume = ((value >> 12) & 0xF) / 16;
 
 	channel.step = this.cpuFrequency * (((value >> 8) & 0x7) / 64);
 };
@@ -531,31 +538,33 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	// TODO: left and right
 	channel = this.squareChannels[0];
 	if (channel.enabled) {
-		sample += channel.sample * this.soundRatio;
+		sample += channel.sample * this.soundRatio * this.PSG_MAX;
 	}
 
 	channel = this.squareChannels[1];
 	if (channel.enabled) {
-		sample += channel.sample * this.soundRatio;
+		sample += channel.sample * this.soundRatio * this.PSG_MAX;
 	}
 
 	if (this.enableChannel3) {
-		sample += this.channel3Sample * this.soundRatio * this.channel3Volume;
+		sample += this.channel3Sample * this.soundRatio * this.channel3Volume * this.PSG_MAX;
 	}
 
 	if (this.enableChannel4) {
-		sample += this.channel4.sample * this.soundRatio;
+		sample += this.channel4.sample * this.soundRatio * this.PSG_MAX;
 	}
 
 	if (this.enableChannelA) {
-		sample += this.fifoASample;
+		sample += this.fifoASample * this.FIFO_MAX;
 	}
 
 	if (this.enableChannelB) {
-		sample += this.fifoBSample;
+		sample += this.fifoBSample * this.FIFO_MAX;
 	}
 
 	var samplePointer = this.samplePointer;
+	sample += this.soundBias;
+	sample *= this.masterVolume / this.SOUND_MAX;
 	if (this.buffers) {
 		this.buffers[0][samplePointer] = sample;
 		this.buffers[1][samplePointer] = sample;
