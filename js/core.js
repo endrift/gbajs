@@ -85,20 +85,14 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 	var gprs = this.gprs;
 	var mmu = this.mmu;
 	this.step = function() {
-		var instruction;
-		if (this.instruction) {
-			instruction = this.instruction;
-		} else {
-			instruction = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
-			this.instruction = instruction;
-		}
+		var instruction = this.instruction || (this.instruction = this.loadInstruction(gprs[this.PC] - this.instructionWidth));
 		gprs[this.PC] += this.instructionWidth;
 		this.conditionPassed = true;
 		instruction();
 	
 		if (!instruction.writesPC) {
-			if (this.instruction) { // We might have gotten an interrupt from the instruction
-				if (!instruction.next) {
+			if (this.instruction != null) { // We might have gotten an interrupt from the instruction
+				if (instruction.next == null) {
 					instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
 				}
 				this.instruction = instruction.next;

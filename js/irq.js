@@ -48,12 +48,12 @@ function GameBoyAdvanceInterruptHandler() {
 			nextCount: 0,
 			srcControl: 0,
 			dstControl: 0,
-			repeat: 0,
+			repeat: false,
 			width: 0,
-			drq: 0,
+			drq: false,
 			timing: 0,
-			doIrq: 0,
-			enable: 0,
+			doIrq: false,
+			enable: false,
 			nextIRQ: 0
 		});
 	}
@@ -65,9 +65,9 @@ function GameBoyAdvanceInterruptHandler() {
 			reload: 0,
 			oldReload: 0,
 			prescaleBits: 0,
-			countUp: 0,
-			doIrq: 0,
-			enable: 0,
+			countUp: false,
+			doIrq: false,
+			enable: false,
 			lastEvent: 0,
 			nextEvent: 0,
 			overflowInterval: 1
@@ -648,12 +648,12 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 	var currentDma = this.dma[dma];
 	currentDma.dstControl = (control & 0x0060) >> 5;
 	currentDma.srcControl = (control & 0x0180) >> 7;
-	currentDma.repeat = control & 0x0200;
+	currentDma.repeat = !!(control & 0x0200);
 	currentDma.width = (control & 0x0400) ? 4 : 2;
-	currentDma.drq = control & 0x0800;
+	currentDma.drq = !!(control & 0x0800);
 	currentDma.timing = (control & 0x3000) >> 12;
-	currentDma.doIrq = control & 0x4000;
-	currentDma.enable = control & 0x8000;
+	currentDma.doIrq = !!(control & 0x4000);
+	currentDma.enable = !!(control & 0x8000);
 	currentDma.nextIRQ = 0;
 
 	if (currentDma.drq) {
@@ -689,11 +689,11 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 		currentTimer.prescaleBits = 10;
 		break;
 	}
-	currentTimer.countUp = control & 0x0004;
-	currentTimer.doIrq = control & 0x0040;
+	currentTimer.countUp = !!(control & 0x0004);
+	currentTimer.doIrq = !!(control & 0x0040);
 	currentTimer.overflowInterval = (0x10000 - currentTimer.reload) << currentTimer.prescaleBits;
 	var wasEnabled = currentTimer.enable;
-	currentTimer.enable = ((control & 0x0080) >> 7) << timer;
+	currentTimer.enable = !!(((control & 0x0080) >> 7) << timer);
 	if (!wasEnabled && currentTimer.enable) {
 		if (!currentTimer.countUp) {
 			currentTimer.lastEvent = this.cpu.cycles;

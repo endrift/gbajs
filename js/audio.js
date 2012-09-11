@@ -60,8 +60,8 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.squareChannels = new Array();
 	for (var i = 0; i < 2; ++i) {
 		this.squareChannels[i] = {
-			enabled: 0,
-			playing: 0,
+			enabled: false,
+			playing: false,
 			sample: 0,
 			duty: 0.5,
 			increment: 0,
@@ -73,6 +73,7 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 			sweepSteps: 0,
 			sweepIncrement: 0,
 			sweepInterval: 0,
+			doSweep: false,
 			raise: 0,
 			lower: 0,
 			nextStep: 0,
@@ -255,11 +256,11 @@ GameBoyAdvanceAudio.prototype.resetSquareChannel = function(channel) {
 
 GameBoyAdvanceAudio.prototype.setSquareChannelEnabled = function(channel, enable) {
 	if (!(channel.enabled && channel.playing) && enable) {
-		channel.enabled = enable;
+		channel.enabled = !!enable;
 		this.updateTimers();
 		this.core.irq.pollNextEvent();
 	} else {
-		channel.enabled = enable;
+		channel.enabled = !!enable;
 	}
 };
 
@@ -268,6 +269,7 @@ GameBoyAdvanceAudio.prototype.writeSquareChannelSweep = function(channelId, valu
 	channel.sweepSteps = value & 0x07;
 	channel.sweepIncrement = (value & 0x08) ? -1 : 1;
 	channel.sweepInterval = ((value >> 4) & 0x7) * this.cpuFrequency / 128;
+	channel.doSweep = !!channel.sweepInterval;
 	channel.nextSweep = this.cpu.cycles + channel.sweepInterval;
 	this.resetSquareChannel(channel);
 };
@@ -306,7 +308,7 @@ GameBoyAdvanceAudio.prototype.writeSquareChannelFC = function(channelId, value) 
 };
 
 GameBoyAdvanceAudio.prototype.updateSquareChannel = function(channel, cycles) {
-	if (channel.sweepInterval && cycles >= channel.nextSweep) {
+	if (channel.doSweep && cycles >= channel.nextSweep) {
 		channel.frequency += channel.sweepIncrement * (channel.frequency >> channel.sweepSteps);
 		if (channel.frequency < 0) {
 			channel.frequency = 0;
@@ -337,7 +339,7 @@ GameBoyAdvanceAudio.prototype.updateSquareChannel = function(channel, cycles) {
 	if (this.nextEvent > channel.lower) {
 		this.nextEvent = channel.lower;
 	}
-	if (channel.sweepInterval && this.nextEvent > channel.nextSweep) {
+	if (channel.doSweep && this.nextEvent > channel.nextSweep) {
 		this.nextEvent = channel.nextSweep;
 	}
 };
