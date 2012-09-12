@@ -731,6 +731,12 @@ GameBoyAdvanceSoftwareRenderer.prototype.clear = function(mmu) {
 	// BLDY
 	this.blendY = 0;
 
+	// MOSAIC
+	this.bgMosaicX = 1;
+	this.bgMosaicY = 1;
+	this.objMosaicX = 1;
+	this.objMosaicY = 1;
+
 	this.lastHblank = 0;
 	this.nextHblank = this.HDRAW_LENGTH;
 	this.nextEvent = this.nextHblank;
@@ -1038,6 +1044,13 @@ GameBoyAdvanceSoftwareRenderer.prototype.writeBlendY = function(value) {
 	this.palette.setBlendY(value >= 16 ? 1 : (value / 16));
 };
 
+GameBoyAdvanceSoftwareRenderer.prototype.writeMosaic = function(value) {
+	this.bgMosaicX = (value & 0xF) + 1;
+	this.bgMosaicY = ((value >> 4) & 0xF) + 1;
+	this.objMosaicX = ((value >> 8) & 0xF) + 1;
+	this.objMosaicY = ((value >> 12) & 0xF) + 1;
+};
+
 GameBoyAdvanceSoftwareRenderer.prototype.resetLayers = function() {
 	if (this.backgroundMode > 1) {
 		this.bg[0].enabled = false;
@@ -1205,7 +1218,11 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode0 = function(backing,
 	var localX;
 	var localXLo;
 	var localY = y + yOff;
+	if (this.mosaic) {
+		localY -= y % video.bgMosaicY;
+	}
 	var localYLo = localY & 0x7;
+	var mosaicX;
 	var screenBase = bg.screenBase;
 	var charBase = bg.charBase;
 	var size = bg.size;
@@ -1229,24 +1246,26 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode0 = function(backing,
 	var tileRow = video.accessTile(charBase, map.tile << paletteShift, (!map.vflip ? localYLo : 7 - localYLo) << paletteShift);
 	for (x = start; x < end; ++x) {
 		localX = x + xOff;
+		mosaicX = this.mosaic ? offset % video.bgMosaicX : 0;
+		localX -= mosaicX;
 		localXLo = localX & 0x7;
 		if (!paletteShift) {
-			if (!localXLo) {
+			if (!localXLo || (this.mosaic && !mosaicX)) {
 				video.accessMapMode0(screenBase, size, localX, yBase, map);
 				tileRow = video.accessTile(charBase, map.tile, !map.vflip ? localYLo : 7 - localYLo);
-				if (!tileRow) {
+				if (!tileRow && !localXLo) {
 					x += 7;
 					offset += 8;
 					continue;
 				}
 			}
 		} else {
-			if (!localXLo) {
+			if (!localXLo || (this.mosaic && !mosaicX)) {
 				video.accessMapMode0(screenBase, size, localX, yBase, map);
 			}
-			if (!(localXLo & 0x3)) {
+			if (!(localXLo & 0x3) || (this.mosaic && !mosaicX)) {
 				tileRow = video.accessTile(charBase + (!!(localX & 0x4) == !map.hflip ? 4 : 0), map.tile << 1, (!map.vflip ? localYLo : 7 - localYLo) << 1);
-				if (!tileRow) {
+				if (!tileRow && !(localXLo & 0x3)) {
 					x += 3;
 					offset += 4;
 					continue;

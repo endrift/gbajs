@@ -528,6 +528,9 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 		value &= 0x001F;
 		this.video.renderPath.writeBlendY(value);
 		break;
+	case this.MOSAIC:
+		this.video.renderPath.writeMosaic(value);
+		break;
 
 	// Sound
 	case this.SOUND1CNT_LO:
