@@ -1304,6 +1304,10 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode2 = function(backing,
 	for (x = start; x < end; ++x) {
 		localX = bg.dx * x + bg.sx;
 		localY = bg.dy * x + bg.sy;
+		if (this.mosaic) {
+			localX -= (x % video.bgMosaicX) * bg.dx + (y % video.bgMosaicY) * bg.dmx;
+			localY -= (x % video.bgMosaicX) * bg.dy + (y % video.bgMosaicY) * bg.dmy;
+		}
 		if (bg.overflow) {
 			localX &= sizeAdjusted - 1;
 			if (localX < 0) {
@@ -1345,6 +1349,10 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode3 = function(backing,
 	for (x = start; x < end; ++x) {
 		localX = bg.dx * x + bg.sx;
 		localY = bg.dy * x + bg.sy;
+		if (this.mosaic) {
+			localX -= (x % video.bgMosaicX) * bg.dx + (y % video.bgMosaicY) * bg.dmx;
+			localY -= (x % video.bgMosaicX) * bg.dy + (y % video.bgMosaicY) * bg.dmy;
+		}
 		if (localX < 0 || localY < 0 || localX >= video.HORIZONTAL_PIXELS || localY >= video.VERTICAL_PIXELS) {
 			offset++;
 			continue;
@@ -1380,6 +1388,10 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode4 = function(backing,
 	for (x = start; x < end; ++x) {
 		localX = bg.dx * x + bg.sx;
 		localY = 0 | bg.dy * x + bg.sy;
+		if (this.mosaic) {
+			localX -= (x % video.bgMosaicX) * bg.dx + (y % video.bgMosaicY) * bg.dmx;
+			localY -= (x % video.bgMosaicX) * bg.dy + (y % video.bgMosaicY) * bg.dmy;
+		}
 		yBase = (localY << 2) & 0x7E0;
 		if (localX < 0 || localY < 0 || localX >= video.HORIZONTAL_PIXELS || localY >= video.VERTICAL_PIXELS) {
 			offset++;
