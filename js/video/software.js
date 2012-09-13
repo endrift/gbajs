@@ -425,7 +425,11 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	} else {
 		localY = this.cachedHeight - y + yOff - 1;
 	}
+	if (this.mosaic) {
+		localY -= y % video.objMosaicY;
+	}
 	var localYLo = localY & 0x7;
+	var mosaicX;
 	var tileOffset;
 	if (video.objCharacterMapping) {
 		tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
@@ -435,25 +439,28 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 
 	var paletteShift = this.multipalette ? 1 : 0;
 
+	// TODO: make mosaic work when off the borders of the sprite
+	mosaicX = this.mosaic ? offset % video.objMosaicX : 0;
 	if (!this.hflip) {
-		localX = underflow;
+		localX = underflow - mosaicX;
 	} else {
-		localX = this.cachedWidth - underflow - 1;
+		localX = this.cachedWidth - (underflow - mosaicX) - 1;
 	}
 
 	var tileRow = video.accessTile(this.TILE_OFFSET + (x & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), localYLo << paletteShift);
 	for (x = underflow; x < totalWidth; ++x) {
+		mosaicX = this.mosaic ? offset % video.objMosaicX : 0;
 		if (!this.hflip) {
-			localX = x;
+			localX = x - mosaicX;
 		} else {
-			localX = this.cachedWidth - x - 1;
+			localX = this.cachedWidth - (x - mosaicX) - 1;
 		}
 		if (!paletteShift) {
-			if (!(x & 0x7)) {
+			if (!(x & 0x7) || (this.mosaic && !mosaicX)) {
 				tileRow = video.accessTile(this.TILE_OFFSET, this.tileBase + tileOffset + (localX >> 3), localYLo);
 			}
 		} else {
-			if (!(x & 0x3)) {
+			if (!(x & 0x3) || (this.mosaic && !mosaicX)) {
 				tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4), this.tileBase + (tileOffset << 1) + ((localX & 0x01F8) >> 2), localYLo << 1);
 			}
 		}
