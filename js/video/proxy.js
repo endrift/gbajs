@@ -193,6 +193,10 @@ GameBoyAdvanceRenderProxy.prototype.writeBlendY = function(value) {
 	this.dirty.BLDY = value;
 };
 
+GameBoyAdvanceRenderProxy.prototype.writeMosaic = function(value) {
+	this.dirty.MOSAIC = value;
+};
+
 GameBoyAdvanceRenderProxy.prototype.setBacking = function(backing) {
 	this.backing = backing;
 	this.worker.postMessage({ type: 'start', backing: this.backing });

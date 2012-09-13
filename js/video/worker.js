@@ -104,6 +104,9 @@ function receiveDirty(dirty) {
 		case 'BLDY':
 			video.writeBlendY(dirty[type]);
 			break;
+		case 'MOSAIC':
+			video.writeMosaic(dirty[type]);
+			break;
 		case 'memory':
 			receiveMemory(dirty.memory);
 			break;
