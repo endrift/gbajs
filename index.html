@@ -27,6 +27,7 @@ try {
 	gba = new GameBoyAdvance();
 	gba.keypad.eatInput = true;
 	gba.setLogger(function(error) {
+		console.log(error);
 		gba.pause();
 		var crash = document.createElement('img');
 		var screen = document.getElementById('screen');
