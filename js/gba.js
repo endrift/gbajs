@@ -195,6 +195,7 @@ GameBoyAdvance.prototype.runStable = function() {
 				}
 			} catch(exception) {
 				self.ERROR(exception);
+				throw exception;
 			}
 		};
 	} else {
@@ -206,6 +207,7 @@ GameBoyAdvance.prototype.runStable = function() {
 				}
 			} catch(exception) {
 				self.ERROR(exception);
+				throw exception;
 			}
 		};
 	}

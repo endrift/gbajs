@@ -23,6 +23,7 @@ function Console(gba) {
 	this.logQueue = [];
 	var self = this;
 	gba.setLogger(function (message) { self.log(message) });
+	this.gba.doStep = function () { return self.testBreakpoints() };
 }
 
 Console.prototype.updateGPRs = function() {
@@ -76,6 +77,9 @@ Console.prototype.updateCPSR = function() {
 
 Console.prototype.log = function(message) {
 	this.logQueue.push(message);
+	if (message.substring(0, '[ERROR]'.length) === '[ERROR]') {
+		this.pause();
+	}
 	if (!this.stillRunning) {
 		this.flushLog();
 	}
@@ -197,7 +201,6 @@ Console.prototype.breakpointHit = function() {
 }
 
 Console.prototype.addBreakpoint = function(addr) {
-	this.gba.doStep = this.testBreakpoints;
 	this.breakpoints[addr] = true;
 	var bpLi = document.getElementById('bp' + addr);
 	if (!bpLi) {
@@ -217,7 +220,7 @@ Console.prototype.addBreakpoint = function(addr) {
 }
 
 Console.prototype.testBreakpoints = function() {
-	if (this.breakpoints[this.cpu.gprs[this.cpu.PC]]) {
+	if (this.breakpoints.length && this.breakpoints[this.cpu.gprs[this.cpu.PC]]) {
 		return false;
 	}
 	return this.gba.waitFrame();
