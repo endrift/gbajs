@@ -58,7 +58,7 @@ window.onload = function() {
 		if (!gba.audio.context) {
 			// Remove the sound box if sound isn't available
 			var soundbox = document.getElementById('sound');
-			soundbox.parent.removeChild(soundbox);
+			soundbox.parentElement.removeChild(soundbox);
 		}
 	} else {
 		var dead = document.getElementById('controls');
