@@ -612,10 +612,10 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	}
 
 	var samplePointer = this.samplePointer;
-	sampleLeft += this.soundBias;
 	sampleLeft *= this.masterVolume / this.SOUND_MAX;
-	sampleRight += this.soundBias;
+	sampleLeft = Math.max(Math.min(sampleLeft, 1), -1);
 	sampleRight *= this.masterVolume / this.SOUND_MAX;
+	sampleRight = Math.max(Math.min(sampleRight, 1), -1);
 	if (this.buffers) {
 		this.buffers[0][samplePointer] = sampleLeft;
 		this.buffers[1][samplePointer] = sampleRight;
