@@ -4,7 +4,6 @@ function MemoryProxy(owner, size, blockSize) {
 	this.blockSize = blockSize;
 	this.mask = (1 << blockSize) - 1;
 	this.size = size;
-	this.delay = 0;
 	if (blockSize) {
 		for (var i = 0; i < (size >> blockSize); ++i) {
 			this.blocks.push(new MemoryBlock(1 << blockSize));
@@ -66,8 +65,7 @@ function GameBoyAdvanceRenderProxy() {
 	this.worker = new Worker('js/video/worker.js');
 
 	this.currentFrame = 0;
-	this.lastSeen = 0;
-	this.lastSent = 0;
+	this.delay = 0;
 	this.skipFrame = false;
 
 	this.dirty = {};
@@ -211,17 +209,20 @@ GameBoyAdvanceRenderProxy.prototype.drawScanline = function(y) {
 
 GameBoyAdvanceRenderProxy.prototype.startDraw = function() {
 	++this.currentFrame;
+	if (this.delay <= 0) {
+		this.skipFrame = false;
+	}
+	if (!this.skipFrame) {
+		++this.delay;
+	}
 };
 
 GameBoyAdvanceRenderProxy.prototype.finishDraw = function(caller) {
 	this.caller = caller;
 	if (!this.skipFrame) {
 		this.worker.postMessage({ type: 'finish', frame: this.currentFrame });
-		++this.delay;
 		if (this.delay > 2) {
 			this.skipFrame = true;
 		}
-	} else if (this.delay == 0) {
-		this.skipFrame = false;
 	}
 };
