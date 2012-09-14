@@ -63,6 +63,11 @@ function GameBoyAdvance() {
 		window.mozRequestAnimationFrame ||
 		window.oRequestAnimationFrame ||
 		window.msRequestAnimationFrame;
+
+	var self = this;
+	this.video.vblankCallback = function() {
+		self.seenFrame = true;
+	};
 };
 
 GameBoyAdvance.prototype.setCanvas = function(canvas) {
@@ -137,8 +142,8 @@ GameBoyAdvance.prototype.step = function() {
 };
 
 GameBoyAdvance.prototype.waitFrame = function() {
-	if (this.cpu.cycles - this.lastVblank >= this.video.TOTAL_LENGTH) {
-		this.lastVblank = this.cpu.cycles;
+	if (this.seenFrame) {
+		this.seenFrame = false;
 		return false;
 	}
 	return true;
