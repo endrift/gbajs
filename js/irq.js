@@ -1,5 +1,5 @@
 function GameBoyAdvanceInterruptHandler() {
-	this.FREQUENCY = 16780000;
+	this.FREQUENCY = 0x1000000;
 
 	this.cpu = null;
 	this.enable = false;
