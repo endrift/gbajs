@@ -426,7 +426,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 		localY = this.cachedHeight - y + yOff - 1;
 	}
 	var localYLo = localY & 0x7;
-	var mosaicX = 0;
+	var mosaicX;
 	var tileOffset;
 	if (video.objCharacterMapping) {
 		tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
@@ -440,7 +440,6 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 		mosaicX = video.objMosaicX - 1 - (video.objMosaicX + offset - 1) % video.objMosaicX;
 		offset += mosaicX;
 		underflow += mosaicX;
-		mosaicX = 0;
 	}
 	if (!this.hflip) {
 		localX = underflow;
@@ -449,7 +448,8 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	}
 
 	var tileRow = video.accessTile(this.TILE_OFFSET + (x & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), localYLo << paletteShift);
-	for (x = underflow; x < totalWidth || mosaicX; ++x) {
+	for (x = underflow; x < totalWidth; ++x) {
+		mosaicX = this.mosaic ? offset % video.objMosaicX : 0;
 		if (!this.hflip) {
 			localX = x - mosaicX;
 		} else {
@@ -466,7 +466,6 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 		}
 		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask, false);
 		offset++;
-		mosaicX = this.mosaic ? offset % video.objMosaicX : 0;
 	}
 };
 
@@ -518,6 +517,10 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 	for (x = underflow; x < drawWidth; ++x) {
 		localX = this.scalerotOam.a * (x - (totalWidth >> 1)) + this.scalerotOam.b * (yDiff - (totalHeight >> 1)) + (this.cachedWidth >> 1);
 		localY = this.scalerotOam.c * (x - (totalWidth >> 1)) + this.scalerotOam.d * (yDiff - (totalHeight >> 1)) + (this.cachedHeight >> 1);
+		if (this.mosaic) {
+			localX -= (x % video.objMosaicX) * this.scalerotOam.a + (y % video.objMosaicY) * this.scalerotOam.b;
+			localY -= (x % video.objMosaicX) * this.scalerotOam.c + (y % video.objMosaicY) * this.scalerotOam.d;
+		}
 
 		if (localX < 0 || localX >= this.cachedWidth || localY < 0 || localY >= this.cachedHeight) {
 			offset++;
@@ -633,7 +636,7 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, 
 		} else {
 			mosaicY = y - y % video.objMosaicY;
 		}
-		if (wrappedY <= mosaicY && (wrappedY + totalHeight) > mosaicY) {
+		if (wrappedY <= y && (wrappedY + totalHeight) > y) {
 			obj.drawScanline(backing, mosaicY, wrappedY, start, end);
 		}
 	}
