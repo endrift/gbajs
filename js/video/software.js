@@ -425,11 +425,8 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	} else {
 		localY = this.cachedHeight - y + yOff - 1;
 	}
-	if (this.mosaic) {
-		localY -= y % video.objMosaicY;
-	}
 	var localYLo = localY & 0x7;
-	var mosaicX;
+	var mosaicX = 0;
 	var tileOffset;
 	if (video.objCharacterMapping) {
 		tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
@@ -439,17 +436,20 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 
 	var paletteShift = this.multipalette ? 1 : 0;
 
-	// TODO: make mosaic work when off the borders of the sprite
-	mosaicX = this.mosaic ? offset % video.objMosaicX : 0;
+	if (this.mosaic) {
+		mosaicX = video.objMosaicX - 1 - (video.objMosaicX + offset - 1) % video.objMosaicX;
+		offset += mosaicX;
+		underflow += mosaicX;
+		mosaicX = 0;
+	}
 	if (!this.hflip) {
-		localX = underflow - mosaicX;
+		localX = underflow;
 	} else {
-		localX = this.cachedWidth - (underflow - mosaicX) - 1;
+		localX = this.cachedWidth - underflow - 1;
 	}
 
 	var tileRow = video.accessTile(this.TILE_OFFSET + (x & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), localYLo << paletteShift);
-	for (x = underflow; x < totalWidth; ++x) {
-		mosaicX = this.mosaic ? offset % video.objMosaicX : 0;
+	for (x = underflow; x < totalWidth || mosaicX; ++x) {
 		if (!this.hflip) {
 			localX = x - mosaicX;
 		} else {
@@ -466,6 +466,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 		}
 		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask, false);
 		offset++;
+		mosaicX = this.mosaic ? offset % video.objMosaicX : 0;
 	}
 };
 
@@ -599,6 +600,7 @@ function GameBoyAdvanceOBJLayer(video, index) {
 GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, end) {
 	var y = this.video.vcount;
 	var wrappedY;
+	var mosaicY;
 	var obj;
 	if (start >= end) {
 		return;
@@ -626,8 +628,13 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, 
 		} else {
 			totalHeight = obj.cachedHeight << obj.doublesize;
 		}
-		if (wrappedY <= y && (wrappedY + totalHeight) > y) {
-			obj.drawScanline(backing, y, wrappedY, start, end);
+		if (!obj.mosaic) {
+			mosaicY = y;
+		} else {
+			mosaicY = y - y % video.objMosaicY;
+		}
+		if (wrappedY <= mosaicY && (wrappedY + totalHeight) > mosaicY) {
+			obj.drawScanline(backing, mosaicY, wrappedY, start, end);
 		}
 	}
 };
