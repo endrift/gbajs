@@ -1,5 +1,5 @@
 function GameBoyAdvanceInterruptHandler() {
-	this.FREQUENCY = 16780000;
+	this.FREQUENCY = 0x1000000;
 
 	this.cpu = null;
 	this.enable = false;
@@ -519,70 +519,66 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 };
 
 GameBoyAdvanceInterruptHandler.prototype.pollNextEvent = function() {
-	this.nextEvent = 0;
+	var nextEvent = this.video.nextEvent;
 	var test;
-
-	test = this.video.nextEvent;
-	if (!this.nextEvent || test < this.nextEvent) {
-		this.nextEvent = test;
-	}
 
 	if (this.audio.enabled) {
 		test = this.audio.nextEvent;
-		if (!this.nextEvent || test < this.nextEvent) {
-			this.nextEvent = test;
+		if (!nextEvent || test < nextEvent) {
+			nextEvent = test;
 		}
 	}
 
 	if (this.timersEnabled) {
 		var timer = this.timers[0];
 		test = timer.nextEvent;
-		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
-			this.nextEvent = test;
+		if (timer.enable && test && (!nextEvent || test < nextEvent)) {
+			nextEvent = test;
 		}
 
 		timer = this.timers[1];
 		test = timer.nextEvent;
-		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
-			this.nextEvent = test;
+		if (timer.enable && test && (!nextEvent || test < nextEvent)) {
+			nextEvent = test;
 		}
 		timer = this.timers[2];
 		test = timer.nextEvent;
-		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
-			this.nextEvent = test;
+		if (timer.enable && test && (!nextEvent || test < nextEvent)) {
+			nextEvent = test;
 		}
 		timer = this.timers[3];
 		test = timer.nextEvent;
-		if (timer.enable && test && (!this.nextEvent || test < this.nextEvent)) {
-			this.nextEvent = test;
+		if (timer.enable && test && (!nextEvent || test < nextEvent)) {
+			nextEvent = test;
 		}
 	}
 
 	var dma = this.dma[0];
 	test = dma.nextIRQ;
-	if (dma.enable && dma.doIrq && test && (!this.nextEvent || test < this.nextEvent)) {
-		this.nextEvent = test;
+	if (dma.enable && dma.doIrq && test && (!nextEvent || test < nextEvent)) {
+		nextEvent = test;
 	}
 
 	dma = this.dma[1];
 	test = dma.nextIRQ;
-	if (dma.enable && dma.doIrq && test && (!this.nextEvent || test < this.nextEvent)) {
-		this.nextEvent = test;
+	if (dma.enable && dma.doIrq && test && (!nextEvent || test < nextEvent)) {
+		nextEvent = test;
 	}
 
 	dma = this.dma[2];
 	test = dma.nextIRQ;
-	if (dma.enable && dma.doIrq && test && (!this.nextEvent || test < this.nextEvent)) {
-		this.nextEvent = test;
+	if (dma.enable && dma.doIrq && test && (!nextEvent || test < nextEvent)) {
+		nextEvent = test;
 	}
 
 	dma = this.dma[3];
 	test = dma.nextIRQ;
-	if (dma.enable && dma.doIrq && test && (!this.nextEvent || test < this.nextEvent)) {
-		this.nextEvent = test;
+	if (dma.enable && dma.doIrq && test && (!nextEvent || test < nextEvent)) {
+		nextEvent = test;
 	}
 
-	this.core.ASSERT(this.nextEvent >= this.cpu.cycles, "Next event is before present");
+	this.core.ASSERT(nextEvent >= this.cpu.cycles, "Next event is before present");
+	this.nextEvent = nextEvent;
 };
 
 GameBoyAdvanceInterruptHandler.prototype.waitForIRQ = function() {

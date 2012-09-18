@@ -16,6 +16,7 @@ function GameBoyAdvanceVideo() {
 	this.TOTAL_LENGTH = 280896;
 
 	this.drawCallback = function() {};
+	this.vblankCallback = function() {};
 };
 
 GameBoyAdvanceVideo.prototype.clear = function() {
@@ -78,6 +79,7 @@ GameBoyAdvanceVideo.prototype.updateTimers = function(cpu) {
 				if (this.vblankIRQ) {
 					this.cpu.irq.raiseIRQ(this.cpu.irq.IRQ_VBLANK);
 				}
+				this.vblankCallback();
 				break;
 			case this.VERTICAL_TOTAL_PIXELS - 1:
 				this.inVblank = false;

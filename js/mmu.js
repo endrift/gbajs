@@ -155,26 +155,26 @@ function BadMemory(mmu, cpu) {
 };
 
 BadMemory.prototype.load8 = function(offset) {
-	return this.mmu.load8(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x3);
+	return this.mmu.load8(this.cpu.gprs[this.cpu.PC] - this.cpu.instructionWidth + (offset & 0x3));
 };
 
 BadMemory.prototype.load16 = function(offset) {
-	return this.mmu.load16(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x2);
+	return this.mmu.load16(this.cpu.gprs[this.cpu.PC] - this.cpu.instructionWidth + (offset & 0x2));
 };
 
 BadMemory.prototype.loadU8 = function(offset) {
-	return this.mmu.loadU8(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x3);
+	return this.mmu.loadU8(this.cpu.gprs[this.cpu.PC] - this.cpu.instructionWidth + (offset & 0x3));
 };
 
 BadMemory.prototype.loadU16 = function(offset) {
-	return this.mmu.loadU16(this.cpu.gprs[this.cpu.gprs.PC] | offset & 0x2);
+	return this.mmu.loadU16(this.cpu.gprs[this.cpu.PC] - this.cpu.instructionWidth + (offset & 0x2));
 };
 
 BadMemory.prototype.load32 = function(offset) {
 	if (this.cpu.execMode == this.cpu.MODE_ARM) {
-		return this.mmu.load32(this.cpu.gprs[this.cpu.gprs.PC]);
+		return this.mmu.load32(this.cpu.gprs[this.cpu.gprs.PC] - this.cpu.instructionWidth);
 	} else {
-		var halfword = this.mmu.loadU16(this.cpu.gprs[this.cpu.gprs.PC]);
+		var halfword = this.mmu.loadU16(this.cpu.gprs[this.cpu.PC] - this.cpu.instructionWidth);
 		return halfword | (halfword << 16);
 	}
 };

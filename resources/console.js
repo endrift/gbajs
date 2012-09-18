@@ -221,6 +221,7 @@ Console.prototype.addBreakpoint = function(addr) {
 
 Console.prototype.testBreakpoints = function() {
 	if (this.breakpoints.length && this.breakpoints[this.cpu.gprs[this.cpu.PC]]) {
+		this.breakpointHit();
 		return false;
 	}
 	return this.gba.waitFrame();

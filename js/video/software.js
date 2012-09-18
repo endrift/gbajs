@@ -425,9 +425,6 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	} else {
 		localY = this.cachedHeight - y + yOff - 1;
 	}
-	if (this.mosaic) {
-		localY -= y % video.objMosaicY;
-	}
 	var localYLo = localY & 0x7;
 	var mosaicX;
 	var tileOffset;
@@ -439,12 +436,15 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 
 	var paletteShift = this.multipalette ? 1 : 0;
 
-	// TODO: make mosaic work when off the borders of the sprite
-	mosaicX = this.mosaic ? offset % video.objMosaicX : 0;
+	if (this.mosaic) {
+		mosaicX = video.objMosaicX - 1 - (video.objMosaicX + offset - 1) % video.objMosaicX;
+		offset += mosaicX;
+		underflow += mosaicX;
+	}
 	if (!this.hflip) {
-		localX = underflow - mosaicX;
+		localX = underflow;
 	} else {
-		localX = this.cachedWidth - (underflow - mosaicX) - 1;
+		localX = this.cachedWidth - underflow - 1;
 	}
 
 	var tileRow = video.accessTile(this.TILE_OFFSET + (x & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), localYLo << paletteShift);
@@ -517,6 +517,10 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 	for (x = underflow; x < drawWidth; ++x) {
 		localX = this.scalerotOam.a * (x - (totalWidth >> 1)) + this.scalerotOam.b * (yDiff - (totalHeight >> 1)) + (this.cachedWidth >> 1);
 		localY = this.scalerotOam.c * (x - (totalWidth >> 1)) + this.scalerotOam.d * (yDiff - (totalHeight >> 1)) + (this.cachedHeight >> 1);
+		if (this.mosaic) {
+			localX -= (x % video.objMosaicX) * this.scalerotOam.a + (y % video.objMosaicY) * this.scalerotOam.b;
+			localY -= (x % video.objMosaicX) * this.scalerotOam.c + (y % video.objMosaicY) * this.scalerotOam.d;
+		}
 
 		if (localX < 0 || localX >= this.cachedWidth || localY < 0 || localY >= this.cachedHeight) {
 			offset++;
@@ -599,6 +603,7 @@ function GameBoyAdvanceOBJLayer(video, index) {
 GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, end) {
 	var y = this.video.vcount;
 	var wrappedY;
+	var mosaicY;
 	var obj;
 	if (start >= end) {
 		return;
@@ -626,8 +631,13 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, 
 		} else {
 			totalHeight = obj.cachedHeight << obj.doublesize;
 		}
+		if (!obj.mosaic) {
+			mosaicY = y;
+		} else {
+			mosaicY = y - y % video.objMosaicY;
+		}
 		if (wrappedY <= y && (wrappedY + totalHeight) > y) {
-			obj.drawScanline(backing, y, wrappedY, start, end);
+			obj.drawScanline(backing, mosaicY, wrappedY, start, end);
 		}
 	}
 };
