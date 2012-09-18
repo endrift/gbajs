@@ -98,7 +98,7 @@ GameBoyAdvanceRenderProxy.prototype.memoryDirtied = function(mem, block) {
 
 GameBoyAdvanceRenderProxy.prototype.clear = function(mmu) {
 	this.palette = new MemoryProxy(this, mmu.SIZE_PALETTE_RAM, 0);
-	this.vram = new MemoryProxy(this, mmu.SIZE_VRAM, 11);
+	this.vram = new MemoryProxy(this, mmu.SIZE_VRAM, 13);
 	this.oam = new MemoryProxy(this, mmu.SIZE_OAM, 0);
 
 	this.dirty = {};

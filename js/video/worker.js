@@ -122,9 +122,9 @@ function receiveMemory(memory) {
 		video.oam.overwrite(new Uint16Array(memory.oam));
 	}
 	if (memory.vram) {
-		for (var i = 0; i < 48; ++i) {
+		for (var i = 0; i < 12; ++i) {
 			if (memory.vram[i]) {
-				video.vram.insert(i << 10, new Uint16Array(memory.vram[i]));
+				video.vram.insert(i << 12, new Uint16Array(memory.vram[i]));
 			}
 		}
 	}
