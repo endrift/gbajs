@@ -798,7 +798,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.clear = function(mmu) {
 		this.drawScanlineBGMode2,
 		this.drawScanlineBGMode3,
 		this.drawScanlineBGMode4,
-		function () { throw 'Unimplemented BG Mode 5'; }
+		this.drawScanlineBGMode5
 	];
 
 	this.drawLayers = [
@@ -1416,6 +1416,44 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode4 = function(backing,
 		}
 		color = this.vram.loadU8(charBase + (localY * video.HORIZONTAL_PIXELS) + localX);
 		bg.pushPixel(index, map, video, color, 0, offset, backing, mask, false);
+		offset++;
+	}
+};
+
+GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode5 = function(backing, bg, start, end) {
+	var video = this.video;
+	var x;
+	var y = video.vcount;
+	var offset = start;
+	var localX;
+	var localY;
+	var charBase = 0;
+	if (video.displayFrameSelect) {
+		charBase += 0xA000;
+	}
+	var index = bg.index;
+	var map = video.sharedMap;
+	var color;
+	var mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+	if (video.blendMode == 1 && video.alphaEnabled) {
+		mask |= video.target1[index];
+	}
+
+	var yBase;
+
+	for (x = start; x < end; ++x) {
+		localX = bg.dx * x + bg.sx;
+		localY = bg.dy * x + bg.sy;
+		if (this.mosaic) {
+			localX -= (x % video.bgMosaicX) * bg.dx + (y % video.bgMosaicY) * bg.dmx;
+			localY -= (x % video.bgMosaicX) * bg.dy + (y % video.bgMosaicY) * bg.dmy;
+		}
+		if (localX < 0 || localY < 0 || localX >= 160 || localY >= 128) {
+			offset++;
+			continue;
+		}
+		color = this.vram.loadU16(charBase + ((localY * 160) + localX) << 1);
+		bg.pushPixel(index, map, video, color, 0, offset, backing, mask, true);
 		offset++;
 	}
 };
