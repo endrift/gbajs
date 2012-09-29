@@ -582,7 +582,7 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	}
 
 	if (this.enableChannel4) {
-		sample += this.channel4.sample * this.soundRatio * this.PSG_MAX;
+		sample = this.channel4.sample * this.soundRatio * this.PSG_MAX;
 		if (this.enabledLeft & 0x8) {
 			sampleLeft += sample;
 		}
