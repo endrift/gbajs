@@ -266,6 +266,8 @@ function GameBoyAdvanceMMU() {
 
 	this.ICACHE_PAGE_BITS = 8;
 	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
+
+	this.bios = null;
 };
 
 GameBoyAdvanceMMU.prototype.mmap = function(region, object) {
@@ -275,7 +277,7 @@ GameBoyAdvanceMMU.prototype.mmap = function(region, object) {
 GameBoyAdvanceMMU.prototype.clear = function() {
 	var badMemory = new BadMemory(this, this.cpu);
 	this.memory = [
-		null,
+		this.bios,
 		badMemory, // Unused
 		new MemoryBlock(this.SIZE_WORKING_RAM, 9),
 		new MemoryBlock(this.SIZE_WORKING_IRAM, 7),
@@ -313,7 +315,7 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 };
 
 GameBoyAdvanceMMU.prototype.loadBios = function(bios) {
-	this.memory[this.REGION_BIOS] = new BIOSView(bios);
+	this.bios = new BIOSView(bios);
 };
 
 GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {

@@ -33,7 +33,10 @@ function GameBoyAdvanceInterruptHandler() {
 	this.MASK_DMA3 = 0x0800;
 	this.MASK_KEYPAD = 0x1000;
 	this.MASK_GAMEPAK = 0x2000;
+};
 
+GameBoyAdvanceInterruptHandler.prototype.clear = function() {
+	this.enable = false;
 	this.enabledIRQs = 0;
 	this.interruptFlags = 0;
 
@@ -76,6 +79,7 @@ function GameBoyAdvanceInterruptHandler() {
 
 	this.nextEvent = 0;
 	this.springIRQ = false;
+	this.resetSP();
 };
 
 GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
@@ -234,10 +238,6 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 
 	this.pollNextEvent();
 }
-
-GameBoyAdvanceInterruptHandler.prototype.clear = function() {
-	this.resetSP();
-};
 
 GameBoyAdvanceInterruptHandler.prototype.resetSP = function() {
 	this.cpu.switchMode(this.cpu.MODE_SUPERVISOR);

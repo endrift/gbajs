@@ -45,8 +45,6 @@ function GameBoyAdvance() {
 
 	this.keypad.core = this;
 
-	this.reset();
-
 	this.keypad.registerHandlers();
 	this.doStep = this.waitFrame;
 	this.paused = false;
@@ -98,8 +96,7 @@ GameBoyAdvance.prototype.setBios = function(bios) {
 };
 
 GameBoyAdvance.prototype.setRom = function(rom) {
-	// TODO: be able to reset the ROM live
-	//this.reset();
+	this.reset();
 
 	this.rom = this.mmu.loadRom(rom, true);
 	this.retrieveSavedata();

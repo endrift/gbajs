@@ -40,10 +40,14 @@ function ARMCore() {
 	this.armCompiler = new ARMCoreArm(this);
 	this.thumbCompiler = new ARMCoreThumb(this);
 	this.generateConds();
+
+	this.gprs = new Int32Array(16);
 };
 
 ARMCore.prototype.resetCPU = function(startOffset) {
-	this.gprs = new Int32Array(16);
+	for (var i = 0; i < this.PC; ++i) {
+		this.gprs[i] = 0;
+	}
 	this.gprs[this.PC] = startOffset + this.WORD_SIZE_ARM;
 
 	this.loadInstruction = this.loadInstructionArm;
@@ -79,6 +83,9 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 
 	this.page = null;
 	this.pageId = 0;
+	this.pageRegion = -1;
+
+	this.instruction = null;
 
 	this.irq.clear();
 
