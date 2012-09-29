@@ -200,6 +200,9 @@ GameBoyAdvance.prototype.runStable = function() {
 				}
 			} catch(exception) {
 				self.ERROR(exception);
+				if (exception.stack) {
+					self.logStackTrace(exception.stack.split('\n'));
+				}
 				throw exception;
 			}
 		};
@@ -212,6 +215,9 @@ GameBoyAdvance.prototype.runStable = function() {
 				}
 			} catch(exception) {
 				self.ERROR(exception);
+				if (exception.stack) {
+					self.logStackTrace(exception.stack.split('\n'));
+				}
 				throw exception;
 			}
 		};
@@ -309,6 +315,17 @@ GameBoyAdvance.prototype.log = function(message) {};
 
 GameBoyAdvance.prototype.setLogger = function(logger) {
 	this.log = logger;
+};
+
+GameBoyAdvance.prototype.logStackTrace = function(stack) {
+	var overflow = stack.length - 32;
+	this.ERROR('Stack trace follows:');
+	if (overflow > 0) {
+		this.log('> (Too many frames)');
+	}
+	for (var i = Math.max(overflow, 0); i < stack.length; ++i) {
+		this.log('> ' + stack[i]);
+	}
 };
 
 GameBoyAdvance.prototype.ERROR = function(error) {
