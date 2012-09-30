@@ -33,7 +33,7 @@ a:link, a:visited {
 	height: 0;
 }
 
-#controls *, #instructions {
+#controls > *, #instructions {
 	opacity: 1;
 	-webkit-transition: opacity ease-out 0.6s;
 	-moz-transition: opacity ease-out 0.6s;
@@ -112,6 +112,10 @@ a:link, a:visited {
 
 .hidden {
 	opacity: 0 !important;
+}
+
+.dead {
+	display: none;
 }
 
 input[type=file] {
@@ -256,52 +260,6 @@ ul#links li:not(:first-child)::before {
 	border-bottom-right-radius: 0;
 	padding-right: 10px;
 	border-right: 1px solid rgba(96, 48, 96, 0.8);
-}
-
-#mapping td:first-child::after, #mapping td:first-child::before,
-#mapping td:last-child::after, #mapping td:last-child::before {
-	border-style: solid;
-	position: relative;
-	height: 0;
-	content: "";
-	display: inline-block;
-	margin: 0;
-	float: right;
-	border-color: transparent;
-}
-
-#mapping td:first-child::after {
-	border-width: 14px;
-	margin-right: -36px;
-	border-left-color: #765490;
-	top: 3px;
-	z-index: 3;
-}
-
-#mapping td:first-child::before {
-	border-width: 14px;
-	margin-right: -38px;
-	border-left-color: rgba(96, 48, 96, 0.8);
-	top: 3px;
-	z-index: 3;
-}
-
-#mapping td:last-child::before {
-	border-width: 15px;
-	margin-left: -100px;
-	border-left-color: #765490;
-	top: 2px;
-	left: -72px;
-	z-index: 2;
-}
-
-#mapping td:last-child::after {
-	border-width: 15px;
-	margin-left: -100px;
-	border-left-color: rgba(96, 48, 96, 0.8);
-	top: 2px;
-	left: -70px;
-	z-index: 1;
 }
 
 #mapping td:last-child {
