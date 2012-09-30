@@ -99,7 +99,11 @@ GameBoyAdvance.prototype.setRom = function(rom) {
 	this.reset();
 
 	this.rom = this.mmu.loadRom(rom, true);
+	if (!this.rom) {
+		return false;
+	}
 	this.retrieveSavedata();
+	return true;
 };
 
 GameBoyAdvance.prototype.hasRom = function() {
@@ -110,9 +114,9 @@ GameBoyAdvance.prototype.loadRomFromFile = function(romFile, callback) {
 	var reader = new FileReader();
 	var self = this;
 	reader.onload = function(e) {
-		self.setRom(e.target.result);
+		var result = self.setRom(e.target.result);
 		if (callback) {
-			callback();
+			callback(result);
 		}
 	}
 	reader.readAsArrayBuffer(romFile);

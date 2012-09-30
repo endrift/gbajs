@@ -328,6 +328,10 @@ GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
 	};
 
 	var lo = new ROMView(rom);
+	if (lo.view.getUint8(0xB2) != 0x96) {
+		// Not a valid ROM
+		return null;
+	}
 	lo.mmu = this; // Needed for GPIO
 	this.memory[this.REGION_CART0] = lo;
 	this.memory[this.REGION_CART1] = lo;

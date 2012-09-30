@@ -110,14 +110,24 @@ function run(file) {
 	load.removeAttribute('onclick');
 	var pause = document.getElementById('pause');
 	pause.textContent = "PAUSE";
-	gba.loadRomFromFile(file, function() {
-		for (var i = 0; i < runCommands.length; ++i) {
-			runCommands[i]();
+	gba.loadRomFromFile(file, function(result) {
+		if (result) {
+			for (var i = 0; i < runCommands.length; ++i) {
+				runCommands[i]();
+			}
+			runCommands = [];
+			fadeOut('preload', 'ingame');
+			fadeOut('instructions');
+			gba.runStable();
+		} else {
+			load.textContent = 'FAILED';
+			setTimeout(function() {
+				load.textContent = 'SELECT';
+				load.onclick = function() {
+					document.getElementById('loader').click();
+				}
+			}, 3000);
 		}
-		runCommands = [];
-		fadeOut('preload', 'ingame');
-		fadeOut('instructions');
-		gba.runStable();
 	});
 }
 
