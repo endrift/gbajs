@@ -139,7 +139,7 @@ function reset() {
 	var crash = document.getElementById('crash');
 	if (crash) {
 		var context = gba.targetCanvas.getContext('2d');
-		context.clearRect(0, 0, 240, 160);
+		context.clearRect(0, 0, 480, 320);
 		gba.video.drawCallback();
 		crash.parentElement.removeChild(crash);
 		var canvas = document.getElementById('screen');
