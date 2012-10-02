@@ -123,6 +123,8 @@ GameBoyAdvance.prototype.loadRomFromFile = function(romFile, callback) {
 };
 
 GameBoyAdvance.prototype.reset = function() {
+	this.audio.pause(true);
+
 	this.mmu.clear();
 	this.io.clear();
 	this.audio.clear();
@@ -152,6 +154,7 @@ GameBoyAdvance.prototype.waitFrame = function() {
 
 GameBoyAdvance.prototype.pause = function() {
 	this.paused = true;
+	this.audio.pause(true);
 	if (this.interval) {
 		clearInterval(this.interval);
 		this.interval = null;
@@ -183,6 +186,7 @@ GameBoyAdvance.prototype.runStable = function() {
 	var runFunc;
 	var start = Date.now();
 	this.paused = false;
+	this.audio.pause(false);
 
 	if (this.reportFPS) {
 		runFunc = function() {

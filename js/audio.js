@@ -12,7 +12,6 @@ function GameBoyAdvanceAudio() {
 		this.sampleMask = (this.bufferSize << 2) - 1;
 		this.jsAudio = this.context.createJavaScriptNode(this.bufferSize);
 		this.jsAudio.onaudioprocess = function(e) { GameBoyAdvanceAudio.audioProcess(self, e) };
-		this.jsAudio.connect(this.context.destination);
 	} else {
 		this.context = null;
 	}
@@ -32,6 +31,9 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.fifoBSample = 0;
 
 	this.enabled = false;
+	if (this.context) {
+		this.jsAudio.disconnect(this.context.destination);
+	}
 
 	this.enableChannel3 = false;
 	this.enableChannel4 = false;
@@ -132,6 +134,16 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.writeChannel4FC(0);
 };
 
+GameBoyAdvanceAudio.prototype.pause = function(paused) {
+	if (this.context) {
+		if (paused) {
+			this.jsAudio.disconnect(this.context.destination);
+		} else if (this.enabled) {
+			this.jsAudio.connect(this.context.destination);
+		}
+	}
+};
+
 GameBoyAdvanceAudio.prototype.updateTimers = function() {
 	var cycles = this.cpu.cycles;
 	if (!this.enabled || cycles < this.nextEvent) {
@@ -208,11 +220,18 @@ GameBoyAdvanceAudio.prototype.updateTimers = function() {
 };
 
 GameBoyAdvanceAudio.prototype.writeEnable = function(value) {
-	this.enabled = value;
+	this.enabled = !!value;
 	this.nextEvent = this.cpu.cycles;
 	this.nextSample = this.nextEvent;
 	this.updateTimers();
 	this.core.irq.pollNextEvent();
+	if (this.context) {
+		if (value) {
+			this.jsAudio.connect(this.context.destination);
+		} else {
+			this.jsAudio.disconnect(this.context.destination);
+		}
+	}
 };
 
 GameBoyAdvanceAudio.prototype.writeSoundControlLo = function(value) {
