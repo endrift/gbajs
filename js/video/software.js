@@ -634,7 +634,7 @@ GameBoyAdvanceOBJLayer.prototype.drawScanline = function(backing, layer, start, 
 		if (!obj.mosaic) {
 			mosaicY = y;
 		} else {
-			mosaicY = y - y % video.objMosaicY;
+			mosaicY = y - y % this.video.objMosaicY;
 		}
 		if (wrappedY <= y && (wrappedY + totalHeight) > y) {
 			obj.drawScanline(backing, mosaicY, wrappedY, start, end);
