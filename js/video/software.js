@@ -1076,8 +1076,12 @@ GameBoyAdvanceSoftwareRenderer.prototype.resetLayers = function() {
 	if (this.bg[2].enabled) {
 		this.bg[2].drawScanline = this.bgModes[this.backgroundMode];
 	}
-	if ((this.backgroundMode == 0 || this.backgroundMode == 2) && this.bg[3].enabled) {
-		this.bg[3].drawScanline = this.bgModes[this.backgroundMode];
+	if ((this.backgroundMode == 0 || this.backgroundMode == 2)) {
+		if (this.bg[3].enabled) {
+			this.bg[3].drawScanline = this.bgModes[this.backgroundMode];
+		}
+	} else {
+		this.bg[3].enabled = false;
 	}
 	this.drawLayers.sort(this.layerComparator);
 };
