@@ -1514,7 +1514,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 			if (this.windows[2].enabled[layer.index] || (this.objwin && this.windows[3].enabled[layer.index])) {
 				// WINOUT/OBJWIN
 				this.objwinActive = this.objwin;
-				this.setBlendEnabled(layer.index, this.windows[2].special, this.blendMode); // Window 3 handled in pushPixel
+				this.setBlendEnabled(layer.index, this.windows[2].special && this.target1[layer.index], this.blendMode); // Window 3 handled in pushPixel
 				if (firstEnd > lastStart) {
 					layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
 				} else {
