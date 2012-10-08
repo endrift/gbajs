@@ -3,10 +3,18 @@ body {
 	text-align: center;
 	margin: 0;
 	color: white;
-	font-family: sans-serif;
+	font-family: 'Calibri', 'Verdana', sans-serif;
 	overflow: hidden;
 	font-size: 15px;
 	height: 100%;
+}
+
+button {
+	font-family: 'Calibri', 'Verdana', sans-serif;
+}
+
+#controls * {
+	-webkit-font-smoothing: antialiased; /* I'm so sorry */
 }
 
 canvas {
