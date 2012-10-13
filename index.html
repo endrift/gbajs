@@ -29,12 +29,16 @@ try {
 	gba.setLogger(function(error) {
 		console.log(error);
 		gba.pause();
-		var crash = document.createElement('img');
 		var screen = document.getElementById('screen');
+		if (screen.getAttribute('class') == 'dead') {
+			console.log('We appear to have crashed multiple times without reseting.');
+			return;
+		}
+		var crash = document.createElement('img');
 		crash.setAttribute('id', 'crash');
 		crash.setAttribute('src', 'resources/crash.png');
 		screen.parentElement.insertBefore(crash, screen);
-		screen.parentElement.removeChild(screen);
+		screen.setAttribute('class', 'dead');
 	});
 } catch (exception) {
 	gba = null;
@@ -80,9 +84,15 @@ function fadeOut(id, nextId) {
 	var e = document.getElementById(id);
 	var e2 = document.getElementById(nextId);
 	var removeSelf = function() {
-		e.parentElement.removeChild(e);
+		e.setAttribute('class', 'dead');
+		e.removeEventListener('webkitTransitionEnd', removeSelf);
+		e.removeEventListener('oTransitionEnd', removeSelf);
+		e.removeEventListener('transitionend', removeSelf);
 		if (e2) {
-			e2.removeAttribute('class');
+			e2.setAttribute('class', 'hidden');
+			setTimeout(function() {
+				e2.removeAttribute('class');
+			}, 0);
 		}
 	}
 
@@ -94,18 +104,53 @@ function fadeOut(id, nextId) {
 
 function run(file) {
 	var dead = document.getElementById('loader');
-	dead.parentElement.removeChild(dead);
+	dead.value = '';
 	var load = document.getElementById('select');
 	load.textContent = 'Loading...';
 	load.removeAttribute('onclick');
-	gba.loadRomFromFile(file, function() {
-		for (var i = 0; i < runCommands.length; ++i) {
-			runCommands[i]();
+	var pause = document.getElementById('pause');
+	pause.textContent = "PAUSE";
+	gba.loadRomFromFile(file, function(result) {
+		if (result) {
+			for (var i = 0; i < runCommands.length; ++i) {
+				runCommands[i]();
+			}
+			runCommands = [];
+			fadeOut('preload', 'ingame');
+			fadeOut('instructions');
+			gba.runStable();
+		} else {
+			load.textContent = 'FAILED';
+			setTimeout(function() {
+				load.textContent = 'SELECT';
+				load.onclick = function() {
+					document.getElementById('loader').click();
+				}
+			}, 3000);
 		}
-		fadeOut('preload', 'ingame');
-		fadeOut('instructions');
-		gba.runStable();
 	});
+}
+
+function reset() {
+	gba.pause();
+	gba.reset();
+	var load = document.getElementById('select');
+	load.textContent = 'SELECT';
+	var crash = document.getElementById('crash');
+	if (crash) {
+		var context = gba.targetCanvas.getContext('2d');
+		context.clearRect(0, 0, 480, 320);
+		gba.video.drawCallback();
+		crash.parentElement.removeChild(crash);
+		var canvas = document.getElementById('screen');
+		canvas.removeAttribute('class');
+	} else {
+		lcdFade(gba.context, gba.targetCanvas.getContext('2d'), gba.video.drawCallback);
+	}
+	load.onclick = function() {
+		document.getElementById('loader').click();
+	}
+	fadeOut('ingame', 'preload');
 }
 
 function uploadSavedataPending(file) {
@@ -126,6 +171,30 @@ function togglePause() {
 function screenshot() {
 	var canvas = gba.indirectCanvas;
 	window.open(canvas.toDataURL('image/png'), 'screenshot');
+}
+
+function lcdFade(context, target, callback) {
+	var i = 0;
+	var drawInterval = setInterval(function() {
+		i++;
+		var pixelData = context.getImageData(0, 0, 240, 160);
+		for (var y = 0; y < 160; ++y) {
+			for (var x = 0; x < 240; ++x) {
+				var xDiff = Math.abs(x - 120);
+				var yDiff = Math.abs(y - 80) * 0.8;
+				var xFactor = (120 - i - xDiff) / 120;
+				var yFactor = (80 - i - ((y & 1) * 10) - yDiff + Math.pow(xDiff, 1 / 2)) / 80;
+				pixelData.data[(x + y * 240) * 4 + 3] *= Math.pow(xFactor, 1 / 3) * Math.pow(yFactor, 1 / 2);
+			}
+		}
+		context.putImageData(pixelData, 0, 0);
+		target.clearRect(0, 0, 480, 320);
+		if (i > 40) {
+			clearInterval(drawInterval);
+		} else {
+			callback();
+		}
+	}, 50);
 }
 
 function setVolume(value) {
@@ -186,6 +255,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 	</div>
 	<div id="ingame" class="hidden">
 		<button id="pause" class="bigbutton" onclick="togglePause()">PAUSE</button>
+		<button class="bigbutton" onclick="reset()">RESET</button>
 		<button onclick="gba.downloadSavedata()">Download Savegame</button>
 		<button onclick="screenshot()">Screenshot</button>
 		<div id="sound">
@@ -199,11 +269,10 @@ document.addEventListener('webkitfullscreenchange', function() {
 	<p>
 		For legal reasons, GBA.js is presented without any included games. Please click Select
 		below to choose a Game Boy Advance game image from your hard drive that you'd like to play.
-		The games must be uncompressed, so unzip them as needed. If the game crashes, or you want
-		to change the game you're playing, you will need to reload the page.
+		The games must be uncompressed, so unzip them as needed.
 	</p>
 	<p>
-		Please note that this is an early prototype and compatibility right now is lacking. More
+		Please note that this is a beta and there might be compatibility problems. More
 		information and a link to a compatibility table can be found on the sidebar. If you're
 		feeling daring, please submit problem reports to the GitHub page.
 	</p>
@@ -218,7 +287,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 			<li><a href="http://endrift.com/gbajs/compat.html">Compatibility list</a></li>
 		</ul>
 		<div id="stats">
-			<footer>Prototype version (2012-09-05)</footer>
+			<footer>Version 1.0 Beta 1</footer>
 			<p><span id="fps">0</span> frames per second</p>
 		</div>
 	</header>

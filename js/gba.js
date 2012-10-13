@@ -45,8 +45,6 @@ function GameBoyAdvance() {
 
 	this.keypad.core = this;
 
-	this.reset();
-
 	this.keypad.registerHandlers();
 	this.doStep = this.waitFrame;
 	this.paused = false;
@@ -98,11 +96,14 @@ GameBoyAdvance.prototype.setBios = function(bios) {
 };
 
 GameBoyAdvance.prototype.setRom = function(rom) {
-	// TODO: be able to reset the ROM live
-	//this.reset();
+	this.reset();
 
 	this.rom = this.mmu.loadRom(rom, true);
+	if (!this.rom) {
+		return false;
+	}
 	this.retrieveSavedata();
+	return true;
 };
 
 GameBoyAdvance.prototype.hasRom = function() {
@@ -113,15 +114,17 @@ GameBoyAdvance.prototype.loadRomFromFile = function(romFile, callback) {
 	var reader = new FileReader();
 	var self = this;
 	reader.onload = function(e) {
-		self.setRom(e.target.result);
+		var result = self.setRom(e.target.result);
 		if (callback) {
-			callback();
+			callback(result);
 		}
 	}
 	reader.readAsArrayBuffer(romFile);
 };
 
 GameBoyAdvance.prototype.reset = function() {
+	this.audio.pause(true);
+
 	this.mmu.clear();
 	this.io.clear();
 	this.audio.clear();
@@ -151,6 +154,7 @@ GameBoyAdvance.prototype.waitFrame = function() {
 
 GameBoyAdvance.prototype.pause = function() {
 	this.paused = true;
+	this.audio.pause(true);
 	if (this.interval) {
 		clearInterval(this.interval);
 		this.interval = null;
@@ -182,11 +186,17 @@ GameBoyAdvance.prototype.runStable = function() {
 	var runFunc;
 	var start = Date.now();
 	this.paused = false;
+	this.audio.pause(false);
 
 	if (this.reportFPS) {
 		runFunc = function() {
 			try {
 				timer += Date.now() - start;
+				if (self.paused) {
+					return;
+				} else if (requestAnimationFrame) {
+					requestAnimationFrame(runFunc);
+				}
 				start = Date.now();
 				self.advanceFrame();
 				++frames;
@@ -195,23 +205,28 @@ GameBoyAdvance.prototype.runStable = function() {
 					frames = 0;
 					timer = 0;
 				}
-				if (!self.paused && requestAnimationFrame) {
-					requestAnimationFrame(runFunc);
-				}
 			} catch(exception) {
 				self.ERROR(exception);
+				if (exception.stack) {
+					self.logStackTrace(exception.stack.split('\n'));
+				}
 				throw exception;
 			}
 		};
 	} else {
 		runFunc = function() {
 			try {
-				self.advanceFrame();
-				if (!self.paused && requestAnimationFrame) {
+				if (self.paused) {
+					return;
+				} else if (requestAnimationFrame) {
 					requestAnimationFrame(runFunc);
 				}
+				self.advanceFrame();
 			} catch(exception) {
 				self.ERROR(exception);
+				if (exception.stack) {
+					self.logStackTrace(exception.stack.split('\n'));
+				}
 				throw exception;
 			}
 		};
@@ -309,6 +324,17 @@ GameBoyAdvance.prototype.log = function(message) {};
 
 GameBoyAdvance.prototype.setLogger = function(logger) {
 	this.log = logger;
+};
+
+GameBoyAdvance.prototype.logStackTrace = function(stack) {
+	var overflow = stack.length - 32;
+	this.ERROR('Stack trace follows:');
+	if (overflow > 0) {
+		this.log('> (Too many frames)');
+	}
+	for (var i = Math.max(overflow, 0); i < stack.length; ++i) {
+		this.log('> ' + stack[i]);
+	}
 };
 
 GameBoyAdvance.prototype.ERROR = function(error) {

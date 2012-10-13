@@ -12,7 +12,6 @@ function GameBoyAdvanceAudio() {
 		this.sampleMask = (this.bufferSize << 2) - 1;
 		this.jsAudio = this.context.createJavaScriptNode(this.bufferSize);
 		this.jsAudio.onaudioprocess = function(e) { GameBoyAdvanceAudio.audioProcess(self, e) };
-		this.jsAudio.connect(this.context.destination);
 	} else {
 		this.context = null;
 	}
@@ -32,6 +31,9 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.fifoBSample = 0;
 
 	this.enabled = false;
+	if (this.context) {
+		this.jsAudio.disconnect(this.context.destination);
+	}
 
 	this.enableChannel3 = false;
 	this.enableChannel4 = false;
@@ -41,6 +43,9 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.enableLeftChannelA = false;
 	this.enableRightChannelB = false;
 	this.enableLeftChannelB = false;
+
+	this.playingChannel3 = false;
+	this.playingChannel4 = false;
 
 	this.volumeLeft = 0;
 	this.volumeRight = 0;
@@ -77,16 +82,21 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 			raise: 0,
 			lower: 0,
 			nextStep: 0,
+			timed: false,
+			length: 0,
 			end: 0
 		}
 	}
 
 	this.waveData = new Uint8Array(32);
-	this.channel3Dimenstion = 0;
+	this.channel3Dimension = 0;
 	this.channel3Bank = 0;
 	this.channel3Volume = 0;
 	this.channel3Interval = 0;
 	this.channel3Next = 0;
+	this.channel3Length = 0;
+	this.channel3Timed = false;
+	this.channel3End = 0;
 	this.channel3Pointer =0;
 	this.channel3Sample = 0;
 
@@ -102,6 +112,9 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 		initialVolume: 0,
 		volume: 0,
 		nextStep: 0,
+		timed: false,
+		length: 0,
+		end: 0
 	};
 
 	this.nextEvent = 0;
@@ -119,6 +132,16 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.writeSquareChannelFC(0, 0);
 	this.writeSquareChannelFC(1, 0);
 	this.writeChannel4FC(0);
+};
+
+GameBoyAdvanceAudio.prototype.pause = function(paused) {
+	if (this.context) {
+		if (paused) {
+			this.jsAudio.disconnect(this.context.destination);
+		} else if (this.enabled) {
+			this.jsAudio.connect(this.context.destination);
+		}
+	}
 };
 
 GameBoyAdvanceAudio.prototype.updateTimers = function() {
@@ -139,38 +162,48 @@ GameBoyAdvanceAudio.prototype.updateTimers = function() {
 		this.updateSquareChannel(channel, cycles);
 	}
 
-	if (this.enableChannel3 && this.channel3Write) {
+	if (this.enableChannel3 && this.playingChannel3) {
 		if (cycles >= this.channel3Next) {
-			var sample = this.waveData[this.channel3Pointer >> 1];
-			this.channel3Sample = (((sample >> ((this.channel3Pointer & 1) << 2)) & 0xF) - 0x8) / 8;
-			this.channel3Pointer = (this.channel3Pointer + 1);
-			this.channel3Next += this.channel3Interval;
-			if (this.channel3Dimension && this.channel3Pointer >= 64) {
-				this.channel3Pointer -= 64;
-			} else if (!this.channel3Bank && this.channel3Pointer >= 32) {
-				this.channel3Pointer -= 32;
-			} else if (this.channel3Pointer >= 64) {
-				this.channel3Pointer -= 32;
+			if (this.channel3Write) {
+				var sample = this.waveData[this.channel3Pointer >> 1];
+				this.channel3Sample = (((sample >> ((this.channel3Pointer & 1) << 2)) & 0xF) - 0x8) / 8;
+				this.channel3Pointer = (this.channel3Pointer + 1);
+				if (this.channel3Dimension && this.channel3Pointer >= 64) {
+					this.channel3Pointer -= 64;
+				} else if (!this.channel3Bank && this.channel3Pointer >= 32) {
+					this.channel3Pointer -= 32;
+				} else if (this.channel3Pointer >= 64) {
+					this.channel3Pointer -= 32;
+				}
 			}
-		}
-		if (this.channel3Interval) {
-			if (this.nextEvent > this.channel3Next) {
+			this.channel3Next += this.channel3Interval;
+			if (this.channel3Interval && this.nextEvent > this.channel3Next) {
 				this.nextEvent = this.channel3Next;
 			}
 		}
+		if (this.channel3Timed && cycles >= this.channel3End) {
+			this.playingChannel3 = false;
+		}
 	}
 
-	if (this.enableChannel4) {
-		if (cycles >= this.channel4.next) {
-			this.channel4.lfsr >>= 1;
-			var sample = this.channel4.lfsr & 1;
-			this.channel4.lfsr |= (((this.channel4.lfsr >> 1) & 1) ^ sample) << (this.channel4.width - 1);
-			this.channel4.next += this.channel4.interval;
-			this.channel4.sample = (sample - 0.5) * 2 * this.channel4.volume;
-		}
-		this.updateEnvelope(this.channel4, cycles);
-		if (this.nextEvent > this.channel4.next) {
-			this.nextEvent = this.channel4.next;
+	if (this.enableChannel4 && this.playingChannel4) {
+		if (this.channel4.timed && cycles >= this.channel4.end) {
+			this.playingChannel4 = false;
+		} else {
+			if (cycles >= this.channel4.next) {
+				this.channel4.lfsr >>= 1;
+				var sample = this.channel4.lfsr & 1;
+				this.channel4.lfsr |= (((this.channel4.lfsr >> 1) & 1) ^ sample) << (this.channel4.width - 1);
+				this.channel4.next += this.channel4.interval;
+				this.channel4.sample = (sample - 0.5) * 2 * this.channel4.volume;
+			}
+			this.updateEnvelope(this.channel4, cycles);
+			if (this.nextEvent > this.channel4.next) {
+				this.nextEvent = this.channel4.next;
+			}
+			if (this.channel4.timed && this.nextEvent > this.channel4.end) {
+				this.nextEvent = this.channel4.end;
+			}
 		}
 	}
 
@@ -187,11 +220,18 @@ GameBoyAdvanceAudio.prototype.updateTimers = function() {
 };
 
 GameBoyAdvanceAudio.prototype.writeEnable = function(value) {
-	this.enabled = value;
+	this.enabled = !!value;
 	this.nextEvent = this.cpu.cycles;
 	this.nextSample = this.nextEvent;
 	this.updateTimers();
 	this.core.irq.pollNextEvent();
+	if (this.context) {
+		if (value) {
+			this.jsAudio.connect(this.context.destination);
+		} else {
+			this.jsAudio.disconnect(this.context.destination);
+		}
+	}
 };
 
 GameBoyAdvanceAudio.prototype.writeSoundControlLo = function(value) {
@@ -247,6 +287,7 @@ GameBoyAdvanceAudio.prototype.resetSquareChannel = function(channel) {
 	if (channel.enabled && !channel.playing) {
 		channel.raise = this.cpu.cycles;
 		channel.lower = channel.raise + channel.duty * channel.interval;
+		channel.end = this.cpu.cycles + channel.length;
 		this.nextEvent = this.cpu.cycles;
 	}
 	channel.playing = channel.enabled;
@@ -300,6 +341,7 @@ GameBoyAdvanceAudio.prototype.writeSquareChannelFC = function(channelId, value) 
 	var frequency = value & 2047;
 	channel.frequency = frequency;
 	channel.interval = this.cpuFrequency * (2048 - frequency) / 131072;
+	channel.timed = !!(value & 0x4000);
 
 	if (value & 0x8000) {
 		this.resetSquareChannel(channel);
@@ -308,6 +350,11 @@ GameBoyAdvanceAudio.prototype.writeSquareChannelFC = function(channelId, value) 
 };
 
 GameBoyAdvanceAudio.prototype.updateSquareChannel = function(channel, cycles) {
+	if (channel.timed && cycles >= channel.end) {
+		channel.playing = false;
+		return;
+	}
+
 	if (channel.doSweep && cycles >= channel.nextSweep) {
 		channel.frequency += channel.sweepIncrement * (channel.frequency >> channel.sweepSteps);
 		if (channel.frequency < 0) {
@@ -325,8 +372,7 @@ GameBoyAdvanceAudio.prototype.updateSquareChannel = function(channel, cycles) {
 		channel.sample = channel.volume;
 		channel.lower = channel.raise + channel.duty * channel.interval;
 		channel.raise += channel.interval;
-	}
-	if (cycles >= channel.lower) {
+	} else if (cycles >= channel.lower) {
 		channel.sample = -channel.volume;
 		channel.lower += channel.interval;
 	}
@@ -338,6 +384,9 @@ GameBoyAdvanceAudio.prototype.updateSquareChannel = function(channel, cycles) {
 	}
 	if (this.nextEvent > channel.lower) {
 		this.nextEvent = channel.lower;
+	}
+	if (channel.timed && this.nextEvent > channel.end) {
+		this.nextEvent = channel.end;
 	}
 	if (channel.doSweep && this.nextEvent > channel.nextSweep) {
 		this.nextEvent = channel.nextSweep;
@@ -357,7 +406,7 @@ GameBoyAdvanceAudio.prototype.writeChannel3Lo = function(value) {
 };
 
 GameBoyAdvanceAudio.prototype.writeChannel3Hi = function(value) {
-	var length = value & 0xFF;
+	this.channel3Length = this.cpuFrequency * (0x100 - (value & 0xFF)) / 256;
 	var volume = (value >> 13) & 0x7;
 	switch (volume) {
 	case 0:
@@ -379,6 +428,7 @@ GameBoyAdvanceAudio.prototype.writeChannel3Hi = function(value) {
 
 GameBoyAdvanceAudio.prototype.writeChannel3X = function(value) {
 	this.channel3Interval = this.cpuFrequency * (2048 - (value & 0x7FF)) / 2097152;
+	this.channel3Timed = !!(value & 0x4000);
 	if (this.channel3Write) {
 		this.resetChannel3();
 	}
@@ -387,12 +437,14 @@ GameBoyAdvanceAudio.prototype.writeChannel3X = function(value) {
 GameBoyAdvanceAudio.prototype.resetChannel3 = function() {
 	this.channel3Next = this.cpu.cycles;
 	this.nextEvent = this.channel3Next;
+	this.channel3End = this.cpu.cycles + this.channel3Length;
+	this.playingChannel3 = this.channel3Write;
 	this.updateTimers();
 	this.core.irq.pollNextEvent();
 };
 
 GameBoyAdvanceAudio.prototype.writeWaveData = function(offset, data, width) {
-	if (this.channel3Bank) {
+	if (!this.channel3Bank) {
 		offset += 16;
 	}
 	if (width == 2) {
@@ -405,7 +457,9 @@ GameBoyAdvanceAudio.prototype.writeWaveData = function(offset, data, width) {
 GameBoyAdvanceAudio.prototype.setChannel4Enabled = function(enable) {
 	if (!this.enableChannel4 && enable) {
 		this.channel4.next = this.cpu.cycles;
-		this.enableChannel4 = enable;
+		this.channel4.end = this.cpu.cycles + this.channel4.length;
+		this.enableChannel4 = true;
+		this.playingChannel4 = true;
 		this.nextEvent = this.cpu.cycles;
 		this.updateEnvelope(this.channel4);
 		this.updateTimers();
@@ -421,6 +475,8 @@ GameBoyAdvanceAudio.prototype.writeChannel4LE = function(value) {
 };
 
 GameBoyAdvanceAudio.prototype.writeChannel4FC = function(value) {
+	this.channel4.timed = !!(value & 0x4000);
+
 	var r = value & 0x7;
 	if (!r) {
 		r = 0.5;
@@ -437,6 +493,7 @@ GameBoyAdvanceAudio.prototype.writeChannel4FC = function(value) {
 		this.channel4.width = width;
 		this.resetChannel4();
 	}
+
 	if (value & 0x8000) {
 		this.resetChannel4();
 	}
@@ -452,14 +509,17 @@ GameBoyAdvanceAudio.prototype.resetChannel4 = function() {
 	if (this.channel4.step) {
 		this.channel4.nextStep = this.cpu.cycles + this.channel4.step;
 	}
+	this.channel4.end = this.cpu.cycles + this.channel4.length;
 	this.channel4.next = this.cpu.cycles;
 	this.nextEvent = this.channel4.next;
+
+	this.playingChannel4 = this.enableChannel4;
 	this.updateTimers();
 	this.core.irq.pollNextEvent();
 };
 
 GameBoyAdvanceAudio.prototype.writeChannelLE = function(channel, value) {
-	channel.end = this.cpu.cycles + this.cpuFrequency * ((value & 0x3F) / 256);
+	channel.length = this.cpuFrequency * ((0x40 - (value & 0x3F)) / 256);
 
 	if (value & 0x0800) {
 		channel.increment = 1 / 16;
@@ -550,7 +610,7 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 
 	// TODO: left and right
 	channel = this.squareChannels[0];
-	if (channel.enabled) {
+	if (channel.playing) {
 		sample = channel.sample * this.soundRatio * this.PSG_MAX;
 		if (this.enabledLeft & 0x1) {
 			sampleLeft += sample;
@@ -561,7 +621,7 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	}
 
 	channel = this.squareChannels[1];
-	if (channel.enabled) {
+	if (channel.playing) {
 		sample = channel.sample * this.soundRatio * this.PSG_MAX;
 		if (this.enabledLeft & 0x2) {
 			sampleLeft += sample;
@@ -571,7 +631,7 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 		}
 	}
 
-	if (this.enableChannel3) {
+	if (this.playingChannel3) {
 		sample = this.channel3Sample * this.soundRatio * this.channel3Volume * this.PSG_MAX;
 		if (this.enabledLeft & 0x4) {
 			sampleLeft += sample;
@@ -581,8 +641,8 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 		}
 	}
 
-	if (this.enableChannel4) {
-		sample += this.channel4.sample * this.soundRatio * this.PSG_MAX;
+	if (this.playingChannel4) {
+		sample = this.channel4.sample * this.soundRatio * this.PSG_MAX;
 		if (this.enabledLeft & 0x8) {
 			sampleLeft += sample;
 		}
