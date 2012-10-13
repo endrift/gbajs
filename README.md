@@ -2,7 +2,7 @@ GBA.js
 ======
 **Version 1.0 Beta 1 — Copyright © 2012 Jeffrey Pfau**
 
-GBA.js is Game Boy Advance emulator written from scratch to employ HTML5 technologies like Canvas and Web Audio. It uses no plugins, and is designed to run on cutting edge web browsers. It is hosted [on GitHub](https://github.com/jpfau/gbajs) and is made available under the 2-clause BSD license. The most recent version can be found at [http://jpfau.github.com/gbajs/]().
+GBA.js is Game Boy Advance emulator written from scratch to employ HTML5 technologies like Canvas and Web Audio. It uses no plugins, and is designed to run on cutting edge web browsers. It is hosted [on GitHub](https://github.com/jpfau/gbajs) and is made available under the 2-clause BSD license. The most recent version can be found at [http://jpfau.github.com/gbajs/](http://jpfau.github.com/gbajs/).
 
 ## Browser Compatibility
 The current version of GBA.js is known to work in the following web browsers:
