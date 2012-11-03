@@ -17,9 +17,17 @@ button {
 	-webkit-font-smoothing: antialiased; /* I'm so sorry */
 }
 
-canvas {
+#screen {
 	margin-top: 85px;
 	margin-bottom: -405px; /* Take up no height */
+}
+
+#screen[zoomed] {
+	margin-top: 42.5px;
+	margin-bottom: -363px; /* Take up no height */
+	image-rendering: -webkit-optimize-contrast;
+	image-rendering: -moz-crisp-edges;
+	zoom: 2;
 }
 
 #crash {
@@ -48,7 +56,7 @@ a:link, a:visited {
 	-o-transition: opacity ease-out 0.6s;
 }
 
-#controls button, #mapping td, #sound {
+#controls button, #mapping td, #sound, #controls label {
 	background: transparent;
 	border: 0px solid rgba(192, 128, 192, 0.5);
 	border-top: 2px solid rgba(96, 48, 96, 0.8);
@@ -276,7 +284,7 @@ ul#links li:not(:first-child)::before {
 	border-left: 1px solid rgba(96, 48, 96, 0.8);
 }
 
-#sound {
+#sound, #controls label {
 	float: right;
 }
 

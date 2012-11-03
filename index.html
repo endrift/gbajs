@@ -201,6 +201,19 @@ function setVolume(value) {
 	gba.audio.masterVolume = Math.pow(2, value) - 1;
 }
 
+function setZoomed(zoomed) {
+	var screen = document.getElementById('screen');
+	if (zoomed) {
+		screen.setAttribute('width', '240');
+		screen.setAttribute('height', '160');
+		screen.setAttribute('zoomed', 'true');
+	} else {
+		screen.setAttribute('width', '480');
+		screen.setAttribute('height', '320');
+		screen.removeAttribute('zoomed');
+	}
+}
+
 document.addEventListener('webkitfullscreenchange', function() {
 	var canvas = document.getElementById('screen');
 	if (document.webkitIsFullScreen) {
@@ -258,6 +271,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<button class="bigbutton" onclick="reset()">RESET</button>
 		<button onclick="gba.downloadSavedata()">Download Savegame</button>
 		<button onclick="screenshot()">Screenshot</button>
+		<label><input type="checkbox" onchange="setZoomed(this.checked)"> Pixelated</label>
 		<div id="sound">
 			<p>Sound</p>
 			<input type="checkbox" checked onchange="gba.audio.masterEnable = this.checked">
