@@ -80,14 +80,21 @@ window.onload = function() {
 	}
 }
 
-function fadeOut(id, nextId) {
+function fadeOut(id, nextId, kill) {
 	var e = document.getElementById(id);
 	var e2 = document.getElementById(nextId);
+	if (!e) {
+		return;
+	}
 	var removeSelf = function() {
-		e.setAttribute('class', 'dead');
-		e.removeEventListener('webkitTransitionEnd', removeSelf);
-		e.removeEventListener('oTransitionEnd', removeSelf);
-		e.removeEventListener('transitionend', removeSelf);
+		if (kill) {
+			e.parentElement.removeChild(e);
+		} else {
+			e.setAttribute('class', 'dead');
+			e.removeEventListener('webkitTransitionEnd', removeSelf);
+			e.removeEventListener('oTransitionEnd', removeSelf);
+			e.removeEventListener('transitionend', removeSelf);
+		}
 		if (e2) {
 			e2.setAttribute('class', 'hidden');
 			setTimeout(function() {
@@ -117,7 +124,7 @@ function run(file) {
 			}
 			runCommands = [];
 			fadeOut('preload', 'ingame');
-			fadeOut('instructions');
+			fadeOut('instructions', null, true);
 			gba.runStable();
 		} else {
 			load.textContent = 'FAILED';
