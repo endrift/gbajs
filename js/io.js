@@ -172,6 +172,10 @@ GameBoyAdvanceIO.prototype.load32 = function(offset) {
 		return this.loadU16(offset | 2) << 16;
 	case this.IME:
 		return this.loadU16(offset) & 0xFFFF;
+	case this.JOY_RECV:
+	case this.JOY_TRANS:
+ 		this.core.STUB('Unimplemented JOY register read: 0x' + offset.toString(16));
+ 		return 0;
 	}
 
 	return this.loadU16(offset) | (this.loadU16(offset | 2) << 16);
@@ -276,9 +280,6 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		this.core.STUB('Unimplemented I/O register read: KEYCNT');
 		return 0;
 
-	case this.JOYCNT:
-		return 0;
-
 	case this.BG0HOFS:
 	case this.BG0VOFS:
 	case this.BG1HOFS:
@@ -336,6 +337,10 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
  	case this.SIOMULTI3:
  	case this.SIODATA8:
  		this.core.STUB('Unimplemented SIO register read: 0x' + offset.toString(16));
+ 		return 0;
+	case this.JOYCNT:
+	case this.JOYSTAT:
+ 		this.core.STUB('Unimplemented JOY register read: 0x' + offset.toString(16));
  		return 0;
 
 	default:
@@ -695,6 +700,10 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.SIOCNT:
 		this.STUB_REG('SIOCNT', offset);
 		break;
+	case this.JOYCNT:
+	case this.JOYSTAT:
+		this.STUB_REG('JOY', offset);
+		break;
 
 	// Misc
 	case this.IE:
@@ -770,6 +779,10 @@ GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
 	// High bits of this write should be ignored
 	case this.IME:
 		this.store16(offset, value & 0xFFFF);
+		return;
+	case this.JOY_RECV:
+	case this.JOY_TRANS:
+		this.STUB_REG('JOY', offset);
 		return;
 	default:
 		this.store16(offset, value & 0xFFFF);
