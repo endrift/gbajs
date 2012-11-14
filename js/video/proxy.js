@@ -195,6 +195,10 @@ GameBoyAdvanceRenderProxy.prototype.writeMosaic = function(value) {
 	this.dirty.MOSAIC = value;
 };
 
+GameBoyAdvanceRenderProxy.prototype.clearSubsets = function(regions) {
+	this.dirty.clear |= regions;
+}
+
 GameBoyAdvanceRenderProxy.prototype.setBacking = function(backing) {
 	this.backing = backing;
 	this.worker.postMessage({ type: 'start', backing: this.backing });
