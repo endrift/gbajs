@@ -838,6 +838,23 @@ GameBoyAdvanceSoftwareRenderer.prototype.clear = function(mmu) {
 	};
 };
 
+GameBoyAdvanceSoftwareRenderer.prototype.clearSubsets = function(regions) {
+	if (regions & 0x04) {
+		this.palette.overwrite(new Uint16Array(256));
+	}
+
+	if (regions & 0x08) {
+		for (var i = 0; i < 12; ++i) {
+			this.vram.insert(i << 12, new Uint16Array(4096));
+		}
+	}
+
+	if (regions & 0x10) {
+		this.oam.overwrite(new Uint16Array(this.oam.buffer.byteLength >> 1));
+		this.oam.video = this;
+	}
+}
+
 GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {
 	this.pixelData = backing.createImageData(this.HORIZONTAL_PIXELS, this.VERTICAL_PIXELS);
 	this.context = backing;

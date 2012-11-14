@@ -273,7 +273,19 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		break;
 	case 0x01:
 		// RegisterRamReset
-		this.core.STUB('Unimplemented RegisterRamReset');
+		var regions = this.cpu.gprs[0];
+		if (regions & 0x01) {
+			this.core.mmu.memory[this.core.mmu.REGION_WORKING_RAM] = new MemoryBlock(this.core.mmu.SIZE_WORKING_RAM, 9);
+		}
+		if (regions & 0x02) {
+			this.core.mmu.memory[this.core.mmu.REGION_WORKING_IRAM] = new MemoryBlock(this.core.mmu.SIZE_WORKING_IRAM, 9);
+		}
+		if (regions & 0x1C) {
+			this.video.renderPath.clearSubsets(regions);
+		}
+		if (regions & 0xE0) {
+			this.core.STUB('Unimplemented RegisterRamReset');
+		}
 		break;
 	case 0x02:
 		// Halt

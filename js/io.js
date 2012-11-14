@@ -170,6 +170,12 @@ GameBoyAdvanceIO.prototype.load32 = function(offset) {
 	case this.DMA2CNT_LO:
 	case this.DMA3CNT_LO:
 		return this.loadU16(offset | 2) << 16;
+	case this.IME:
+		return this.loadU16(offset) & 0xFFFF;
+	case this.JOY_RECV:
+	case this.JOY_TRANS:
+ 		this.core.STUB('Unimplemented JOY register read: 0x' + offset.toString(16));
+ 		return 0;
 	}
 
 	return this.loadU16(offset) | (this.loadU16(offset | 2) << 16);
@@ -274,9 +280,6 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		this.core.STUB('Unimplemented I/O register read: KEYCNT');
 		return 0;
 
-	case this.JOYCNT:
-		return 0;
-
 	case this.BG0HOFS:
 	case this.BG0VOFS:
 	case this.BG1HOFS:
@@ -335,11 +338,11 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
  	case this.SIODATA8:
  		this.core.STUB('Unimplemented SIO register read: 0x' + offset.toString(16));
  		return 0;
- 		
-	case 0x20A:
-		// These are the high bits for IME, which do nothing. Some games try to do a 32-bit read
-		// from IME and that will trip this. Return 0, as the bits are just empty after all.
-		return 0;
+	case this.JOYCNT:
+	case this.JOYSTAT:
+ 		this.core.STUB('Unimplemented JOY register read: 0x' + offset.toString(16));
+ 		return 0;
+
 	default:
 		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
 	}
@@ -697,6 +700,10 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.SIOCNT:
 		this.STUB_REG('SIOCNT', offset);
 		break;
+	case this.JOYCNT:
+	case this.JOYSTAT:
+		this.STUB_REG('JOY', offset);
+		break;
 
 	// Misc
 	case this.IE:
@@ -767,6 +774,15 @@ GameBoyAdvanceIO.prototype.store32 = function(offset, value) {
 		return;
 	case this.FIFO_B_LO:
 		this.audio.appendToFifoB(value);
+		return;
+
+	// High bits of this write should be ignored
+	case this.IME:
+		this.store16(offset, value & 0xFFFF);
+		return;
+	case this.JOY_RECV:
+	case this.JOY_TRANS:
+		this.STUB_REG('JOY', offset);
 		return;
 	default:
 		this.store16(offset, value & 0xFFFF);
