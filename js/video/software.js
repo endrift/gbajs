@@ -838,19 +838,17 @@ GameBoyAdvanceSoftwareRenderer.prototype.clear = function(mmu) {
 	};
 };
 
-GameBoyAdvanceSoftwareRenderer.prototype.clearSubsets = function(regions) {
+GameBoyAdvanceSoftwareRenderer.prototype.clearSubsets = function(mmu, regions) {
 	if (regions & 0x04) {
-		this.palette.overwrite(new Uint16Array(256));
+		this.palette.overwrite(new Uint16Array(mmu.SIZE_PALETTE >> 1));
 	}
 
 	if (regions & 0x08) {
-		for (var i = 0; i < 12; ++i) {
-			this.vram.insert(i << 12, new Uint16Array(4096));
-		}
+		this.vram.insert(0, new Uint16Array(mmu.SIZE_VRAM >> 1));
 	}
 
 	if (regions & 0x10) {
-		this.oam.overwrite(new Uint16Array(this.oam.buffer.byteLength >> 1));
+		this.oam.overwrite(new Uint16Array(mmu.SIZE_OAM >> 1));
 		this.oam.video = this;
 	}
 }

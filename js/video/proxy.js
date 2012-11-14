@@ -195,9 +195,25 @@ GameBoyAdvanceRenderProxy.prototype.writeMosaic = function(value) {
 	this.dirty.MOSAIC = value;
 };
 
-GameBoyAdvanceRenderProxy.prototype.clearSubsets = function(regions) {
-	this.dirty.clear |= regions;
-}
+GameBoyAdvanceRenderProxy.prototype.clearSubsets = function(mmu, regions) {
+	if (regions & 0x04) {
+		this.palette = new MemoryProxy(this, mmu.SIZE_PALETTE_RAM, 0);
+		mmu.mmap(mmu.REGION_PALETTE_RAM, this.palette);
+		this.memoryDirtied(this.palette, 0);
+	}
+	if (regions & 0x08) {
+		this.vram = new MemoryProxy(this, mmu.SIZE_VRAM, 13);
+		mmu.mmap(mmu.REGION_VRAM, this.vram);
+		for (var i = 0; i < this.vram.blocks.length; ++i) {
+			this.memoryDirtied(this.vram, i);
+		}
+	}
+	if (regions & 0x10) {
+		this.oam = new MemoryProxy(this, mmu.SIZE_OAM, 0);
+		mmu.mmap(mmu.REGION_OAM, this.oam);
+		this.memoryDirtied(this.oam, 0);
+	}
+};
 
 GameBoyAdvanceRenderProxy.prototype.setBacking = function(backing) {
 	this.backing = backing;

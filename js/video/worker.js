@@ -110,9 +110,6 @@ function receiveDirty(dirty) {
 		case 'memory':
 			receiveMemory(dirty.memory);
 			break;
-		case 'clear':
-			video.clearSubsets(dirty.clear);
-			break;
 		}
 	}
 }

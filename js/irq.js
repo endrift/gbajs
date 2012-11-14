@@ -281,7 +281,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			this.core.mmu.memory[this.core.mmu.REGION_WORKING_IRAM] = new MemoryBlock(this.core.mmu.SIZE_WORKING_IRAM, 9);
 		}
 		if (regions & 0x1C) {
-			this.video.renderPath.clearSubsets(regions);
+			this.video.renderPath.clearSubsets(this.core.mmu, regions);
 		}
 		if (regions & 0xE0) {
 			this.core.STUB('Unimplemented RegisterRamReset');
