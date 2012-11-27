@@ -678,6 +678,9 @@ function GameBoyAdvanceSoftwareRenderer() {
 				if (!(backing.stencil[x] & video.WRITTEN_MASK)) {
 					backing.color[x] = video.palette.accessColor(this.index, 0);
 					backing.stencil[x] = video.WRITTEN_MASK;
+				} else if (backing.stencil[x] & video.TARGET1_MASK) {
+					backing.color[x] = video.palette.mix(video.blendB, video.palette.accessColor(this.index, 0), video.blendA, backing.color[x]);
+					backing.stencil[x] = video.WRITTEN_MASK;
 				}
 			}
 		}
@@ -1214,9 +1217,6 @@ GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, o
 	} else {
 		return;
 	}
-	if (mask & video.TARGET1_MASK && blend != 1) {
-		stencil &= ~video.TARGET1_MASK;
-	}
 
 	if (mask & video.OBJWIN_MASK) {
 		// We ARE the object window, don't draw pixels!
@@ -1568,7 +1568,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.finishScanline = function(backing) {
 	for (var x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
 		if (backing.stencil[x] & this.WRITTEN_MASK) {
 			color = backing.color[x];
-			if (this.blendMode == 1 && isTarget2 && backing.stencil[x] & this.TARGET1_MASK) {
+			if (isTarget2 && backing.stencil[x] & this.TARGET1_MASK) {
 				color = this.palette.mix(this.blendA, color, this.blendB, bd);
 			}
 			this.palette.convert16To32(color, this.sharedColor);
