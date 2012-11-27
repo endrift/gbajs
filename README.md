@@ -14,6 +14,7 @@ The following web browsers also work, but run slowly and have no sound:
 
 * Firefox 15 or newer
 * Opera 12.00 or newer
+* Internet Explorer 10 or newer
 
 The following browsers will not work:
 

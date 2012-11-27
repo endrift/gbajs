@@ -27,6 +27,7 @@ button {
 	margin-bottom: -363px; /* Take up no height */
 	image-rendering: -webkit-optimize-contrast;
 	image-rendering: -moz-crisp-edges;
+	-ms-interpolation-mode: nearest-neighbor;
 	zoom: 2;
 }
 
@@ -54,6 +55,7 @@ a:link, a:visited {
 	-webkit-transition: opacity ease-out 0.6s;
 	-moz-transition: opacity ease-out 0.6s;
 	-o-transition: opacity ease-out 0.6s;
+	transition: opacity ease-out 0.6s;
 }
 
 #controls button, #mapping td, #sound, #controls label {
@@ -88,10 +90,12 @@ a:link, a:visited {
 	padding: 10px 15px;
 	background: -webkit-linear-gradient(left, rgba(0, 0, 0, 0.5) 0, rgba(0, 0, 0, 0.2) 12px, rgba(0, 0, 0, 0) 20px), #452e5c;
 	background: -moz-linear-gradient(left, rgba(0, 0, 0, 0.5) 0, rgba(0, 0, 0, 0.2) 12px, rgba(0, 0, 0, 0) 20px), #452e5c;
+	background: -ms-linear-gradient(left, rgba(0, 0, 0, 0.5) 0, rgba(0, 0, 0, 0.2) 12px, rgba(0, 0, 0, 0) 20px), #452e5c;
 	background: -o-linear-gradient(left, rgba(0, 0, 0, 0.5) 0, rgba(0, 0, 0, 0.2) 12px, rgba(0, 0, 0, 0) 20px), #452e5c;
 	-webkit-transition: width ease-out 0.5s, padding ease-out 0.5s;
 	-moz-transition: width ease-out 0.5s, padding ease-out 0.5s;
 	-o-transition: width ease-out 0.5s, padding ease-out 0.5s;
+	transition: width ease-out 0.5s, padding ease-out 0.5s;
 	z-index: 15;
 }
 
@@ -124,6 +128,9 @@ a:link, a:visited {
 	-o-transform-origin: 100% 100%;
 	-o-transform: rotate(-90deg);
 	-o-transition: right ease-out 0.5s;
+	transform-origin: 100% 100%;
+	transform: rotate(-90deg);
+	transition: right ease-out 0.5s;
 }
 
 .hidden {
