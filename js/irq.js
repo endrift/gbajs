@@ -278,7 +278,9 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 			this.core.mmu.memory[this.core.mmu.REGION_WORKING_RAM] = new MemoryBlock(this.core.mmu.SIZE_WORKING_RAM, 9);
 		}
 		if (regions & 0x02) {
-			this.core.mmu.memory[this.core.mmu.REGION_WORKING_IRAM] = new MemoryBlock(this.core.mmu.SIZE_WORKING_IRAM, 9);
+			for (var i = 0; i < this.core.mmu.SIZE_WORKING_IRAM - 0x200; i += 4) {
+				this.core.mmu.memory[this.core.mmu.REGION_WORKING_IRAM].store32(i, 0);
+			}
 		}
 		if (regions & 0x1C) {
 			this.video.renderPath.clearSubsets(this.core.mmu, regions);
