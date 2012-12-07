@@ -44,6 +44,13 @@ GameBoyAdvanceVideo.prototype.clear = function() {
 	this.nextVcounterIRQ = 0;
 };
 
+GameBoyAdvanceVideo.prototype.freeze = function() {
+	return {};
+};
+
+GameBoyAdvanceVideo.prototype.defrost = function(frost) {
+};
+
 GameBoyAdvanceVideo.prototype.setBacking = function(backing) {
 	var pixelData = backing.createImageData(this.HORIZONTAL_PIXELS, this.VERTICAL_PIXELS);
 	this.context = backing;

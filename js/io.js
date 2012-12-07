@@ -155,6 +155,16 @@ GameBoyAdvanceIO.prototype.clear = function() {
 	this.registers[this.BG3PD >> 1] = this.DEFAULT_BGPD;
 };
 
+GameBoyAdvanceIO.prototype.freeze = function() {
+	return {
+		'registers': this.core.encodeBase64(new DataView(this.registers.buffer))
+	};
+};
+
+GameBoyAdvanceIO.prototype.defrost = function(frost) {
+	this.registers = new Uint16Array(this.core.decodeBase64(frost.registers));
+};
+
 GameBoyAdvanceIO.prototype.load8 = function(offset) {
 	throw 'Unimplmeneted unaligned I/O access';
 }

@@ -250,6 +250,19 @@ GameBoyAdvance.prototype.loadSavedataFromFile = function(saveFile) {
 };
 
 GameBoyAdvance.prototype.decodeSavedata = function(string) {
+	this.setSavedata(this.decodeBase64(string));
+};
+
+GameBoyAdvance.prototype.encodeSavedata = function() {
+	var sram = this.mmu.save;
+	if (!sram) {
+		this.WARN("No save data available");
+		return null;
+	}
+	return this.encodeBase64(sram.view);
+};
+
+GameBoyAdvance.prototype.decodeBase64 = function(string) {
 	var length = (string.length * 3 / 4);
 	if (string[string.length - 2] == '=') {
 		length -= 2;
@@ -273,31 +286,26 @@ GameBoyAdvance.prototype.decodeSavedata = function(string) {
 		}
 	}
 
-	this.setSavedata(buffer);
+	return buffer;
 };
 
-GameBoyAdvance.prototype.encodeSavedata = function() {
-	var sram = this.mmu.save;
-	if (!sram) {
-		this.WARN("No save data available");
-		return null;
-	}
-	var savedata = [];
+GameBoyAdvance.prototype.encodeBase64 = function(view) {
+	var data = [];
 	var b;
 	var wordstring = [];
 	var triplet;
-	for (var i = 0; i < sram.view.byteLength; ++i) {
-		b = sram.view.getUint8(i, true);
+	for (var i = 0; i < view.byteLength; ++i) {
+		b = view.getUint8(i, true);
 		wordstring.push(String.fromCharCode(b));
 		while (wordstring.length >= 3) {
 			triplet = wordstring.splice(0, 3);
-			savedata.push(btoa(triplet.join('')));
+			data.push(btoa(triplet.join('')));
 		}
 	};
 	if (wordstring.length) {
-		savedata.push(btoa(wordstring.join('')));
+		data.push(btoa(wordstring.join('')));
 	}
-	return savedata.join('');
+	return data.join('');
 };
 
 GameBoyAdvance.prototype.downloadSavedata = function() {
@@ -318,6 +326,26 @@ GameBoyAdvance.prototype.retrieveSavedata = function() {
 		return true;
 	}
 	return false;
+};
+
+GameBoyAdvance.prototype.freeze = function() {
+	return {
+		'cpu': this.cpu.freeze(),
+		'mmu': this.mmu.freeze(),
+		'irq': this.irq.freeze(),
+		'io': this.io.freeze(),
+		'audio': this.audio.freeze(),
+		'video': this.video.freeze()
+	}
+};
+
+GameBoyAdvance.prototype.defrost = function(frost) {
+	this.cpu.defrost(frost.cpu);
+	this.mmu.defrost(frost.mmu);
+	this.irq.defrost(frost.irq);
+	this.io.defrost(frost.io);
+	this.audio.defrost(frost.audio);
+	this.video.defrost(frost.video);
 };
 
 GameBoyAdvance.prototype.log = function(message) {};

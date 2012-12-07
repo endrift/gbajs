@@ -82,6 +82,41 @@ GameBoyAdvanceInterruptHandler.prototype.clear = function() {
 	this.resetSP();
 };
 
+GameBoyAdvanceInterruptHandler.prototype.freeze = function() {
+	return {
+		'enable': this.enable,
+		'enabledIRQs': this.enabledIRQs,
+		'interruptFlags': this.interruptFlags,
+		'dma': this.dma,
+		'timers': this.timers,
+		'nextEvent': this.nextEvent,
+		'springIRQ': this.springIRQ
+	};
+};
+
+GameBoyAdvanceInterruptHandler.prototype.defrost = function(frost) {
+	this.enable = frost.enable;
+	this.enabledIRQs = frost.enabledIRQs;
+	this.interruptFlags = frost.interruptFlags;
+	this.dma = frost.dma;
+	this.timers = frost.timers;
+	this.timersEnabled = 0;
+	if (this.timers[0].enable) {
+		++this.timersEnabled;
+	}
+	if (this.timers[1].enable) {
+		++this.timersEnabled;
+	}
+	if (this.timers[2].enable) {
+		++this.timersEnabled;
+	}
+	if (this.timers[3].enable) {
+		++this.timersEnabled;
+	}
+	this.nextEvent = frost.nextEvent;
+	this.springIRQ = frost.springIRQ;
+};
+
 GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	if (this.nextEvent > this.cpu.cycles) {
 		return;

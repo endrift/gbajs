@@ -64,7 +64,6 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 	this.cpsrZ = false;
 	this.cpsrN = false;
 
-	this.currentBank = null;
 	this.bankedRegisters = [
 		new Int32Array(7),
 		new Int32Array(7),
@@ -120,6 +119,151 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 		}
 		this.irq.updateTimers();
 	};
+};
+
+ARMCore.prototype.freeze = function() {
+	return {
+		'gprs': [
+			this.gprs[0],
+			this.gprs[1],
+			this.gprs[2],
+			this.gprs[3],
+			this.gprs[4],
+			this.gprs[5],
+			this.gprs[6],
+			this.gprs[7],
+			this.gprs[8],
+			this.gprs[9],
+			this.gprs[10],
+			this.gprs[11],
+			this.gprs[12],
+			this.gprs[13],
+			this.gprs[14],
+			this.gprs[15],
+		],
+		'mode': this.mode,
+		'cpsrI': this.cpsrI,
+		'cpsrF': this.cpsrF,
+		'cpsrV': this.cpsrV,
+		'cpsrC': this.cpsrC,
+		'cpsrZ': this.cpsrZ,
+		'cpsrN': this.cpsrN,
+		'bankedRegisters': [
+			[
+				this.bankedRegisters[0][0],
+				this.bankedRegisters[0][1],
+				this.bankedRegisters[0][2],
+				this.bankedRegisters[0][3],
+				this.bankedRegisters[0][4],
+				this.bankedRegisters[0][5],
+				this.bankedRegisters[0][6]
+			],
+			[
+				this.bankedRegisters[1][0],
+				this.bankedRegisters[1][1],
+				this.bankedRegisters[1][2],
+				this.bankedRegisters[1][3],
+				this.bankedRegisters[1][4],
+				this.bankedRegisters[1][5],
+				this.bankedRegisters[1][6]
+			],
+			[
+				this.bankedRegisters[2][0],
+				this.bankedRegisters[2][1]
+			],
+			[
+				this.bankedRegisters[3][0],
+				this.bankedRegisters[3][1]
+			],
+			[
+				this.bankedRegisters[4][0],
+				this.bankedRegisters[4][1]
+			],
+			[
+				this.bankedRegisters[5][0],
+				this.bankedRegisters[5][1]
+			]
+		],
+		'spsr': this.spsr,
+		'bankedSPSRs': [
+			this.bankedSPSRs[0],
+			this.bankedSPSRs[1],
+			this.bankedSPSRs[2],
+			this.bankedSPSRs[3],
+			this.bankedSPSRs[4],
+			this.bankedSPSRs[5]
+		],
+		'cycles': this.cycles
+	};
+};
+
+ARMCore.prototype.defrost = function(frost) {
+	this.instruction = null;
+
+	this.page = null;
+	this.pageId = 0;
+	this.pageRegion = -1;
+
+	this.gprs[0] = frost.gprs[0];
+	this.gprs[1] = frost.gprs[1];
+	this.gprs[2] = frost.gprs[2];
+	this.gprs[3] = frost.gprs[3];
+	this.gprs[4] = frost.gprs[4];
+	this.gprs[5] = frost.gprs[5];
+	this.gprs[6] = frost.gprs[6];
+	this.gprs[7] = frost.gprs[7];
+	this.gprs[8] = frost.gprs[8];
+	this.gprs[9] = frost.gprs[9];
+	this.gprs[10] = frost.gprs[10];
+	this.gprs[11] = frost.gprs[11];
+	this.gprs[12] = frost.gprs[12];
+	this.gprs[13] = frost.gprs[13];
+	this.gprs[14] = frost.gprs[14];
+	this.gprs[15] = frost.gprs[15];
+
+	this.mode = frost.mode;
+	this.cpsrI = frost.cpsrI;
+	this.cpsrF = frost.cpsrF;
+	this.cpsrV = frost.cpsrV;
+	this.cpsrC = frost.cpsrC;
+	this.cpsrZ = frost.cpsrZ;
+	this.cpsrN = frost.cpsrN;
+
+	this.bankedRegisters[0][0] = frost.bankedRegisters[0][0];
+	this.bankedRegisters[0][1] = frost.bankedRegisters[0][1];
+	this.bankedRegisters[0][2] = frost.bankedRegisters[0][2];
+	this.bankedRegisters[0][3] = frost.bankedRegisters[0][3];
+	this.bankedRegisters[0][4] = frost.bankedRegisters[0][4];
+	this.bankedRegisters[0][5] = frost.bankedRegisters[0][5];
+	this.bankedRegisters[0][6] = frost.bankedRegisters[0][6];
+
+	this.bankedRegisters[1][0] = frost.bankedRegisters[1][0];
+	this.bankedRegisters[1][1] = frost.bankedRegisters[1][1];
+	this.bankedRegisters[1][2] = frost.bankedRegisters[1][2];
+	this.bankedRegisters[1][3] = frost.bankedRegisters[1][3];
+	this.bankedRegisters[1][4] = frost.bankedRegisters[1][4];
+	this.bankedRegisters[1][5] = frost.bankedRegisters[1][5];
+	this.bankedRegisters[1][6] = frost.bankedRegisters[1][6];
+
+	this.bankedRegisters[2][0] = frost.bankedRegisters[2][0];
+	this.bankedRegisters[2][1] = frost.bankedRegisters[2][1];
+
+	this.bankedRegisters[3][0] = frost.bankedRegisters[3][0];
+	this.bankedRegisters[3][1] = frost.bankedRegisters[3][1];
+
+	this.bankedRegisters[4][0] = frost.bankedRegisters[4][0];
+	this.bankedRegisters[4][1] = frost.bankedRegisters[4][1];
+
+	this.bankedRegisters[5][0] = frost.bankedRegisters[5][0];
+	this.bankedRegisters[5][1] = frost.bankedRegisters[5][1];
+
+	this.spsr = frost.spsr;
+	this.bankedSPSRs[0] = frost.bankedSPSRs[0];
+	this.bankedSPSRs[1] = frost.bankedSPSRs[1];
+	this.bankedSPSRs[2] = frost.bankedSPSRs[2];
+	this.bankedSPSRs[3] = frost.bankedSPSRs[3];
+	this.bankedSPSRs[4] = frost.bankedSPSRs[4];
+	this.bankedSPSRs[5] = frost.bankedSPSRs[5];
 };
 
 ARMCore.prototype.fetchPage = function(address) {

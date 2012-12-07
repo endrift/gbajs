@@ -134,6 +134,13 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.writeChannel4FC(0);
 };
 
+GameBoyAdvanceAudio.prototype.freeze = function() {
+	return {};
+};
+
+GameBoyAdvanceAudio.prototype.defrost = function(frost) {
+};
+
 GameBoyAdvanceAudio.prototype.pause = function(paused) {
 	if (this.context) {
 		if (paused) {
