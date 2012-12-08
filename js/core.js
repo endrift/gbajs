@@ -264,6 +264,8 @@ ARMCore.prototype.defrost = function(frost) {
 	this.bankedSPSRs[3] = frost.bankedSPSRs[3];
 	this.bankedSPSRs[4] = frost.bankedSPSRs[4];
 	this.bankedSPSRs[5] = frost.bankedSPSRs[5];
+
+	this.cycles = frost.cycles;
 };
 
 ARMCore.prototype.fetchPage = function(address) {

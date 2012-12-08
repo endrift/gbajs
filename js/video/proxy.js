@@ -6,12 +6,30 @@ function MemoryProxy(owner, size, blockSize) {
 	this.size = size;
 	if (blockSize) {
 		for (var i = 0; i < (size >> blockSize); ++i) {
-			this.blocks.push(new MemoryBlock(1 << blockSize));
+			this.blocks.push(new MemoryView(new ArrayBuffer(1 << blockSize)));
 		}
 	} else {
 		this.blockSize = 31;
 		this.mask = -1;
-		this.blocks[0] = new MemoryBlock(size);
+		this.blocks[0] = new MemoryView(new ArrayBuffer(size));
+	}
+};
+
+MemoryProxy.prototype.combine = function() {
+	if (this.blocks.length > 1) {
+		var combined = new Uint8Array(this.size);
+		for (var i = 0; i < this.blocks.length; ++i) {
+			combined.set(new Uint8Array(this.blocks[i].buffer), i << this.blockSize);
+		}
+		return combined.buffer;
+	} else {
+		return this.blocks[0].buffer;
+	}
+};
+
+MemoryProxy.prototype.replace = function(buffer) {
+	for (var i = 0; i < this.blocks.length; ++i) {
+		this.blocks[i] = new MemoryView(buffer.slice(i << this.blockSize, (i << this.blockSize) + this.blocks[i].buffer.byteLength));
 	}
 };
 
@@ -104,6 +122,25 @@ GameBoyAdvanceRenderProxy.prototype.clear = function(mmu) {
 	this.dirty = {};
 
 	this.worker.postMessage({ type: 'clear', SIZE_VRAM: mmu.SIZE_VRAM, SIZE_OAM: mmu.SIZE_OAM });
+};
+
+GameBoyAdvanceRenderProxy.prototype.freeze = function(encodeBase64) {
+	return {
+		'palette': encodeBase64(new DataView(this.palette.combine())),
+		'vram': encodeBase64(new DataView(this.vram.combine())),
+		'oam': encodeBase64(new DataView(this.oam.combine()))
+	};
+};
+
+GameBoyAdvanceRenderProxy.prototype.defrost = function(frost, decodeBase64) {
+	this.palette.replace(decodeBase64(frost.palette));
+	this.memoryDirtied(this.palette, 0);
+	this.vram.replace(decodeBase64(frost.vram));
+	for (var i = 0; i < this.vram.blocks.length; ++i) {
+		this.memoryDirtied(this.vram, i);
+	}
+	this.oam.replace(decodeBase64(frost.oam));
+	this.memoryDirtied(this.oam, 0);
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeDisplayControl = function(value) {

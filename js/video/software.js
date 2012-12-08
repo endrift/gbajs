@@ -854,7 +854,13 @@ GameBoyAdvanceSoftwareRenderer.prototype.clearSubsets = function(mmu, regions) {
 		this.oam.overwrite(new Uint16Array(mmu.SIZE_OAM >> 1));
 		this.oam.video = this;
 	}
-}
+};
+
+GameBoyAdvanceSoftwareRenderer.prototype.freeze = function(encodeBase64) {
+};
+
+GameBoyAdvanceSoftwareRenderer.prototype.defrost = function(frost, decodeBase64) {
+};
 
 GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {
 	this.pixelData = backing.createImageData(this.HORIZONTAL_PIXELS, this.VERTICAL_PIXELS);
