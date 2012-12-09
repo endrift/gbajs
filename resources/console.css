@@ -46,11 +46,11 @@ section {
 	text-align: center;
 }
 
-ul, ol, #registers {
+ul, ol, #registers, #savestates {
 	padding: 10px;
 }
 
-#devtools, #registers {
+#devtools, #registers, #savestates {
 	-webkit-box-orient: vertical;
 	-moz-box-orient: vertical;
 }
@@ -80,6 +80,10 @@ ul, ol, #registers {
 	border-left: 1px solid #DADDE1;
 }
 
+#savestates ol > li {
+	display: inline;
+}
+
 #gprs {
 	text-align: center;
 }
@@ -107,7 +111,7 @@ ul, ol, #registers {
 	width: 80px;
 }
 
-#registers ol {
+#registers ol, #savestates ol {
 	border: 1px solid #DADDE1;
 	padding: 8px;
 }

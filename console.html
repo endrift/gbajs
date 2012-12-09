@@ -41,6 +41,19 @@ function screenshot() {
 	window.open(canvas.toDataURL('image/png'), 'screenshot');
 };
 
+function savestate(slot) {
+	gbaCon.pause();
+	var state = JSON.stringify(core.freeze());
+	localStorage[core.SYS_ID + '.' + core.mmu.cart.code + '.state' + slot] = state;
+	gbaCon.log('Saved state ' + slot);
+};
+
+function loadSavestate(slot) {
+	var state = localStorage[core.SYS_ID + '.' + core.mmu.cart.code + '.state' + slot];
+	core.defrost(JSON.parse(state));
+	gbaCon.log('Loaded state ' + slot);
+}
+
 var core = new GameBoyAdvance();
 var rom = null;
 
@@ -93,6 +106,38 @@ window.onload = function() {
 			<button onclick="core.downloadSavedata()">Download savedata</button>
 			<button onclick="core.storeSavedata()">Store savedata</button>
 			<button onclick="screenshot()">Take screenshot</button>
+		</section>
+		<section id="savestates">
+			<div>
+				<h3>Freeze</h3>
+				<ol>
+					<li><button onclick="savestate(0)">0</button></li>
+					<li><button onclick="savestate(1)">1</button></li>
+					<li><button onclick="savestate(2)">2</button></li>
+					<li><button onclick="savestate(3)">3</button></li>
+					<li><button onclick="savestate(4)">4</button></li>
+					<li><button onclick="savestate(5)">5</button></li>
+					<li><button onclick="savestate(6)">6</button></li>
+					<li><button onclick="savestate(7)">7</button></li>
+					<li><button onclick="savestate(8)">8</button></li>
+					<li><button onclick="savestate(9)">9</button></li>
+				</ol>
+			</div>
+			<div>
+				<h3>Defrost</h3>
+				<ol>
+					<li><button onclick="loadSavestate(0)">0</button></li>
+					<li><button onclick="loadSavestate(1)">1</button></li>
+					<li><button onclick="loadSavestate(2)">2</button></li>
+					<li><button onclick="loadSavestate(3)">3</button></li>
+					<li><button onclick="loadSavestate(4)">4</button></li>
+					<li><button onclick="loadSavestate(5)">5</button></li>
+					<li><button onclick="loadSavestate(6)">6</button></li>
+					<li><button onclick="loadSavestate(7)">7</button></li>
+					<li><button onclick="loadSavestate(8)">8</button></li>
+					<li><button onclick="loadSavestate(9)">9</button></li>
+				</ol>
+			</div>
 		</section>
 		<section id="registers">
 			<div>
