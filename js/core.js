@@ -448,7 +448,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				var rm = instruction & 0x0000000F;
 				var immediate = instruction & 0x000000FF;
 				var rotateImm = (instruction & 0x00000F00) >> 7;
-				immediate = (immediate >> rotateImm) | (immediate << (32 - rotateImm));
+				immediate = (immediate >>> rotateImm) | (immediate << (32 - rotateImm));
 				op = this.armCompiler.constructMSR(rm, r, instruction, immediate, condOp);
 				op.writesPC = false;
 			} else if ((instruction & 0x00BF0000) == 0x000F0000) {
