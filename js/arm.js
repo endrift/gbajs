@@ -329,7 +329,7 @@ ARMCoreArm.prototype.constructAddressingMode1Immediate = function(immediate) {
 ARMCoreArm.prototype.constructAddressingMode1ImmediateRotate = function(immediate, rotate) {
 	var cpu = this.cpu;
 	return function() {
-		cpu.shifterOperand = (immediate >> rotate) | (immediate << (32 - rotate));
+		cpu.shifterOperand = (immediate >>> rotate) | (immediate << (32 - rotate));
 		cpu.shifterCarryOut = cpu.shifterOperand >> 31;
 	}
 };
