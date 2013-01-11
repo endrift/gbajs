@@ -147,6 +147,10 @@ var handlers = {
 
 	finish: function(data) {
 		currentFrame = data.frame;
+		for (var i = 0; i < data.scanlines.length; ++i) {
+			receiveDirty(data.scanlines[i].dirty);
+			video.drawScanline(data.scanlines[i].y, proxyBacking);
+		}
 		video.finishDraw(self);
 	},
 };
