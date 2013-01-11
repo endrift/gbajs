@@ -1,4 +1,5 @@
 function ARMCore() {
+	this.inherit();
 	this.SP = 13;
 	this.LR = 14;
 	this.PC = 15;
