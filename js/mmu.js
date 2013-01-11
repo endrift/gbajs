@@ -1,4 +1,5 @@
 function MemoryView(memory, offset) {
+	this.inherit();
 	this.buffer = memory;
 	this.view = new DataView(this.buffer, typeof(offset) === "number" ? offset : 0);
 	this.mask = memory.byteLength - 1;
@@ -150,6 +151,7 @@ BIOSView.prototype.store16 = function(offset, value) {};
 BIOSView.prototype.store32 = function(offset, value) {};
 
 function BadMemory(mmu, cpu) {
+	this.inherit();
 	this.cpu = cpu;
 	this.mmu = mmu
 };
@@ -188,6 +190,7 @@ BadMemory.prototype.store32 = function(offset, value) {};
 BadMemory.prototype.invalidatePage = function(address) {};
 
 function GameBoyAdvanceMMU() {
+	this.inherit();
 	this.REGION_BIOS = 0x0;
 	this.REGION_WORKING_RAM = 0x2;
 	this.REGION_WORKING_IRAM = 0x3;

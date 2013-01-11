@@ -1,4 +1,5 @@
 function GameBoyAdvanceInterruptHandler() {
+	this.inherit();
 	this.FREQUENCY = 0x1000000;
 
 	this.cpu = null;
