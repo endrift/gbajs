@@ -102,6 +102,7 @@ GameBoyAdvanceRenderProxy.prototype.clear = function(mmu) {
 	this.oam = new MemoryProxy(this, mmu.SIZE_OAM, 0);
 
 	this.dirty = {};
+	this.scanlineQueue = [];
 
 	this.worker.postMessage({ type: 'clear', SIZE_VRAM: mmu.SIZE_VRAM, SIZE_OAM: mmu.SIZE_OAM });
 };
@@ -222,7 +223,7 @@ GameBoyAdvanceRenderProxy.prototype.setBacking = function(backing) {
 
 GameBoyAdvanceRenderProxy.prototype.drawScanline = function(y) {
 	if (!this.skipFrame) {
-		this.worker.postMessage({ type: 'scanline', y: y, dirty: this.dirty });
+		this.scanlineQueue.push({ y: y, dirty: this.dirty });
 		this.dirty = {};
 	}
 };
@@ -240,7 +241,8 @@ GameBoyAdvanceRenderProxy.prototype.startDraw = function() {
 GameBoyAdvanceRenderProxy.prototype.finishDraw = function(caller) {
 	this.caller = caller;
 	if (!this.skipFrame) {
-		this.worker.postMessage({ type: 'finish', frame: this.currentFrame });
+		this.worker.postMessage({ type: 'finish', scanlines: this.scanlineQueue, frame: this.currentFrame });
+		this.scanlineQueue = [];
 		if (this.delay > 2) {
 			this.skipFrame = true;
 		}
