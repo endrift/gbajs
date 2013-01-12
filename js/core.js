@@ -776,7 +776,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				var rn = (instruction & 0x0000F000) >> 12;
 				var rs = (instruction & 0x00000F00) >> 8;
 				var rm = instruction & 0x0000000F;
-				switch (instruction & 0x00FE00000) {
+				switch (instruction & 0x00F00000) {
 				case 0x00000000:
 					// MUL
 					op = this.armCompiler.constructMUL(rd, rs, rm, condOp);
