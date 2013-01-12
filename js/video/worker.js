@@ -152,9 +152,9 @@ var handlers = {
 			for (var y = scanline; y < data.scanlines[i].y; ++y) {
 				video.drawScanline(y, proxyBacking);
 			}
-			scanline = data.scanlines[i].y;
+			scanline = data.scanlines[i].y + 1;
 			receiveDirty(data.scanlines[i].dirty);
-			video.drawScanline(scanline, proxyBacking);
+			video.drawScanline(data.scanlines[i].y, proxyBacking);
 		}
 		for (var y = scanline; y < 160; ++y) {
 			video.drawScanline(y, proxyBacking);
