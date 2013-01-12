@@ -1096,7 +1096,7 @@ ARMCoreArm.prototype.constructRSCS = function(rd, rn, shiftOp, condOp) {
 		} else {
 			cpu.cpsrN = d >> 31;
 			cpu.cpsrZ = !(d & 0xFFFFFFFF);
-			cpu.cpsrC = d > 0xFFFFFFFF;
+			cpu.cpsrC = (cpu.shifterOperand >>> 0) >= (d >>> 0);
 			cpu.cpsrV = (cpu.shifterOperand >> 31) != (n >> 31) &&
 						(cpu.shifterOperand >> 31) != (d >> 31);
 		}
@@ -1134,7 +1134,7 @@ ARMCoreArm.prototype.constructSBCS = function(rd, rn, shiftOp, condOp) {
 		} else {
 			cpu.cpsrN = d >> 31;
 			cpu.cpsrZ = !(d & 0xFFFFFFFF);
-			cpu.cpsrC = d > 0xFFFFFFFF;
+			cpu.cpsrC = (gprs[rn] >>> 0) >= (d >>> 0);
 			cpu.cpsrV = (gprs[rn] >> 31) != (shifterOperand >> 31) &&
 						(gprs[rn] >> 31) != (d >> 31);
 		}

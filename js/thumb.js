@@ -677,7 +677,7 @@ ARMCoreThumb.prototype.constructSBC = function(rd, rm) {
 		var d = (gprs[rd] >>> 0) - m;
 		cpu.cpsrN = d >> 31;
 		cpu.cpsrZ = !(d & 0xFFFFFFFF);
-		cpu.cpsrC = d > 0xFFFFFFFF;
+		cpu.cpsrC = gprs[rd] >= d;
 		cpu.cpsrV = ((gprs[rd] ^ m) >> 31) && ((gprs[rd] ^ d) >> 31);
 		gprs[rd] = d;
 	};
