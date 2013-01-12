@@ -314,16 +314,24 @@ GameBoyAdvance.prototype.downloadSavedata = function() {
 };
 
 GameBoyAdvance.prototype.storeSavedata = function() {
-	var storage = window.localStorage;
-	storage[this.SYS_ID + '.' + this.mmu.cart.code] = this.encodeSavedata();
+	try {
+		var storage = window.localStorage;
+		storage[this.SYS_ID + '.' + this.mmu.cart.code] = this.encodeSavedata();
+	} catch (e) {
+		this.WARN('Could not store savedata! ' + e);
+	}
 };
 
 GameBoyAdvance.prototype.retrieveSavedata = function() {
-	var storage = window.localStorage;
-	var data = storage[this.SYS_ID + '.' + this.mmu.cart.code];
-	if (data) {
-		this.decodeSavedata(data);
-		return true;
+	try {
+		var storage = window.localStorage;
+		var data = storage[this.SYS_ID + '.' + this.mmu.cart.code];
+		if (data) {
+			this.decodeSavedata(data);
+			return true;
+		}
+	} catch (e) {
+		this.WARN('Could not retrieve savedata! ' + e);
 	}
 	return false;
 };
