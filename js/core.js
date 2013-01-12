@@ -787,7 +787,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 			var offset = 0;
 			if (u) {
 				if (p) {
-					immediate = -4;
+					immediate = 4;
 				}
 				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 					if (rs & m) {
