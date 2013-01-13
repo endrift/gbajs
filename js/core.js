@@ -218,8 +218,19 @@ ARMCore.prototype.switchMode = function(newMode) {
 		var oldBank = this.selectBank(this.mode);
 		if (newBank != oldBank) {
 			// TODO: support FIQ
-			if (newMode == this.FIQ || this.mode == this.FIQ) {
-				throw 'FIQ mode switching is unimplemented';
+			if (newMode == this.MODE_FIQ || this.mode == this.MODE_FIQ) {
+				var oldFiqBank = (oldBank == this.BANK_FIQ) + 0;
+				var newFiqBank = (newBank == this.BANK_FIQ) + 0;
+				this.bankedRegisters[oldFiqBank][2] = this.gprs[8];
+				this.bankedRegisters[oldFiqBank][3] = this.gprs[9];
+				this.bankedRegisters[oldFiqBank][4] = this.gprs[10];
+				this.bankedRegisters[oldFiqBank][5] = this.gprs[11];
+				this.bankedRegisters[oldFiqBank][6] = this.gprs[12];
+				this.gprs[8] = this.bankedRegisters[newFiqBank][2];
+				this.gprs[9] = this.bankedRegisters[newFiqBank][3];
+				this.gprs[10] = this.bankedRegisters[newFiqBank][4];
+				this.gprs[11] = this.bankedRegisters[newFiqBank][5];
+				this.gprs[12] = this.bankedRegisters[newFiqBank][6];
 			}
 			this.bankedRegisters[oldBank][0] = this.gprs[this.SP];
 			this.bankedRegisters[oldBank][1] = this.gprs[this.LR];
