@@ -965,9 +965,9 @@ ARMCoreArm.prototype.constructMUL = function(rd, rs, rm, condOp) {
 		cpu.cycles += 4; // TODO: better timing
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
-			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) & 0xFFFFFFFF;
-			var lo = ((gprs[rm] & 0x0000FFFF) * gprs[rs]) & 0xFFFFFFFF;
-			gprs[rd] = (hi + lo) & 0xFFFFFFFF;
+			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) | 0;
+			var lo = ((gprs[rm] & 0x0000FFFF) * gprs[rs]) | 0;
+			gprs[rd] = hi + lo;
 		} else {
 			gprs[rd] = gprs[rm] * gprs[rs];
 		}
@@ -985,9 +985,9 @@ ARMCoreArm.prototype.constructMULS = function(rd, rs, rm, condOp) {
 		cpu.cycles += 4; // TODO: better timing
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
-			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) & 0xFFFFFFFF;
-			var lo = ((gprs[rm] & 0x0000FFFF) * gprs[rs]) & 0xFFFFFFFF;
-			gprs[rd] = (hi + lo) & 0xFFFFFFFF;
+			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) | 0;
+			var lo = ((gprs[rm] & 0x0000FFFF) * gprs[rs]) | 0;
+			gprs[rd] = hi + lo;
 		} else {
 			gprs[rd] = gprs[rm] * gprs[rs];
 		}
@@ -1184,11 +1184,11 @@ ARMCoreArm.prototype.constructSMLAL = function(rd, rn, rs, rm, condOp) {
 			return;
 		}
 		cpu.cycles += 6; // TODO: better timing
-		var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
-		var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
-		var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
-		gprs[rn] += mid & 0xFFFFFFFF;
-		gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) | 0;
+		var hi = (gprs[rm] & 0xFFFF0000) * gprs[rs];
+		var lo = (gprs[rm] & 0x0000FFFF) * gprs[rs];
+		var carry = (gprs[rn] >>> 0) + hi + lo;
+		gprs[rn] = carry;
+		gprs[rd] += carry * SHIFT_32;
 	};
 };
 
@@ -1202,11 +1202,11 @@ ARMCoreArm.prototype.constructSMLALS = function(rd, rn, rs, rm, condOp) {
 			return;
 		}
 		cpu.cycles += 6; // TODO: better timing
-		var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
-		var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
-		var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
-		gprs[rn] += mid & 0xFFFFFFFF;
-		gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) | 0;
+		var hi = (gprs[rm] & 0xFFFF0000) * gprs[rs];
+		var lo = (gprs[rm] & 0x0000FFFF) * gprs[rs];
+		var carry = (gprs[rn] >>> 0) + hi + lo;
+		gprs[rn] = carry;
+		gprs[rd] += carry * SHIFT_32;
 		cpu.cpsrN = gprs[rd] >> 31;
 		cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
 	};
@@ -1452,12 +1452,10 @@ ARMCoreArm.prototype.constructUMLAL = function(rd, rn, rs, rm, condOp) {
 		}
 		cpu.cycles += 6; // TODO: better timing
 		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
-		var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
-		var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
-		gprs[rn] += mid & 0xFFFFFFFF;
-		gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) >>> 0;
-		cpu.cpsrN = gprs[rd] >> 31;
-		cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
+		var lo = (gprs[rm] & 0x0000FFFF) * (gprs[rs] >>> 0);
+		var carry = (gprs[rn] >>> 0) + hi + lo;
+		gprs[rn] = carry;
+		gprs[rd] += carry * SHIFT_32;
 	};
 };
 
@@ -1472,10 +1470,10 @@ ARMCoreArm.prototype.constructUMLALS = function(rd, rn, rs, rm, condOp) {
 		}
 		cpu.cycles += 6; // TODO: better timing
 		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
-		var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
-		var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
-		gprs[rn] += mid & 0xFFFFFFFF;
-		gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) >>> 0;
+		var lo = (gprs[rm] & 0x0000FFFF) * (gprs[rs] >>> 0);
+		var carry = (gprs[rn] >>> 0) + hi + lo;
+		gprs[rn] = carry;
+		gprs[rd] += carry * SHIFT_32;
 		cpu.cpsrN = gprs[rd] >> 31;
 		cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
 	};
