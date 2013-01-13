@@ -621,6 +621,15 @@ ARMCore.prototype.compileArm = function(instruction) {
 		}
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
 		// Single data swap
+		var rm = instruction & 0x0000000F;
+		var rd = (instruction >> 12) & 0x0000000F;
+		var rn = (instruction >> 16) & 0x0000000F;
+		if (instruction & 0x00400000) {
+			op = this.armCompiler.constructSWPB(rd, rn, rm, condOp);
+		} else {
+			op = this.armCompiler.constructSWP(rd, rn, rm, condOp);
+		}
+		op.writesPC = rd == this.PC;
 	} else {
 		switch (i) {
 		case 0x00000000:

@@ -1377,6 +1377,38 @@ ARMCoreArm.prototype.constructSWI = function(immediate, condOp) {
 	};
 };
 
+ARMCoreArm.prototype.constructSWP = function(rd, rn, rm, condOp) {
+	var cpu = this.cpu;
+	var gprs = cpu.gprs;
+	return function() {
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		if (condOp && !condOp()) {
+			return;
+		}
+		cpu.mmu.waitMulti32(gprs[rn], 2);
+		var d = cpu.mmu.load32(gprs[rn]);
+		cpu.mmu.store32(gprs[rn], gprs[rm]);
+		gprs[rd] = d;
+		++cpu.cycles;
+	}
+};
+
+ARMCoreArm.prototype.constructSWPB = function(rd, rn, rm, condOp) {
+	var cpu = this.cpu;
+	var gprs = cpu.gprs;
+	return function() {
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		if (condOp && !condOp()) {
+			return;
+		}
+		cpu.mmu.waitMulti32(gprs[rn], 2);
+		var d = cpu.mmu.load8(gprs[rn]);
+		cpu.mmu.store8(gprs[rn], gprs[rm]);
+		gprs[rd] = d;
+		++cpu.cycles;
+	}
+};
+
 ARMCoreArm.prototype.constructTEQ = function(rd, rn, shiftOp, condOp) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
