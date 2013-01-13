@@ -951,12 +951,18 @@ ARMCore.prototype.compileArm = function(instruction) {
 			var address;
 			var immediate = 0;
 			var offset = 0;
+			var overlap = false;
 			if (u) {
 				if (p) {
 					immediate = 4;
 				}
 				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 					if (rs & m) {
+						if (i == rn && !offset) {
+							rs &= ~m;
+							immediate += 4;
+							overlap = true;
+						}
 						offset += 4;
 					}
 				}
@@ -966,13 +972,18 @@ ARMCore.prototype.compileArm = function(instruction) {
 				}
 				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 					if (rs & m) {
+						if (i == rn && !offset) {
+							rs &= ~m;
+							immediate += 4;
+							overlap = true;
+						}
 						immediate -= 4;
 						offset -= 4;
 					}
 				}
 			}
 			if (w) {
-				address = this.armCompiler.constructAddressingMode4Writeback(immediate, offset, rn);
+				address = this.armCompiler.constructAddressingMode4Writeback(immediate, offset, rn, overlap);
 			} else {
 				address = this.armCompiler.constructAddressingMode4(immediate, rn);
 			}
