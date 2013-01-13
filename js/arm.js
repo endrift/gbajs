@@ -454,11 +454,14 @@ ARMCoreArm.prototype.constructAddressingMode4 = function(immediate, rn) {
 	}
 };
 
-ARMCoreArm.prototype.constructAddressingMode4Writeback = function(immediate, offset, rn) {
+ARMCoreArm.prototype.constructAddressingMode4Writeback = function(immediate, offset, rn, overlap) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
-	return function() {
+	return function(writeInitial) {
 		var addr = gprs[rn] + immediate;
+		if (writeInitial && overlap) {
+			cpu.mmu.store32(gprs[rn] + immediate - 4, gprs[rn]);
+		}
 		gprs[rn] += offset;
 		return addr;
 	}
@@ -730,7 +733,7 @@ ARMCoreArm.prototype.constructLDM = function(rs, address, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		var addr = address();
+		var addr = address(false);
 		var total = 0;
 		var m, i;
 		for (m = rs, i = 0; m; m >>= 1, ++i) {
@@ -1257,7 +1260,7 @@ ARMCoreArm.prototype.constructSTM = function(rs, address, condOp) {
 			mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
-		var addr = address();
+		var addr = address(true);
 		var total = 0;
 		var m, i;
 		for (m = rs, i = 0; m; m >>= 1, ++i) {
@@ -1265,18 +1268,10 @@ ARMCoreArm.prototype.constructSTM = function(rs, address, condOp) {
 				mmu.store32(addr, gprs[i]);
 				addr += 4;
 				++total;
-				break;
 			}
 		}
-		for (m >>= 1, ++i; m; m >>= 1, ++i) {
-			if (m & 1) {
-				mmu.store32(addr, gprs[i]);
-				addr += 4;
-				++total;
-			}
-		}
-		cpu.mmu.waitMulti32(addr, total);
-		cpu.mmu.wait32(gprs[cpu.PC]);
+		mmu.waitMulti32(addr, total);
+		mmu.wait32(gprs[cpu.PC]);
 	};
 };
 
