@@ -1188,7 +1188,7 @@ ARMCoreArm.prototype.constructSMLAL = function(rd, rn, rs, rm, condOp) {
 		var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
 		var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
 		gprs[rn] += mid & 0xFFFFFFFF;
-		gprs[rd] += Math.floor(hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32);
+		gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) | 0;
 	};
 };
 
@@ -1206,7 +1206,7 @@ ARMCoreArm.prototype.constructSMLALS = function(rd, rn, rs, rm, condOp) {
 		var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
 		var mid = (hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF);
 		gprs[rn] += mid & 0xFFFFFFFF;
-		gprs[rd] += Math.floor(hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32);
+		gprs[rd] += (hi * SHIFT_32 + lo * SHIFT_32 + mid * SHIFT_32) | 0;
 		cpu.cpsrN = gprs[rd] >> 31;
 		cpu.cpsrZ = !((gprs[rd] & 0xFFFFFFFF) || (gprs[rn] & 0xFFFFFFFF));
 	};
