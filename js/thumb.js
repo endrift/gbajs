@@ -115,6 +115,7 @@ ARMCoreThumb.prototype.constructASR1 = function(rd, rm, immediate) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		++cpu.cycles;
 		if (immediate == 0) {
 			cpu.cpsrC = gprs[rm] >> 31;
 			if (cpu.cpsrC) {
@@ -136,6 +137,7 @@ ARMCoreThumb.prototype.constructASR2 = function(rd, rm) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		++cpu.cycles;
 		var rs = gprs[rm] & 0xFF;
 		if (rs) {
 			if (rs < 32) {
@@ -423,6 +425,7 @@ ARMCoreThumb.prototype.constructLSL1 = function(rd, rm, immediate) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		++cpu.cycles;
 		if (immediate == 0) {
 			gprs[rd] = gprs[rm];
 		} else {
@@ -439,6 +442,7 @@ ARMCoreThumb.prototype.constructLSL2 = function(rd, rm) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		++cpu.cycles;
 		var rs = gprs[rm] & 0xFF;
 		if (rs) {
 			if (rs < 32) {
@@ -463,6 +467,7 @@ ARMCoreThumb.prototype.constructLSR1 = function(rd, rm, immediate) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		++cpu.cycles;
 		if (immediate == 0) {
 			cpu.cpsrC = gprs[rm] >> 31;
 			gprs[rd] = 0;
@@ -480,6 +485,7 @@ ARMCoreThumb.prototype.constructLSR2 = function(rd, rm) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		++cpu.cycles;
 		var rs = gprs[rm] & 0xFF;
 		if (rs) {
 			if (rs < 32) {
@@ -653,6 +659,7 @@ ARMCoreThumb.prototype.constructROR = function(rd, rm) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		++cpu.cycles;
 		var rs = gprs[rm] & 0xFF;
 		if (rs) {
 			var r4 = rs & 0x1F;
