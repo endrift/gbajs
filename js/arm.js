@@ -1377,7 +1377,7 @@ ARMCoreArm.prototype.constructSWI = function(immediate, condOp) {
 	};
 };
 
-ARMCoreArm.prototype.constructTEQ = function(rn, rn, shiftOp, condOp) {
+ARMCoreArm.prototype.constructTEQ = function(rd, rn, shiftOp, condOp) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
