@@ -119,6 +119,7 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 				gprs[this.PC] += this.instructionWidth;
 			}
 		}
+		++this.cycles;
 		this.irq.updateTimers();
 	};
 };
