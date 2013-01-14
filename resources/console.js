@@ -57,6 +57,9 @@ Console.prototype.updateCPSR = function() {
 	case cpu.MODE_IRQ:
 		mode.textContent = 'IRQ';
 		break;
+	case cpu.MODE_FIQ:
+		mode.textContent = 'FIQ';
+		break;
 	case cpu.MODE_SUPERVISOR:
 		mode.textContent = 'SVC';
 		break;
