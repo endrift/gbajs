@@ -958,7 +958,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				}
 				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 					if (rs & m) {
-						if (i == rn && !offset) {
+						if (w && i == rn && !offset) {
 							rs &= ~m;
 							immediate += 4;
 							overlap = true;
@@ -972,7 +972,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				}
 				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 					if (rs & m) {
-						if (i == rn && !offset) {
+						if (w && i == rn && !offset) {
 							rs &= ~m;
 							immediate += 4;
 							overlap = true;
