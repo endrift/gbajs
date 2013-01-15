@@ -305,9 +305,6 @@ GameBoyAdvance.prototype.encodeSavedata = function() {
 };
 
 GameBoyAdvance.prototype.downloadSavedata = function() {
-	var data = this.encodeSavedata();
-	window.open('data:application/octet-stream;base64,' + data, this.rom.code + '.sav');
-
 	var sram = this.mmu.save;
 	if (!sram) {
 		this.WARN("No save data available");
