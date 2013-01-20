@@ -344,7 +344,8 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
  		return 0;
 
 	default:
-		throw 'Unimplemented I/O register read: 0x' + offset.toString(16);
+		this.core.WARN('Bad I/O register read: 0x' + offset.toString(16));
+		return 0;
 	}
 	return this.registers[offset >> 1];
 };
