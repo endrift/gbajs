@@ -214,7 +214,11 @@ ARMCoreThumb.prototype.constructBX = function(rd, rm) {
 	return function() {
 		// TODO: implement timings
 		cpu.switchExecMode(gprs[rm] & 0x00000001);
-		gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
+		var misalign = 0;
+		if (rm == 15) {
+			misalign = gprs[rm] & 0x00000002;
+		}
+		gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE - misalign;
 	};
 };
 
