@@ -844,11 +844,19 @@ ARMCore.prototype.compileArm = function(instruction) {
 			}
 			if (load) {
 				// LDM
-				op = this.armCompiler.constructLDM(rs, address, condOp);
+				if (user) {
+					op = this.armCompiler.constructLDMS(rs, address, condOp);
+				} else {
+					op = this.armCompiler.constructLDM(rs, address, condOp);
+				}
 				op.writesPC = rs & (1 << 15);
 			} else {
 				// STM
-				op = this.armCompiler.constructSTM(rs, address, condOp);
+				if (user) {
+					op = this.armCompiler.constructSTMS(rs, address, condOp);
+				} else {
+					op = this.armCompiler.constructSTM(rs, address, condOp);
+				}
 				op.writesPC = false;
 			}
 			break;
