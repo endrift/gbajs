@@ -132,6 +132,7 @@ function GameBoyAdvanceIO() {
 	this.WAITCNT = 0x204;
 	this.IME = 0x208;
 
+	this.DEFAULT_DISPCNT = 0x0080;
 	this.DEFAULT_SOUNDBIAS = 0x200;
 	this.DEFAULT_BGPA = 1;
 	this.DEFAULT_BGPD = 1;
@@ -148,6 +149,7 @@ GameBoyAdvanceIO.prototype.setVideo = function(video) {
 GameBoyAdvanceIO.prototype.clear = function() {
 	this.registers = new Uint16Array(this.cpu.mmu.SIZE_IO);
 
+	this.registers[this.DISPCNT >> 1] = this.DEFAULT_DISPCNT;
 	this.registers[this.SOUNDBIAS >> 1] = this.DEFAULT_SOUNDBIAS;
 	this.registers[this.BG2PA >> 1] = this.DEFAULT_BGPA;
 	this.registers[this.BG2PD >> 1] = this.DEFAULT_BGPD;
