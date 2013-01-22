@@ -748,6 +748,33 @@ ARMCoreArm.prototype.constructLDM = function(rs, address, condOp) {
 	};
 };
 
+ARMCoreArm.prototype.constructLDMS = function(rs, address, condOp) {
+	var cpu = this.cpu;
+	var gprs = cpu.gprs;
+	var mmu = cpu.mmu;
+	return function() {
+		mmu.waitSeq32(gprs[cpu.PC]);
+		if (condOp && !condOp()) {
+			return;
+		}
+		var addr = address(false);
+		var total = 0;
+		var mode = cpu.mode;
+		cpu.switchMode(cpu.MODE_SYSTEM);
+		var m, i;
+		for (m = rs, i = 0; m; m >>= 1, ++i) {
+			if (m & 1) {
+				gprs[i] = mmu.load32(addr & 0xFFFFFFFC);
+				addr += 4;
+				++total;
+			}
+		}
+		cpu.switchMode(mode);
+		mmu.waitMulti32(addr, total);
+		++cpu.cycles;
+	};
+};
+
 ARMCoreArm.prototype.constructLDR = function(rd, address, condOp) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
@@ -1270,6 +1297,33 @@ ARMCoreArm.prototype.constructSTM = function(rs, address, condOp) {
 				++total;
 			}
 		}
+		mmu.waitMulti32(addr, total);
+		mmu.wait32(gprs[cpu.PC]);
+	};
+};
+
+ARMCoreArm.prototype.constructSTMS = function(rs, address, condOp) {
+	var cpu = this.cpu;
+	var gprs = cpu.gprs;
+	var mmu = cpu.mmu;
+	return function() {
+		if (condOp && !condOp()) {
+			mmu.waitSeq32(gprs[cpu.PC]);
+			return;
+		}
+		var mode = cpu.mode;
+		var addr = address(true);
+		var total = 0;
+		var m, i;
+		cpu.switchMode(cpu.MODE_SYSTEM);
+		for (m = rs, i = 0; m; m >>= 1, ++i) {
+			if (m & 1) {
+				mmu.store32(addr, gprs[i]);
+				addr += 4;
+				++total;
+			}
+		}
+		cpu.switchMode(mode);
 		mmu.waitMulti32(addr, total);
 		mmu.wait32(gprs[cpu.PC]);
 	};
