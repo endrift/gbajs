@@ -1172,8 +1172,8 @@ GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, o
 	if (video.objwinActive) {
 		if (oldStencil & video.OBJWIN_MASK) {
 			if (video.windows[3].enabled[layer]) {
-				video.setBlendEnabled(layer, video.windows[3].special, blend);
-				if (video.windows[3].special) {
+				video.setBlendEnabled(layer, video.windows[3].special && video.target1[layer], blend);
+				if (video.windows[3].special && video.alphaEnabled) {
 					mask |= video.target1[layer];
 				}
 				stencil |= video.OBJWIN_MASK;
@@ -1181,8 +1181,8 @@ GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, o
 				return;
 			}
 		} else if (video.windows[2].enabled[layer]) {
-			video.setBlendEnabled(layer, video.windows[2].special, blend);
-			if (video.windows[2].special) {
+			video.setBlendEnabled(layer, video.windows[2].special && video.target1[layer], blend);
+			if (video.windows[2].special && video.alphaEnabled) {
 				mask |= video.target1[layer];
 			}
 		} else {
