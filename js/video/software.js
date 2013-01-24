@@ -1046,8 +1046,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.writeBlendControl = function(value) {
 };
 
 GameBoyAdvanceSoftwareRenderer.prototype.setBlendEnabled = function(layer, enabled, override) {
-	this.alphaEnabled = override == 1;
-	this.blendEnabled = override;
+	this.alphaEnabled = enabled && override == 1;
 	if (enabled) {
 		switch (override) {
 		case 1:
@@ -1168,33 +1167,37 @@ GameBoyAdvanceSoftwareRenderer.pushPixel = function(layer, map, video, row, x, o
 	}
 
 	var stencil = video.WRITTEN_MASK;
-	var oldStencil = backing.stencil[offset]; 
+	var oldStencil = backing.stencil[offset];
+	var blend = video.blendMode;
 	if (video.objwinActive) {
 		if (oldStencil & video.OBJWIN_MASK) {
 			if (video.windows[3].enabled[layer]) {
-				video.setBlendEnabled(layer, video.windows[3].special, video.blendMode);
+				video.setBlendEnabled(layer, video.windows[3].special, blend);
+				if (video.windows[3].special) {
+					mask |= video.target1[layer];
+				}
 				stencil |= video.OBJWIN_MASK;
 			} else {
 				return;
 			}
 		} else if (video.windows[2].enabled[layer]) {
-			video.setBlendEnabled(layer, video.windows[2].special, video.blendMode);
+			video.setBlendEnabled(layer, video.windows[2].special, blend);
+			if (video.windows[2].special) {
+				mask |= video.target1[layer];
+			}
 		} else {
 			return;
 		}
 	}
 
-	var blend;
 	if ((mask & video.TARGET1_MASK) && (oldStencil & video.TARGET2_MASK)) {
-		blend = video.blendEnabled;
 		video.setBlendEnabled(layer, true, 1);
 	}
 
 	var pixel = raw ? row : video.palette.accessColor(layer, index);
 
 	if (mask & video.TARGET1_MASK) {
-		blend = video.blendEnabled;
-		video.setBlendEnabled(layer, true, blend);
+		video.setBlendEnabled(layer, !!blend, blend);
 	}
 	var highPriority = (mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK);
 	// Backgrounds can draw over each other, too.
