@@ -316,9 +316,10 @@ GameBoyAdvance.prototype.downloadSavedata = function() {
 
 
 GameBoyAdvance.prototype.storeSavedata = function() {
+	var sram = this.mmu.save;
 	try {
 		var storage = window.localStorage;
-		storage[this.SYS_ID + '.' + this.mmu.cart.code] = this.encodeSavedata();
+		storage[this.SYS_ID + '.' + this.mmu.cart.code] = this.encodeBase64(sram.view);
 	} catch (e) {
 		this.WARN('Could not store savedata! ' + e);
 	}
