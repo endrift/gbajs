@@ -411,8 +411,8 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 			totalWidth = end - this.x;
 		}
 	} else {
-		underflow = 512 - this.x;
-		offset = 0;
+		underflow = start + 512 - this.x;
+		offset = start;
 		if (end < this.cachedWidth - underflow) {
 			totalWidth = end;
 		}
@@ -507,8 +507,8 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 			drawWidth = end - this.x;
 		}
 	} else {
-		underflow = 512 - this.x;
-		offset = 0;
+		underflow = start + 512 - this.x;
+		offset = start;
 		if (end < drawWidth - underflow) {
 			drawWidth = end;
 		}
