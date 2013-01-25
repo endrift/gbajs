@@ -246,6 +246,21 @@ GameBoyAdvanceRenderProxy.prototype.setBacking = function(backing) {
 GameBoyAdvanceRenderProxy.prototype.drawScanline = function(y) {
 	if (!this.skipFrame) {
 		if (this.dirty) {
+			if (this.dirty.memory) {
+				if (this.dirty.memory.palette) {
+					this.dirty.memory.palette = this.dirty.memory.palette.slice(0);
+				}
+				if (this.dirty.memory.oam) {
+					this.dirty.memory.oam = this.dirty.memory.oam.slice(0);
+				}
+				if (this.dirty.memory.vram) {
+					for (var i = 0; i < 12; ++i) {
+						if (this.dirty.memory.vram[i]) {
+							this.dirty.memory.vram[i] = this.dirty.memory.vram[i].slice(0);
+						}
+					}
+				}
+			}
 			this.scanlineQueue.push({ y: y, dirty: this.dirty });
 			this.dirty = null;
 		}
