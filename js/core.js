@@ -903,6 +903,10 @@ ARMCore.prototype.compileArm = function(instruction) {
 			var address = function() {
 				throw "Unimplemented memory access: 0x" + instruction.toString(16);
 			};
+			if (~instruction & 0x01000000) {
+				// Clear the W bit if the P bit is clear--we don't support memory translation, so these turn into regular accesses
+				instruction &= 0xFFDFFFFF;
+			}
 			if (i) {
 				// Register offset
 				var rm = instruction & 0x0000000F;
