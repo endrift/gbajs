@@ -307,7 +307,9 @@ ARMCoreThumb.prototype.constructLDMIA = function(rn, rs) {
 			}
 		}
 		cpu.mmu.waitMulti32(address, total);
-		gprs[rn] = address;
+		if (!((1 << rn) & rs)) {
+			gprs[rn] = address;
+		}
 	};
 };
 
