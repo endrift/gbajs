@@ -65,6 +65,12 @@ window.onload = function() {
 			var soundbox = document.getElementById('sound');
 			soundbox.parentElement.removeChild(soundbox);
 		}
+
+		if (window.navigator.appName == 'Microsoft Internet Explorer') {
+			// Remove the pixelated option if it doesn't work
+			var pixelatedBox = document.getElementById('pixelated');
+			pixelatedBox.parentElement.removeChild(pixelatedBox);
+		}
 	} else {
 		var dead = document.getElementById('controls');
 		dead.parentElement.removeChild(dead);
@@ -209,16 +215,30 @@ function setVolume(value) {
 	gba.audio.masterVolume = Math.pow(2, value) - 1;
 }
 
-function setZoomed(zoomed) {
+function setPixelated(pixelated) {
 	var screen = document.getElementById('screen');
-	if (zoomed) {
-		screen.setAttribute('width', '240');
-		screen.setAttribute('height', '160');
-		screen.setAttribute('zoomed', 'true');
-	} else {
-		screen.setAttribute('width', '480');
-		screen.setAttribute('height', '320');
-		screen.removeAttribute('zoomed');
+	var context = screen.getContext('2d');
+	if (context.webkitImageSmoothingEnabled) {
+		context.webkitImageSmoothingEnabled = !pixelated;
+	} else if (context.mozImageSmoothingEnabled) {
+		context.mozImageSmoothingEnabled = !pixelated;
+	} else if (window.navigator.appName != 'Microsoft Internet Explorer') {
+			if (pixelated) {
+				screen.setAttribute('width', '240');
+				screen.setAttribute('height', '160');
+			} else {
+				screen.setAttribute('width', '480');
+				screen.setAttribute('height', '320');
+			}
+			if (window.navigator.appName == 'Opera') {
+			// Ugly hack! Ew!
+			if (pixelated) {
+				screen.style.marginTop = '0';
+				screen.style.marginBottom = '-325px';
+			} else {
+				delete screen.style;
+			}
+		}
 	}
 }
 
@@ -279,7 +299,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<button class="bigbutton" onclick="reset()">RESET</button>
 		<button onclick="gba.downloadSavedata()">Download Savegame</button>
 		<button onclick="screenshot()">Screenshot</button>
-		<label><input type="checkbox" onchange="setZoomed(this.checked)"> Pixelated</label>
+		<label id="pixelated"><input type="checkbox" onchange="setPixelated(this.checked)"> Pixelated</label>
 		<div id="sound">
 			<p>Sound</p>
 			<input type="checkbox" checked onchange="gba.audio.masterEnable = this.checked">
