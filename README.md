@@ -1,6 +1,6 @@
 GBA.js
 ======
-**Version 1.0 Beta 1 — Copyright © 2012 Jeffrey Pfau**
+**Version 1.0 Beta 2 — Copyright © 2012 – 2013 Jeffrey Pfau**
 
 GBA.js is a Game Boy Advance emulator written from scratch to employ HTML5 technologies like Canvas and Web Audio. It uses no plugins, and is designed to run on cutting edge web browsers. It is hosted [on GitHub](https://github.com/jpfau/gbajs) and is made available under the 2-clause BSD license. The most recent version can be found at [http://jpfau.github.com/gbajs/](http://jpfau.github.com/gbajs/).
 
@@ -8,13 +8,14 @@ GBA.js is a Game Boy Advance emulator written from scratch to employ HTML5 techn
 The current version of GBA.js is known to work in the following web browsers:
 
 * Safari 6.0 or newer
-* Chrome 20 or newer
+* Chrome 22 or newer
 
-The following web browsers also work, but run slowly and have no sound:
+The following web browsers also work, but will have degraded feature sets:
 
-* Firefox 15 or newer
-* Opera 12.00 or newer
-* Internet Explorer 10 or newer
+* Firefox 15 or newer (no sound, slow)
+* Opera 12.1x or newer (no sound, slow)
+* Internet Explorer 10 or newer (no sound, slow, pixelated display does not work)
+* Chrome 20, 21 (pixelated display does not work)
 
 The following browsers will not work:
 
@@ -48,7 +49,7 @@ Features that may be implemented in the future include:
 * Support for gamepaks that have other sensors (e.g. WarioWare Twisted!, Boktai)
 
 ## License
-Copyright © 2012, Jeffrey Pfau
+Copyright © 2012 – 2013, Jeffrey Pfau
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
