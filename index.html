@@ -3,6 +3,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>GBA.js</title>
 <link rel="stylesheet" href="resources/main.css">
+<script src="js/util.js"></script>
 <script src="js/core.js"></script>
 <script src="js/arm.js"></script>
 <script src="js/thumb.js"></script>
@@ -63,6 +64,12 @@ window.onload = function() {
 			// Remove the sound box if sound isn't available
 			var soundbox = document.getElementById('sound');
 			soundbox.parentElement.removeChild(soundbox);
+		}
+
+		if (window.navigator.appName == 'Microsoft Internet Explorer') {
+			// Remove the pixelated option if it doesn't work
+			var pixelatedBox = document.getElementById('pixelated');
+			pixelatedBox.parentElement.removeChild(pixelatedBox);
 		}
 	} else {
 		var dead = document.getElementById('controls');
@@ -208,16 +215,30 @@ function setVolume(value) {
 	gba.audio.masterVolume = Math.pow(2, value) - 1;
 }
 
-function setZoomed(zoomed) {
+function setPixelated(pixelated) {
 	var screen = document.getElementById('screen');
-	if (zoomed) {
-		screen.setAttribute('width', '240');
-		screen.setAttribute('height', '160');
-		screen.setAttribute('zoomed', 'true');
-	} else {
-		screen.setAttribute('width', '480');
-		screen.setAttribute('height', '320');
-		screen.removeAttribute('zoomed');
+	var context = screen.getContext('2d');
+	if (context.webkitImageSmoothingEnabled) {
+		context.webkitImageSmoothingEnabled = !pixelated;
+	} else if (context.mozImageSmoothingEnabled) {
+		context.mozImageSmoothingEnabled = !pixelated;
+	} else if (window.navigator.appName != 'Microsoft Internet Explorer') {
+			if (pixelated) {
+				screen.setAttribute('width', '240');
+				screen.setAttribute('height', '160');
+			} else {
+				screen.setAttribute('width', '480');
+				screen.setAttribute('height', '320');
+			}
+			if (window.navigator.appName == 'Opera') {
+			// Ugly hack! Ew!
+			if (pixelated) {
+				screen.style.marginTop = '0';
+				screen.style.marginBottom = '-325px';
+			} else {
+				delete screen.style;
+			}
+		}
 	}
 }
 
@@ -278,7 +299,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<button class="bigbutton" onclick="reset()">RESET</button>
 		<button onclick="gba.downloadSavedata()">Download Savegame</button>
 		<button onclick="screenshot()">Screenshot</button>
-		<label><input type="checkbox" onchange="setZoomed(this.checked)"> Pixelated</label>
+		<label id="pixelated"><input type="checkbox" onchange="setPixelated(this.checked)"> Pixelated</label>
 		<div id="sound">
 			<p>Sound</p>
 			<input type="checkbox" checked onchange="gba.audio.masterEnable = this.checked">
@@ -305,10 +326,10 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<h2>Game Boy Advance in the Browser</h2>
 		<ul id="links">
 			<li><a href="http://github.com/jpfau/gbajs/">Fork me on GitHub!</a></li>
-			<li><a href="http://endrift.com/gbajs/compat.html">Compatibility list</a></li>
+			<li><a href="https://github.com/jpfau/gbajs/wiki/Compatibility-List">Compatibility list</a></li>
 		</ul>
 		<div id="stats">
-			<footer>Version 1.0 Beta 1</footer>
+			<footer>Version 1.0 Beta 2</footer>
 			<p><span id="fps">0</span> frames per second</p>
 		</div>
 	</header>
@@ -362,7 +383,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 			Fairly decent! Most games run and are playable, although some will still crash at times
 			or lock up at specific points. Moreover, other minor bugs in graphics or sound are
 			still present, and I'm working on fixing those bugs. A compatibility list can be found
-			<a href="http://endrift.com/gbajs/compat.html">here</a>. Please report any bugs you
+			<a href="https://github.com/jpfau/gbajs/wiki/Compatibility-List">here</a>. Please report any bugs you
 			find on the <a href="http://github.com/jpfau/gbajs/issues">GitHub issue tracker</a>.
 			If you're feeling daring, you can also run the
 			<a href="console.html">debug version</a>, and post any useful information it spits out
@@ -371,7 +392,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<dt>So this is cool and all, but what's the point?</dt>
 		<dd>There isn't really a point. I just wanted to make something cool.</dd>
 	</dl>
-	<footer>© 2012 <a href="http://endrift.com/">Jeffrey Pfau</a></footer>
+	<footer>© 2012 – 2013 <a href="http://endrift.com/">Jeffrey Pfau</a></footer>
 </aside>
 </body>
 </html>

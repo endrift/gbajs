@@ -68,7 +68,7 @@ function GameBoyAdvanceRenderProxy() {
 	this.delay = 0;
 	this.skipFrame = false;
 
-	this.dirty = {};
+	this.dirty = null;
 	var self = this;
 	var handlers = {
 		finish: function(data) {
@@ -83,6 +83,7 @@ function GameBoyAdvanceRenderProxy() {
 };
 
 GameBoyAdvanceRenderProxy.prototype.memoryDirtied = function(mem, block) {
+	this.dirty = this.dirty || {};
 	this.dirty.memory = this.dirty.memory || {};
 	if (mem === this.palette) {
 		this.dirty.memory.palette = mem.blocks[0].buffer;
@@ -101,101 +102,123 @@ GameBoyAdvanceRenderProxy.prototype.clear = function(mmu) {
 	this.vram = new MemoryProxy(this, mmu.SIZE_VRAM, 13);
 	this.oam = new MemoryProxy(this, mmu.SIZE_OAM, 0);
 
-	this.dirty = {};
+	this.dirty = null;
+	this.scanlineQueue = [];
 
 	this.worker.postMessage({ type: 'clear', SIZE_VRAM: mmu.SIZE_VRAM, SIZE_OAM: mmu.SIZE_OAM });
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeDisplayControl = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.DISPCNT = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundControl = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGCNT = this.dirty.BGCNT || [];
 	this.dirty.BGCNT[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundHOffset = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGHOFS = this.dirty.BGHOFS || [];
 	this.dirty.BGHOFS[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundVOffset = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGVOFS = this.dirty.BGVOFS || [];
 	this.dirty.BGVOFS[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundRefX = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGX = this.dirty.BGX || [];
 	this.dirty.BGX[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundRefY = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGY = this.dirty.BGY || [];
 	this.dirty.BGY[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundParamA = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGPA = this.dirty.BGPA || [];
 	this.dirty.BGPA[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundParamB = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGPB = this.dirty.BGPB || [];
 	this.dirty.BGPB[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundParamC = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGPC = this.dirty.BGPC || [];
 	this.dirty.BGPC[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBackgroundParamD = function(bg, value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BGPD = this.dirty.BGPD || [];
 	this.dirty.BGPD[bg] = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeWin0H = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.WIN0H = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeWin1H = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.WIN1H = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeWin0V = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.WIN0V = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeWin1V = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.WIN1V = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeWinIn = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.WININ = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeWinOut = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.WINOUT = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBlendControl = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BLDCNT = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBlendAlpha = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BLDALPHA = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeBlendY = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.BLDY = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.writeMosaic = function(value) {
+	this.dirty = this.dirty || {};
 	this.dirty.MOSAIC = value;
 };
 
 GameBoyAdvanceRenderProxy.prototype.clearSubsets = function(mmu, regions) {
+	this.dirty = this.dirty || {};
 	if (regions & 0x04) {
 		this.palette = new MemoryProxy(this, mmu.SIZE_PALETTE_RAM, 0);
 		mmu.mmap(mmu.REGION_PALETTE_RAM, this.palette);
@@ -222,8 +245,25 @@ GameBoyAdvanceRenderProxy.prototype.setBacking = function(backing) {
 
 GameBoyAdvanceRenderProxy.prototype.drawScanline = function(y) {
 	if (!this.skipFrame) {
-		this.worker.postMessage({ type: 'scanline', y: y, dirty: this.dirty });
-		this.dirty = {};
+		if (this.dirty) {
+			if (this.dirty.memory) {
+				if (this.dirty.memory.palette) {
+					this.dirty.memory.palette = this.dirty.memory.palette.slice(0);
+				}
+				if (this.dirty.memory.oam) {
+					this.dirty.memory.oam = this.dirty.memory.oam.slice(0);
+				}
+				if (this.dirty.memory.vram) {
+					for (var i = 0; i < 12; ++i) {
+						if (this.dirty.memory.vram[i]) {
+							this.dirty.memory.vram[i] = this.dirty.memory.vram[i].slice(0);
+						}
+					}
+				}
+			}
+			this.scanlineQueue.push({ y: y, dirty: this.dirty });
+			this.dirty = null;
+		}
 	}
 };
 
@@ -240,7 +280,8 @@ GameBoyAdvanceRenderProxy.prototype.startDraw = function() {
 GameBoyAdvanceRenderProxy.prototype.finishDraw = function(caller) {
 	this.caller = caller;
 	if (!this.skipFrame) {
-		this.worker.postMessage({ type: 'finish', frame: this.currentFrame });
+		this.worker.postMessage({ type: 'finish', scanlines: this.scanlineQueue, frame: this.currentFrame });
+		this.scanlineQueue = [];
 		if (this.delay > 2) {
 			this.skipFrame = true;
 		}

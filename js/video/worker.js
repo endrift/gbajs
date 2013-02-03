@@ -147,6 +147,18 @@ var handlers = {
 
 	finish: function(data) {
 		currentFrame = data.frame;
+		var scanline = 0;
+		for (var i = 0; i < data.scanlines.length; ++i) {
+			for (var y = scanline; y < data.scanlines[i].y; ++y) {
+				video.drawScanline(y, proxyBacking);
+			}
+			scanline = data.scanlines[i].y + 1;
+			receiveDirty(data.scanlines[i].dirty);
+			video.drawScanline(data.scanlines[i].y, proxyBacking);
+		}
+		for (var y = scanline; y < 160; ++y) {
+			video.drawScanline(y, proxyBacking);
+		}
 		video.finishDraw(self);
 	},
 };

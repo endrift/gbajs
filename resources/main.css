@@ -22,13 +22,14 @@ button {
 	margin-bottom: -405px; /* Take up no height */
 }
 
-#screen[zoomed] {
+#screen[width="240"] {
 	margin-top: 42.5px;
 	margin-bottom: -363px; /* Take up no height */
 	image-rendering: -webkit-optimize-contrast;
 	image-rendering: -moz-crisp-edges;
-	-ms-interpolation-mode: nearest-neighbor;
+	image-rendering: -o-crisp-edges;
 	zoom: 2;
+	-o-transform: scale(2);
 }
 
 #crash {

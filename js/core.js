@@ -1,4 +1,5 @@
 function ARMCore() {
+	this.inherit();
 	this.SP = 13;
 	this.LR = 14;
 	this.PC = 15;
@@ -118,6 +119,7 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 				gprs[this.PC] += this.instructionWidth;
 			}
 		}
+		++this.cycles;
 		this.irq.updateTimers();
 	};
 };
@@ -217,8 +219,19 @@ ARMCore.prototype.switchMode = function(newMode) {
 		var oldBank = this.selectBank(this.mode);
 		if (newBank != oldBank) {
 			// TODO: support FIQ
-			if (newMode == this.FIQ || this.mode == this.FIQ) {
-				throw 'FIQ mode switching is unimplemented';
+			if (newMode == this.MODE_FIQ || this.mode == this.MODE_FIQ) {
+				var oldFiqBank = (oldBank == this.BANK_FIQ) + 0;
+				var newFiqBank = (newBank == this.BANK_FIQ) + 0;
+				this.bankedRegisters[oldFiqBank][2] = this.gprs[8];
+				this.bankedRegisters[oldFiqBank][3] = this.gprs[9];
+				this.bankedRegisters[oldFiqBank][4] = this.gprs[10];
+				this.bankedRegisters[oldFiqBank][5] = this.gprs[11];
+				this.bankedRegisters[oldFiqBank][6] = this.gprs[12];
+				this.gprs[8] = this.bankedRegisters[newFiqBank][2];
+				this.gprs[9] = this.bankedRegisters[newFiqBank][3];
+				this.gprs[10] = this.bankedRegisters[newFiqBank][4];
+				this.gprs[11] = this.bankedRegisters[newFiqBank][5];
+				this.gprs[12] = this.bankedRegisters[newFiqBank][6];
 			}
 			this.bankedRegisters[oldBank][0] = this.gprs[this.SP];
 			this.bankedRegisters[oldBank][1] = this.gprs[this.LR];
@@ -448,7 +461,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				var rm = instruction & 0x0000000F;
 				var immediate = instruction & 0x000000FF;
 				var rotateImm = (instruction & 0x00000F00) >> 7;
-				immediate = (immediate >> rotateImm) | (immediate << (32 - rotateImm));
+				immediate = (immediate >>> rotateImm) | (immediate << (32 - rotateImm));
 				op = this.armCompiler.constructMSR(rm, r, instruction, immediate, condOp);
 				op.writesPC = false;
 			} else if ((instruction & 0x00BF0000) == 0x000F0000) {
@@ -620,6 +633,15 @@ ARMCore.prototype.compileArm = function(instruction) {
 		}
 	} else if ((instruction & 0x0FB00FF0) == 0x01000090) {
 		// Single data swap
+		var rm = instruction & 0x0000000F;
+		var rd = (instruction >> 12) & 0x0000000F;
+		var rn = (instruction >> 16) & 0x0000000F;
+		if (instruction & 0x00400000) {
+			op = this.armCompiler.constructSWPB(rd, rn, rm, condOp);
+		} else {
+			op = this.armCompiler.constructSWP(rd, rn, rm, condOp);
+		}
+		op.writesPC = rd == this.PC;
 	} else {
 		switch (i) {
 		case 0x00000000:
@@ -629,7 +651,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				var rn = (instruction & 0x0000F000) >> 12;
 				var rs = (instruction & 0x00000F00) >> 8;
 				var rm = instruction & 0x0000000F;
-				switch (instruction & 0x00FE00000) {
+				switch (instruction & 0x00F00000) {
 				case 0x00000000:
 					// MUL
 					op = this.armCompiler.constructMUL(rd, rs, rm, condOp);
@@ -735,6 +757,10 @@ ARMCore.prototype.compileArm = function(instruction) {
 			var address = function() {
 				throw "Unimplemented memory access: 0x" + instruction.toString(16);
 			};
+			if (~instruction & 0x01000000) {
+				// Clear the W bit if the P bit is clear--we don't support memory translation, so these turn into regular accesses
+				instruction &= 0xFFDFFFFF;
+			}
 			if (i) {
 				// Register offset
 				var rm = instruction & 0x0000000F;
@@ -784,12 +810,18 @@ ARMCore.prototype.compileArm = function(instruction) {
 			var address;
 			var immediate = 0;
 			var offset = 0;
+			var overlap = false;
 			if (u) {
 				if (p) {
-					immediate = -4;
+					immediate = 4;
 				}
 				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 					if (rs & m) {
+						if (w && i == rn && !offset) {
+							rs &= ~m;
+							immediate += 4;
+							overlap = true;
+						}
 						offset += 4;
 					}
 				}
@@ -799,23 +831,36 @@ ARMCore.prototype.compileArm = function(instruction) {
 				}
 				for (var m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
 					if (rs & m) {
+						if (w && i == rn && !offset) {
+							rs &= ~m;
+							immediate += 4;
+							overlap = true;
+						}
 						immediate -= 4;
 						offset -= 4;
 					}
 				}
 			}
 			if (w) {
-				address = this.armCompiler.constructAddressingMode4Writeback(immediate, offset, rn);
+				address = this.armCompiler.constructAddressingMode4Writeback(immediate, offset, rn, overlap);
 			} else {
 				address = this.armCompiler.constructAddressingMode4(immediate, rn);
 			}
 			if (load) {
 				// LDM
-				op = this.armCompiler.constructLDM(rs, address, condOp);
+				if (user) {
+					op = this.armCompiler.constructLDMS(rs, address, condOp);
+				} else {
+					op = this.armCompiler.constructLDM(rs, address, condOp);
+				}
 				op.writesPC = rs & (1 << 15);
 			} else {
 				// STM
-				op = this.armCompiler.constructSTM(rs, address, condOp);
+				if (user) {
+					op = this.armCompiler.constructSTMS(rs, address, condOp);
+				} else {
+					op = this.armCompiler.constructSTM(rs, address, condOp);
+				}
 				op.writesPC = false;
 			}
 			break;
