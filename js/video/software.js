@@ -863,8 +863,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.defrost = function(frost, decodeBase64)
 };
 
 GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {
-	this.pixelData = backing.createImageData(this.HORIZONTAL_PIXELS, this.VERTICAL_PIXELS);
-	this.context = backing;
+	this.pixelData = backing;
 
 	// Clear backing first
 	for (var offset = 0; offset < this.HORIZONTAL_PIXELS * this.VERTICAL_PIXELS * 4;) {
@@ -873,9 +872,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {
 		this.pixelData.data[offset++] = 0xFF;
 		this.pixelData.data[offset++] = 0xFF;
 	}
-
-	this.platformBacking = this.scanline;
-}
+};
 
 GameBoyAdvanceSoftwareRenderer.prototype.writeDisplayControl = function(value) {
 	this.backgroundMode = value & 0x0007;
@@ -1484,10 +1481,6 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode5 = function(backing,
 		bg.pushPixel(index, map, video, color, 0, offset, backing, mask, true);
 		offset++;
 	}
-};
-
-GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {
-	this.pixelData = backing;
 };
 
 GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
