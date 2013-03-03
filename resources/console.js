@@ -309,8 +309,9 @@ Memory.prototype.refresh = function(row) {
 	for (var i = 0; i < 16; ++i) {
 		child = row.children[i + 1];
 		try {
-			newValue = hex(this.mmu.loadU8(row.offset + i), 2, false);
+			newValue = this.mmu.loadU8(row.offset + i);
 			if (newValue >= 0) {
+				newValue = hex(newValue, 2, false);
 				if (child.textContent == newValue) {
 					child.setAttribute('class', 'memoryCell');
 				} else if (showChanged) {
