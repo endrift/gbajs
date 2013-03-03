@@ -10,7 +10,11 @@ function GameBoyAdvanceAudio() {
 		}
 		this.buffers = [new Float32Array(this.bufferSize << 2), new Float32Array(this.bufferSize << 2)];
 		this.sampleMask = (this.bufferSize << 2) - 1;
-		this.jsAudio = this.context.createJavaScriptNode(this.bufferSize);
+		if (this.context.createScriptProcessor) {
+			this.jsAudio = this.context.createScriptProcessor(this.bufferSize);
+		} else {
+			this.jsAudio = this.context.createJavaScriptNode(this.bufferSize);
+		}
 		this.jsAudio.onaudioprocess = function(e) { GameBoyAdvanceAudio.audioProcess(self, e) };
 	} else {
 		this.context = null;
