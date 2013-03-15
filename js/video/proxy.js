@@ -128,20 +128,20 @@ GameBoyAdvanceRenderProxy.prototype.clear = function(mmu) {
 
 GameBoyAdvanceRenderProxy.prototype.freeze = function(encodeBase64) {
 	return {
-		'palette': encodeBase64(new DataView(this.palette.combine())),
-		'vram': encodeBase64(new DataView(this.vram.combine())),
-		'oam': encodeBase64(new DataView(this.oam.combine()))
+		'palette': Serializer.prefix(this.palette.combine()),
+		'vram': Serializer.prefix(this.vram.combine()),
+		'oam': Serializer.prefix(this.oam.combine())
 	};
 };
 
 GameBoyAdvanceRenderProxy.prototype.defrost = function(frost, decodeBase64) {
-	this.palette.replace(decodeBase64(frost.palette));
+	this.palette.replace(frost.palette);
 	this.memoryDirtied(this.palette, 0);
-	this.vram.replace(decodeBase64(frost.vram));
+	this.vram.replace(frost.vram);
 	for (var i = 0; i < this.vram.blocks.length; ++i) {
 		this.memoryDirtied(this.vram, i);
 	}
-	this.oam.replace(decodeBase64(frost.oam));
+	this.oam.replace(frost.oam);
 	this.memoryDirtied(this.oam, 0);
 };
 

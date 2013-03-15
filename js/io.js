@@ -159,12 +159,12 @@ GameBoyAdvanceIO.prototype.clear = function() {
 
 GameBoyAdvanceIO.prototype.freeze = function() {
 	return {
-		'registers': this.core.encodeBase64(new DataView(this.registers.buffer))
+		'registers': Serializer.prefix(this.registers.buffer)
 	};
 };
 
 GameBoyAdvanceIO.prototype.defrost = function(frost) {
-	this.registers = new Uint16Array(this.core.decodeBase64(frost.registers));
+	this.registers = new Uint16Array(frost.registers);
 	// Video registers don't serialize themselves
 	for (var i = 0; i <= this.BLDY; i += 2) {
 		this.store16(this.registers[i >> 1]);

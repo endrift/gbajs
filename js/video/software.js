@@ -856,10 +856,10 @@ GameBoyAdvanceSoftwareRenderer.prototype.clearSubsets = function(mmu, regions) {
 	}
 };
 
-GameBoyAdvanceSoftwareRenderer.prototype.freeze = function(encodeBase64) {
+GameBoyAdvanceSoftwareRenderer.prototype.freeze = function() {
 };
 
-GameBoyAdvanceSoftwareRenderer.prototype.defrost = function(frost, decodeBase64) {
+GameBoyAdvanceSoftwareRenderer.prototype.defrost = function(frost) {
 };
 
 GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {

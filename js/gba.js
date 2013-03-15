@@ -62,6 +62,8 @@ function GameBoyAdvance() {
 		window.oRequestAnimationFrame ||
 		window.msRequestAnimationFrame;
 
+	window.URL = window.URL || window.webkitURL;
+
 	var self = this;
 	this.video.vblankCallback = function() {
 		self.seenFrame = true;
