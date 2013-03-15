@@ -54,7 +54,7 @@ Serializer = {
 				case 'object':
 					if (stream[i].type == Serializer.TYPE) {
 						tag = Serializer.TAG_BLOB;
-						body = Serializer.prefix(stream[i]);
+						body = stream[i];
 					} else {
 						tag = Serializer.TAG_STRUCT;
 						body = Serializer.serialize(stream[i]);
@@ -119,6 +119,93 @@ Serializer = {
 		}
 		pointer.pop();
 		return object;
+	},
+
+	serializePNG: function(blob, base) {
+		var canvas = document.createElement('canvas');
+		var context = canvas.getContext('2d');
+		var pixels = base.getContext('2d').getImageData(0, 0, base.width, base.height);
+		var transparent = 0;
+		for (var y = 0; y < base.height; ++y) {
+			for (var x = 0; x < base.width; ++x) {
+				if (!pixels.data[(x + y * base.width) * 4 + 3]) {
+					++transparent;
+				}
+			}
+		}
+		var bytesInCanvas = transparent * 3 + (base.width * base.height - transparent);
+		for (var multiplier = 1; (bytesInCanvas * multiplier * multiplier) < blob.size; ++multiplier);
+		var edges = bytesInCanvas * multiplier * multiplier - blob.size;
+		var padding = Math.ceil(edges / (base.width * multiplier));
+		canvas.setAttribute('width', base.width * multiplier);
+		canvas.setAttribute('height', base.height * multiplier + padding);
+
+		var reader = new FileReader();
+		reader.onload = function(data) {
+			var view = new Uint8Array(data.target.result);
+			var pointer = 0;
+			var pixelPointer = 0;
+			var newPixels = context.createImageData(canvas.width, canvas.height + padding);
+			for (var y = 0; y < canvas.height; ++y) {
+				for (var x = 0; x < canvas.width; ++x) {
+					var oldY = (y / multiplier) | 0;
+					var oldX = (x / multiplier) | 0;
+					if (oldY > base.height || !pixels.data[(oldX + oldY * base.width) * 4 + 3]) {
+						newPixels.data[pixelPointer++] = view[pointer++];
+						newPixels.data[pixelPointer++] = view[pointer++];
+						newPixels.data[pixelPointer++] = view[pointer++];
+						newPixels.data[pixelPointer++] = 0;
+					} else {
+						var byte = view[pointer++];
+						newPixels.data[pixelPointer++] = pixels.data[(oldX + oldY * base.width) * 4 + 0] | (byte & 7);
+						newPixels.data[pixelPointer++] = pixels.data[(oldX + oldY * base.width) * 4 + 1] | ((byte >> 3) & 7);
+						newPixels.data[pixelPointer++] = pixels.data[(oldX + oldY * base.width) * 4 + 2] | ((byte >> 6) & 7);
+						newPixels.data[pixelPointer++] = pixels.data[(oldX + oldY * base.width) * 4 + 3];
+					}
+				}
+			}
+			context.putImageData(newPixels, 0, 0);
+			window.open(canvas.toDataURL('image/png'), 'screenshot');
+		}
+		reader.readAsArrayBuffer(blob);
+		return canvas;
+	},
+
+	deserializePNG: function(blob, callback) {
+		var reader = new FileReader();
+		reader.onload = function(data) {
+			var image = document.createElement('img');
+			image.setAttribute('src', data.target.result);
+			var canvas = document.createElement('canvas');
+			canvas.setAttribute('height', image.height);
+			canvas.setAttribute('width', image.width);
+			var context = canvas.getContext('2d');
+			context.drawImage(image, 0, 0);
+			var pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+			var data = [];
+			for (var y = 0; y < canvas.height; ++y) {
+				for (var x = 0; x < canvas.width; ++x) {
+					if (!pixels.data[(x + y * canvas.width) * 4 + 3]) {
+						data.push(pixels.data[(x + y * canvas.width) * 4 + 0]);
+						data.push(pixels.data[(x + y * canvas.width) * 4 + 1]);
+						data.push(pixels.data[(x + y * canvas.width) * 4 + 2]);
+					} else {
+						var byte = 0;
+						byte |= pixels.data[(x + y * canvas.width) * 4 + 0] & 7;
+						byte |= (pixels.data[(x + y * canvas.width) * 4 + 1] & 7) << 3;
+						byte |= (pixels.data[(x + y * canvas.width) * 4 + 2] & 7) << 6;
+						data.push(byte);
+					}
+				}
+			}
+			newBlob = new Blob(data.map(function (byte) {
+				var array = new Uint8Array(1);
+				array[0] = byte;
+				return array;
+			}), { type: Serializer.TYPE});
+			Serializer.deserialize(newBlob, callback);
+		}
+		reader.readAsDataURL(blob);
 	}
 };
 

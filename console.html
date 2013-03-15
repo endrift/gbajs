@@ -45,11 +45,12 @@ function screenshot() {
 function savestate() {
 	gbaCon.pause();
 	var state = core.freeze();
+	Serializer.serializePNG(Serializer.serialize(state), document.getElementById('screen'));
 	var url = window.URL.createObjectURL(new Blob([state]));
 };
 
 function loadSavestate(state) {
-	core.defrost(state);
+	Serializer.deserializePNG(state, function (result) { core.defrost(result); });
 	gbaCon.log('Loaded state');
 }
 
@@ -106,7 +107,8 @@ window.onload = function() {
 			<button onclick="core.storeSavedata()">Store savedata</button>
 			<button onclick="screenshot()">Take screenshot</button>
 			<button onclick="savestate()">Freeze</button>
-			<button onclick="">Defrost</button>
+			<input type="file" id="uploadSavestate" onchange="loadSavestate(this.files[0])" style="display: none">
+			<button onclick="document.getElementById('uploadSavestate').click()">Defrost</button>
 		</section>
 		<section id="registers">
 			<div>
