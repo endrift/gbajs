@@ -1,86 +1,26 @@
 <html>
 <head>
-<script src="js/util.js"></script>
-<script src="js/core.js"></script>
-<script src="js/arm.js"></script>
-<script src="js/thumb.js"></script>
-<script src="js/mmu.js"></script>
-<script src="js/io.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/video.js"></script>
-<script src="js/video/proxy.js"></script>
-<script src="js/video/software.js"></script>
-<script src="js/irq.js"></script>
-<script src="js/keypad.js"></script>
-<script src="js/savedata.js"></script>
-<script src="js/gpio.js"></script>
-<script src="js/gba.js"></script>
-
-<script src="resources/xhr.js"></script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>GBA.js Debugger</title>
 <script src="resources/console.js"></script>
 <link href="resources/console.css" rel="stylesheet">
 <script>
-function runTest(r) {
-	core.setRom(r);
-	core.DEBUG("ROM loaded: " + core.rom.title + " [" + core.rom.code + "] (" + r.byteLength + " bytes)");
-	gbaCon.memory.refreshAll();
+function debugLogger(level, message) {
+	console.log(message);
 }
-
-function loadRomFromFile(romFile) {
-	var reader = new FileReader();
-	reader.onload = function(e) { runTest(e.target.result); }
-	reader.readAsArrayBuffer(romFile);
-};
-
-function setLogLevel(level, enabled) {
-	core.logLevel &= ~level;
-	core.logLevel |= enabled && level;
-}
-
-function screenshot() {
-	var canvas = document.getElementById('screen');
-	window.open(canvas.toDataURL('image/png'), 'screenshot');
-};
-
-function savestate() {
-	gbaCon.pause();
-	var state = core.freeze();
-	Serializer.serializePNG(Serializer.serialize(state), document.getElementById('screen'), function(url) {
-		var img = document.getElementById('saveState');
-		img.setAttribute('src', url);
-	});
-};
-
-function loadSavestate(state) {
-	Serializer.deserializePNG(state, function (result) {
-		core.defrost(result);
-		core.DEBUG('Loaded state');
-	});
-}
-
-var core = new GameBoyAdvance();
-setLogLevel(core.LOG_DEBUG, true);
-var rom = null;
 
 var gbaCon;
-core.cpu.resetCPU(0x08000000);
-window.onload = function() {
-	var canvas = document.getElementById('screen');
-	core.setCanvas(canvas);
-
-	gbaCon = new Console(core);
-	core.DEBUG("Logging begun!");
-	core.DEBUG("Loading BIOS...");
-	loadRom('resources/bios.bin', function(bios) {
-		core.setBios(bios);
-		core.DEBUG("BIOS loaded!");
-		gbaCon.memory.refreshAll();
-	});
-};
+function initialize(gba) {
+	window.gba = gba;
+	gba.logLevel = gba.LOG_ERROR | gba.LOG_WARN | gba.LOG_DEBUG;
+	gba.setLogger(debugLogger);
+	gba.DEBUG('Debugger initialized');
+	gbaCon = new Console(gba);
+}
 </script>
+
 </head>
-<body>
-<section id="top">
+<body><section id="top">
 	<section id="consoleContainer">
 		<div id="consoleControls">
 			<label><input type="checkbox" checked onclick="setLogLevel(core.LOG_ERROR, this.checked)">ERROR</label>
@@ -93,9 +33,6 @@ window.onload = function() {
 		<img id="saveState">
 	</section>
 	<section id="main">
-		<section id="display">
-			<canvas id="screen" width="240" height="160"></canvas>
-		</section>
 		<section id="controls">
 			<button onclick="gbaCon.step()">Step</button>
 			<button onclick="gbaCon.runVisible()">Run slowly</button>

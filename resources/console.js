@@ -24,7 +24,7 @@ function Console(gba) {
 	this.memory.refreshAll();
 	this.logQueue = [];
 	var self = this;
-	gba.setLogger(function (message) { self.log(message) });
+	gba.setLogger(function (level, message) { self.log(level, message) });
 	this.gba.doStep = function () { return self.testBreakpoints() };
 }
 
@@ -80,9 +80,26 @@ Console.prototype.updateCPSR = function() {
 	}
 }
 
-Console.prototype.log = function(message) {
+Console.prototype.log = function(level, message) {
+	switch (level) {
+	case this.gba.LOG_ERROR:
+		message = '[ERROR] ' + message;
+		break;
+	case this.gba.LOG_WARN:
+		message = '[WARN] ' + message;
+		break;
+	case this.gba.LOG_STUB:
+		message = '[STUB] ' + message;
+		break;
+	case this.gba.LOG_INFO:
+		message = '[INFO] ' + message;
+		break;
+	case this.gba.LOG_DEBUG:
+		message = '[DEBUG] ' + message;
+		break;
+	}
 	this.logQueue.push(message);
-	if (message.substring(0, '[ERROR]'.length) === '[ERROR]') {
+	if (level == this.gba.LOG_ERROR) {
 		this.pause();
 	}
 	if (!this.stillRunning) {
@@ -121,7 +138,7 @@ Console.prototype.step = function() {
 		this.updateCPSR();
 		this.memory.refreshAll();
 	} catch (exception) {
-		this.log(exception);
+		this.log(this.gba.LOG_DEBUG, exception);
 		throw exception;
 	}
 }
@@ -144,7 +161,7 @@ Console.prototype.runVisible = function() {
 				self.flushLog();
 				setTimeout(run, 0);
 			} catch (exception) {
-				self.log(exception);
+				self.log(this.gba.LOG_DEBUG, exception);
 				self.pause();
 				throw exception;
 			}
@@ -202,7 +219,7 @@ Console.prototype.pause = function() {
 
 Console.prototype.breakpointHit = function() {
 	this.pause();
-	this.log('Hit breakpoint at ' + hex(this.cpu.gprs[this.cpu.PC]));
+	this.log(this.gba.LOG_DEBUG, 'Hit breakpoint at ' + hex(this.cpu.gprs[this.cpu.PC]));
 }
 
 Console.prototype.addBreakpoint = function(addr) {

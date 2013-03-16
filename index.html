@@ -23,11 +23,12 @@
 <script>
 var gba;
 var runCommands = [];
+var debug = null;
 
 try {
 	gba = new GameBoyAdvance();
 	gba.keypad.eatInput = true;
-	gba.setLogger(function(error) {
+	gba.setLogger(function(level, error) {
 		console.log(error);
 		gba.pause();
 		var screen = document.getElementById('screen');
@@ -228,6 +229,14 @@ function setPixelated(pixelated) {
 	}
 }
 
+function enableDebug() {
+	debug = window.open('debugger.html', 'debug');
+	debug.master = window;
+	debug.addEventListener('load', function() {
+		debug.initialize(gba);
+	}, false);
+}
+
 document.addEventListener('webkitfullscreenchange', function() {
 	var canvas = document.getElementById('screen');
 	if (document.webkitIsFullScreen) {
@@ -265,6 +274,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 			<p>Sound</p>
 			<input type="range" min="0" max="1" value="1" step="any" onchange="setVolume(this.value)">
 		</div>
+		<p id="openDebug" onclick="enableDebug()">Debugger</p>
 	</div>
 </section>
 <ul id="links">

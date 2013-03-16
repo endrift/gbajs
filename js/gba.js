@@ -3,6 +3,7 @@ function GameBoyAdvance() {
 	this.LOG_WARN = 2;
 	this.LOG_STUB = 4;
 	this.LOG_INFO = 8;
+	this.LOG_DEBUG = 16;
 
 	this.SYS_ID = 'com.endrift.gbajs';
 
@@ -361,7 +362,7 @@ GameBoyAdvance.prototype.defrost = function(frost) {
 	this.io.defrost(frost.io);
 };
 
-GameBoyAdvance.prototype.log = function(message) {};
+GameBoyAdvance.prototype.log = function(level, message) {};
 
 GameBoyAdvance.prototype.setLogger = function(logger) {
 	this.log = logger;
@@ -371,34 +372,40 @@ GameBoyAdvance.prototype.logStackTrace = function(stack) {
 	var overflow = stack.length - 32;
 	this.ERROR('Stack trace follows:');
 	if (overflow > 0) {
-		this.log('> (Too many frames)');
+		this.log(-1, '> (Too many frames)');
 	}
 	for (var i = Math.max(overflow, 0); i < stack.length; ++i) {
-		this.log('> ' + stack[i]);
+		this.log(-1, '> ' + stack[i]);
 	}
 };
 
 GameBoyAdvance.prototype.ERROR = function(error) {
 	if (this.logLevel & this.LOG_ERROR) {
-		this.log('[ERROR] ' + error);
+		this.log(this.LOG_ERROR, error);
 	}
 };
 
 GameBoyAdvance.prototype.WARN = function(warn) {
 	if (this.logLevel & this.LOG_WARN) {
-		this.log('[WARNING] ' + warn);
+		this.log(this.LOG_WARN, warn);
 	}
 };
 
 GameBoyAdvance.prototype.STUB = function(func) {
 	if (this.logLevel & this.LOG_STUB) {
-		this.log('[STUB] ' + func);
+		this.log(this.LOG_STUB, func);
 	}
 };
 
 GameBoyAdvance.prototype.INFO = function(info) {
 	if (this.logLevel & this.LOG_INFO) {
-		this.log('[INFO] ' + info);
+		this.log(this.LOG_INFO, info);
+	}
+};
+
+GameBoyAdvance.prototype.DEBUG = function(info) {
+	if (this.logLevel & this.LOG_DEBUG) {
+		this.log(this.LOG_DEBUG, info);
 	}
 };
 

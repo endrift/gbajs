@@ -85,11 +85,24 @@ button {
 	margin: 0 0 20px;
 }
 
-label, #sound {
+label, #sound, #controls > div > p {
 	display: block;
+	margin: 5px 30px;
+	height: 18px;
+}
+
+label, #sound {
 	float: left;
 	clear: left;
-	margin: 5px 30px;
+}
+
+#sound + p {
+	margin-top: -23px !important;
+}
+
+#controls > div > p {
+	float: right;
+	clear: right;
 }
 
 input[type=checkbox] {
@@ -144,6 +157,8 @@ input[type=file] {
 
 input[type=range] {
 	width: 100px;
+	height: 14px;
+	margin: 2px;
 }
 
 footer {
