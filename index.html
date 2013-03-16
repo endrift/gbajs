@@ -257,12 +257,12 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<button onclick="gba.downloadSavedata()">Download Savegame</button>
 		<button onclick="screenshot()">Screenshot</button>
 		<label id="pixelated">
-			<p>Pixelated</p>
 			<input type="checkbox" onchange="setPixelated(this.checked)">
+			<p>Pixelated</p>
 		</label>
 		<div id="sound">
-			<p>Sound</p>
 			<input type="checkbox" checked onchange="gba.audio.masterEnable = this.checked">
+			<p>Sound</p>
 			<input type="range" min="0" max="1" value="1" step="any" onchange="setVolume(this.value)">
 		</div>
 	</div>

@@ -56,11 +56,11 @@ button {
 }
 
 #controls > div {
-	margin-top: 50px;
-	-moz-transform-origin: 50% -20px;
+	margin-top: 30px;
+	-moz-transform-origin: 50% 0;
 	-moz-transform: rotateX(0deg);
 	-moz-transition: -moz-transform linear 0.5s;
-	-webkit-transform-origin-y: -20px;
+	-webkit-transform-origin-y: 2px;
 	-webkit-transform: rotateX(0deg);
 	-webkit-transition: -webkit-transform linear 0.5s;
 }
@@ -70,22 +70,30 @@ button {
 	margin-bottom: 199px;
 }
 
-button, #sound, label {
+button {
 	background-color: #6A4883;
 	font-weight: bold;
-	font-size: 20px;
+	font-size: 18px;
 	color: white;
 	text-shadow: 0 3px #433061;
-	padding: 2px 15px 5px;
-	border-radius: 25px / 20px;
+	padding: 2px 10px 5px;
+	border-radius: 0 0 10px 10px;
 	border: 0 solid rgba(0, 0, 0, 0.4);
 	border-width: 3px 1px 0px;
-	display: inline-block;
+	display: inline;
 	box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.2) inset;
+	margin: 0 0 20px;
+}
+
+label, #sound {
+	display: block;
+	float: left;
+	clear: left;
+	margin: 5px 30px;
 }
 
 input[type=checkbox] {
-	margin: -3px 0 0;
+	margin: -3px 5px 0 0;
 }
 
 input[type=checkbox]::after {
@@ -132,6 +140,10 @@ input[type=file] {
 	margin: 0;
 	padding: 0;
 	border: none;
+}
+
+input[type=range] {
+	width: 100px;
 }
 
 footer {
