@@ -51,10 +51,6 @@ window.onload = function() {
 		gba.setCanvas(canvas);
 
 		gba.logLevel = gba.LOG_ERROR;
-		gba.reportFPS = function(fps) {
-			var counter = document.getElementById('fps');
-			counter.textContent = Math.floor(fps);
-		};
 
 		loadRom('resources/bios.bin', function(bios) {
 			gba.setBios(bios);
@@ -74,16 +70,6 @@ window.onload = function() {
 	} else {
 		var dead = document.getElementById('controls');
 		dead.parentElement.removeChild(dead);
-		dead = document.getElementById('instructions');
-		dead.textContent = [
-			'Your browser does not appear to be supported. Is it out of date? ',
-			'Safari 5.1 does not contain the functionality needed for loading the ',
-			'game from your hard drive, and as such is unsupported. ',
-			'Likewise, Firefox 14 and below do not contain the functionality used ',
-			'for memory. Firefox 15 is now out, which supports this functionality.',
-			'However, using Safari or Chrome is highly recommended, and are required ',
-			'for sound support.'
-		].join(' ');
 	}
 }
 
@@ -258,35 +244,6 @@ document.addEventListener('webkitfullscreenchange', function() {
 </head>
 <body>
 <canvas id="screen" width="480" height="320"></canvas>
-<section id="gameinfo">
-	<p>The Game Boy Advance's buttons are mapped as follows:</p>
-	<table id="mapping">
-		<tr>
-			<td>A</td>
-			<td>Z</td>
-		</tr>
-		<tr>
-			<td>B</td>
-			<td>X</td>
-		</tr>
-		<tr>
-			<td>L</td>
-			<td>A</td>
-		</tr>
-		<tr>
-			<td>R</td>
-			<td>S</td>
-		</tr>
-		<tr>
-			<td>Start</td>
-			<td>Enter</td>
-		</tr>
-		<tr>
-			<td>Select</td>
-			<td>\</td>
-		</tr>
-	</table>
-</section>
 <section id="controls">
 	<div id="preload">
 		<button class="bigbutton" id="select" onclick="document.getElementById('loader').click()">SELECT</button>
@@ -307,92 +264,10 @@ document.addEventListener('webkitfullscreenchange', function() {
 		</div>
 	</div>
 </section>
-<section id="instructions">
-	<p>
-		For legal reasons, GBA.js is presented without any included games. Please click Select
-		below to choose a Game Boy Advance game image from your hard drive that you'd like to play.
-		The games must be uncompressed, so unzip them as needed.
-	</p>
-	<p>
-		Please note that this is a beta and there might be compatibility problems. More
-		information and a link to a compatibility table can be found on the sidebar. If you're
-		feeling daring, please submit problem reports to the GitHub page.
-	</p>
-</section>
-<aside id="moreinfo">
-	<div id="rollover">More Info</div>
-	<header>
-		<h1>GBA.js</h1>
-		<h2>Game Boy Advance in the Browser</h2>
-		<ul id="links">
-			<li><a href="http://github.com/jpfau/gbajs/">Fork me on GitHub!</a></li>
-			<li><a href="https://github.com/jpfau/gbajs/wiki/Compatibility-List">Compatibility list</a></li>
-		</ul>
-		<div id="stats">
-			<footer>Version 1.0 Beta 2</footer>
-			<p><span id="fps">0</span> frames per second</p>
-		</div>
-	</header>
-	<dl>
-		<dt>How long did it take you to do this?</dt>
-		<dd>
-			I started in early July. As of the first prototype, it took me five weeks. It's been
-			several more weeks since then, and I've put in several hours per day since starting on
-			this project, so that's a substantial number of hours.
-		</dd>
-		<dt>Why isn't it working?</dt>
-		<dd>
-			You need a very modern browser for this to work. It requires either a recent version of
-			Chrome (up-to-date preferably), Safari 6.0, Firefox 15+ or Opera 12. It might work in
-			IE 10, but definitely not before then. It's also particularly slow in Firefox and
-			Opera, so using Safari or Chrome is highly recommended.
-		</dd>
-		<dt>Why is there no sound?</dt>
-		<dd>
-			Firefox does not contain the functionality required to support sound without using a
-			plugin like Flash. It does not contain using Flash for sound, so you must use a browser
-			other than Firefox if you want sound.
-		</dd>
-		<dt>Why is it so slow?</dt>
-		<dd>
-			The Game Boy Advance runs at a clock speed of roughly 16.78MHz. That means it's doing
-			roughly seventeen million things per second. Although not all of those things are
-			calculations (a lot of them are waiting on memory to become available), that's still a
-			lot of things. While modern computers are more than a hundred times faster than that
-			(and are much better at doing more things at a time), JavaScript has a lot of overhead.
-			As such, squeezing that much performance out of the browser is nearly impossible.
-			Fortunately, browsers and hardware are getting faster all the time, so very soon it
-			will be fast enough to play games at full speed. Meanwhile, I'll do all I can to make
-			it faster without upgrading your hardware or software. Also, it just runs slowly in
-			Firefox in general. I haven't put the time into figuring out why, but it's entirely
-			possible that Firefox just doesn't have the optimizations in place required to make
-			GBA.js run quickly.
-		</dd>
-		<dt>Why the Game Boy Advance?</dt>
-		<dd>
-			I grew up with the Game Boy Advance. It has scores of wonderful games, and it's not too
-			complicated hardware. However, it's complicated enough to push the boundaries of what
-			JavaScript and the web browser can do, so I figured I'd give it a shot. I've seen other
-			emulators on the internet before, and was inpsired to write this one by Grant Galitz's
-			<a href="http://gamecenter.grantgalitz.org/">amazing Game Boy Color emulator</a>. But
-			instead of rehashing what had already been done, I wanted to try and write something
-			new. The Game Boy Advance was the perfect choice.
-		</dd>
-		<dt>How good is compatibility?</dt>
-		<dd>
-			Fairly decent! Most games run and are playable, although some will still crash at times
-			or lock up at specific points. Moreover, other minor bugs in graphics or sound are
-			still present, and I'm working on fixing those bugs. A compatibility list can be found
-			<a href="https://github.com/jpfau/gbajs/wiki/Compatibility-List">here</a>. Please report any bugs you
-			find on the <a href="http://github.com/jpfau/gbajs/issues">GitHub issue tracker</a>.
-			If you're feeling daring, you can also run the
-			<a href="console.html">debug version</a>, and post any useful information it spits out
-			in a problem ticket.
-		</dd>
-		<dt>So this is cool and all, but what's the point?</dt>
-		<dd>There isn't really a point. I just wanted to make something cool.</dd>
-	</dl>
-	<footer>© 2012 – 2013 <a href="http://endrift.com/">Jeffrey Pfau</a></footer>
-</aside>
+<ul id="links">
+	<li><a href="http://github.com/jpfau/gbajs/">Fork me on GitHub!</a></li>
+	<li><a href="https://github.com/jpfau/gbajs/wiki/Compatibility-List">Compatibility list</a></li>
+</ul>
+<footer>© 2012 – 2013 <a href="http://endrift.com/">Jeffrey Pfau</a></footer>
 </body>
 </html>
