@@ -121,7 +121,7 @@ Serializer = {
 		return object;
 	},
 
-	serializePNG: function(blob, base) {
+	serializePNG: function(blob, base, callback) {
 		var canvas = document.createElement('canvas');
 		var context = canvas.getContext('2d');
 		var pixels = base.getContext('2d').getImageData(0, 0, base.width, base.height);
@@ -165,7 +165,7 @@ Serializer = {
 				}
 			}
 			context.putImageData(newPixels, 0, 0);
-			window.open(canvas.toDataURL('image/png'), 'screenshot');
+			callback(canvas.toDataURL('image/png'));
 		}
 		reader.readAsArrayBuffer(blob);
 		return canvas;

@@ -224,3 +224,9 @@ ul, ol, #registers, #savestates {
 .disabled {
 	color: #5C616F;
 }
+
+#saveState {
+	width: 240px;
+	margin: auto;
+	display: block;
+}

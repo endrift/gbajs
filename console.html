@@ -45,13 +45,17 @@ function screenshot() {
 function savestate() {
 	gbaCon.pause();
 	var state = core.freeze();
-	Serializer.serializePNG(Serializer.serialize(state), document.getElementById('screen'));
-	var url = window.URL.createObjectURL(new Blob([state]));
+	Serializer.serializePNG(Serializer.serialize(state), document.getElementById('screen'), function(url) {
+		var img = document.getElementById('saveState');
+		img.setAttribute('src', url);
+	});
 };
 
 function loadSavestate(state) {
-	Serializer.deserializePNG(state, function (result) { core.defrost(result); });
-	gbaCon.log('Loaded state');
+	Serializer.deserializePNG(state, function (result) {
+		core.defrost(result);
+		gbaCon.log('Loaded state');
+	});
 }
 
 var core = new GameBoyAdvance();
@@ -84,6 +88,7 @@ window.onload = function() {
 			<label><input type="checkbox" onclick="setLogLevel(core.LOG_INFO, this.checked)">INFO</label>
 		</div>
 		<ul id="console"></ul>
+		<img id="saveState">
 	</section>
 	<section id="main">
 		<section id="display">

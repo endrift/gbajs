@@ -139,10 +139,13 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 };
 
 GameBoyAdvanceAudio.prototype.freeze = function() {
-	return {};
+	return {
+		nextSample: this.nextSample
+	};
 };
 
 GameBoyAdvanceAudio.prototype.defrost = function(frost) {
+	this.nextSample = frost.nextSample;
 };
 
 GameBoyAdvanceAudio.prototype.pause = function(paused) {
