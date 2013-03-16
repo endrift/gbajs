@@ -161,10 +161,18 @@ function uploadSavedataPending(file) {
 function togglePause() {
 	var e = document.getElementById('pause');
 	if (gba.paused) {
-		gba.runStable();
+		if (debug && debug.gbaCon) {
+			debug.gbaCon.run();
+		} else {
+			gba.runStable();
+		}
 		e.textContent = "PAUSE";
 	} else {
-		gba.pause();
+		if (debug && debug.gbaCon) {
+			debug.gbaCon.pause();
+		} else {
+			gba.pause();
+		}
 		e.textContent = "UNPAUSE";
 	}
 }
@@ -230,11 +238,35 @@ function setPixelated(pixelated) {
 }
 
 function enableDebug() {
-	debug = window.open('debugger.html', 'debug');
-	debug.master = window;
-	debug.addEventListener('load', function() {
-		debug.initialize(gba);
-	}, false);
+	window.onmessage = function(message) {
+		if (message.origin != document.domain && (message.origin != 'file://' || document.domain)) {
+			console.log('Failed XSS');
+			return;
+		}
+		switch (message.data) {
+		case 'connect':
+			if (message.source == debug) {
+				debug.postMessage('connect', document.domain || '*');
+			}
+			break;
+		case 'connected':
+			break;
+		case 'disconnect':
+			if (message.source == debug) {
+				debug = null;
+			}
+		}
+	}
+	window.onunload = function() {
+		if (debug && debug.postMessage) {
+			debug.postMessage('disconnect', document.domain || '*');
+		}
+	}
+	if (!debug || !debug.postMessage) {
+		debug = window.open('debugger.html', 'debug');
+	} else {
+		debug.postMessage('connect', document.domain || '*');
+	}
 }
 
 document.addEventListener('webkitfullscreenchange', function() {

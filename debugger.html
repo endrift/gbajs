@@ -5,6 +5,27 @@
 <script src="resources/console.js"></script>
 <link href="resources/console.css" rel="stylesheet">
 <script>
+window.onmessage = function(message) {
+	if (message.origin != document.domain && (message.origin != 'file://' || document.domain)) {
+		console.log('Failed XSS');
+		return;
+	}
+	switch (message.data) {
+	case 'connect':
+		master = message.source;
+		initialize(master.gba);
+		master.postMessage('connected', document.domain || '*');
+		break;
+	case 'disconnect':
+		master = null;
+		gba.DEBUG('Emulator disconnected');
+		gbaCon = null;
+		gba = null;
+		window.close();
+		break;
+	}
+};
+
 function debugLogger(level, message) {
 	console.log(message);
 }
@@ -13,9 +34,21 @@ var gbaCon;
 function initialize(gba) {
 	window.gba = gba;
 	gba.logLevel = gba.LOG_ERROR | gba.LOG_WARN | gba.LOG_DEBUG;
-	gba.setLogger(debugLogger);
-	gba.DEBUG('Debugger initialized');
 	gbaCon = new Console(gba);
+	gba.DEBUG('Debugger initialized');
+}
+
+window.onload = function() {
+	if (window.opener) {
+		window.opener.postMessage('connect', document.domain || '*');
+	}
+}
+
+window.onunload = function() {
+	gba.doStep = gba.waitFrame;
+	if (window.master) {
+		window.master.postMessage('disconnect', document.domain || '*');
+	}
 }
 </script>
 
@@ -40,16 +73,11 @@ function initialize(gba) {
 			<button onclick="gbaCon.run()">Run quickly</button>
 			<button onclick="gbaCon.pause()">Pause</button>
 		</section>
-		<section id="loading">
-			Load ROM:
-			<input type="file" id="uploadRom" onchange="loadRomFromFile(this.files[0])">
-		</section>
 		<section id="saving">
 			<button onclick="document.getElementById('uploadSave').click()">Load savedata</button>
 			<input type="file" id="uploadSave" onchange="core.loadSavedataFromFile(this.files[0])" style="display: none">
 			<button onclick="core.downloadSavedata()">Download savedata</button>
 			<button onclick="core.storeSavedata()">Store savedata</button>
-			<button onclick="screenshot()">Take screenshot</button>
 			<button onclick="savestate()">Freeze</button>
 			<input type="file" id="uploadSavestate" onchange="loadSavestate(this.files[0])" style="display: none">
 			<button onclick="document.getElementById('uploadSavestate').click()">Defrost</button>
