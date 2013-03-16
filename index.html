@@ -256,7 +256,10 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<button class="bigbutton" onclick="reset()">RESET</button>
 		<button onclick="gba.downloadSavedata()">Download Savegame</button>
 		<button onclick="screenshot()">Screenshot</button>
-		<label id="pixelated"><input type="checkbox" onchange="setPixelated(this.checked)"> Pixelated</label>
+		<label id="pixelated">
+			<p>Pixelated</p>
+			<input type="checkbox" onchange="setPixelated(this.checked)">
+		</label>
 		<div id="sound">
 			<p>Sound</p>
 			<input type="checkbox" checked onchange="gba.audio.masterEnable = this.checked">

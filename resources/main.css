@@ -1,5 +1,6 @@
 body {
 	background: url('bg.png') no-repeat top center, -webkit-linear-gradient(#765490 560px, #6A4883 620px, #433061 900px);
+	background: url('bg.png') no-repeat top center, -moz-linear-gradient(#765490 560px, #6A4883 620px, #433061 900px, #433061);
 	text-align: center;
 	margin: 0 0 15px;
 	color: white;
@@ -69,7 +70,7 @@ button {
 	margin-bottom: 199px;
 }
 
-button {
+button, #sound, label {
 	background-color: #6A4883;
 	font-weight: bold;
 	font-size: 20px;
@@ -79,6 +80,32 @@ button {
 	border-radius: 25px / 20px;
 	border: 0 solid rgba(0, 0, 0, 0.4);
 	border-width: 3px 1px 0px;
+	display: inline-block;
+	box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.2) inset;
+}
+
+input[type=checkbox] {
+	margin: -3px 0 0;
+}
+
+input[type=checkbox]::after {
+	display: inline-block;
+	content: "";
+	background-color: #765490;
+	border: 0 solid rgba(0, 0, 0, 0.3);
+	border-width: 1px 1px 2px;
+	width: 12px;
+	height: 12px;
+	border-radius: 3px;
+	position: relative;
+	top: -3px;
+	visibility: visible;
+}
+
+input[type=checkbox]:checked::after {
+	background-color: #6A4883;
+	border-width: 2px 1px 1px;
+	box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.2) inset;
 }
 
 p:first-child {
@@ -113,7 +140,11 @@ footer {
 }
 
 p {
-	margin-top: 0px;
+	margin: 0;
+}
+
+label p, #sound p {
+	display: inline;
 }
 
 ul#links {
