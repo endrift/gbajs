@@ -23,6 +23,9 @@ function Console(gba) {
 	this.breakpoints = [];
 	this.memory.refreshAll();
 	this.logQueue = [];
+
+	this.paletteView = new PaletteViewer(gba.video.renderPath.palette);
+
 	var self = this;
 	gba.setLogger(function (level, message) { self.log(level, message) });
 	this.gba.doStep = function () { return self.testBreakpoints() };
@@ -389,5 +392,27 @@ Memory.prototype.scrollTo = function(offset) {
 			this.refresh(child);
 		}
 		this.ul.parentElement.scrollTop = this.scrollTop;
+	}
+}
+
+function PaletteViewer(palette) {
+	this.palette = palette;
+	this.view = document.getElementById('debugViewer');
+}
+
+PaletteViewer.prototype.redraw = function() {
+	var context = this.view.getContext('2d');
+	context.clearRect(0, 0, this.view.width, this.view.height);
+	for (var p = 0; p < 2; ++p) {
+		for (var y = 0; y < 16; ++y) {
+			for (var x = 0; x < 16; ++x) {
+				var color = this.palette.loadU16((p * 256 + y * 16 + x) * 2);
+				var r = (color & 0x001F) << 3;
+				var g = (color & 0x03E0) >> 2;
+				var b = (color & 0x7C00) >> 7;
+				context.fillStyle = '#' + hex(r, 2, false) + hex(g, 2, false) + hex(b, 2, false);
+				context.fillRect(x * 15 + 1, y * 10 + p * 160 + 1, 13, 8);
+			}
+		}
 	}
 }

@@ -17,11 +17,11 @@ h3 {
 }
 
 canvas {
-	background-color: gray;
+	margin: 40px;
 }
 
 #screen {
-	margin: 40px;
+	background-color: gray;
 }
 
 section {
