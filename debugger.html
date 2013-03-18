@@ -2,6 +2,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>GBA.js Debugger</title>
+<script src="js/util.js"></script>
 <script src="resources/console.js"></script>
 <link href="resources/console.css" rel="stylesheet">
 <script>
@@ -26,9 +27,10 @@ window.onmessage = function(message) {
 	}
 };
 
-function debugLogger(level, message) {
-	console.log(message);
-}
+function setLogLevel(level, enabled) {
+	core.logLevel &= ~level;
+	core.logLevel |= enabled && level;
+};
 
 var gbaCon;
 function initialize(gba) {
@@ -36,6 +38,26 @@ function initialize(gba) {
 	gba.logLevel = gba.LOG_ERROR | gba.LOG_WARN | gba.LOG_DEBUG;
 	gbaCon = new Console(gba);
 	gba.DEBUG('Debugger initialized');
+}
+
+function savestate() {
+	gbaCon.pause();
+	var state = gba.freeze();
+	Serializer.serializePNG(Serializer.serialize(state), master.document.getElementById('screen'), function(url) {
+		var img = document.getElementById('saveState');
+		img.setAttribute('src', url);
+	});
+};
+
+function loadSavestate(state) {
+	try {
+		Serializer.deserializePNG(state, function (result) {
+			gba.defrost(result);
+			gba.DEBUG('Loaded state');
+		});
+	} catch (exception) {
+		gba.ERROR('Failed to load savestate', exception);
+	}
 }
 
 window.onload = function() {
