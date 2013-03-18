@@ -390,6 +390,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		var dest = this.cpu.gprs[1] & 0xFFFFFFFC;
 		var mode = this.cpu.gprs[2];
 		var count = mode & 0x000FFFFF;
+		count = ((count + 7) >> 3) << 3;
 		var fill = mode & 0x01000000;
 		if (fill) {
 			var word = this.cpu.mmu.load32(source);
