@@ -3,13 +3,10 @@ function GameBoyAdvanceAudio() {
 		var self = this;
 		this.context = new webkitAudioContext();
 		this.bufferSize = 0;
-		if (this.context.sampleRate >= 44100) {
-			this.bufferSize = 2048;
-		} else {
-			this.bufferSize = 1024;
-		}
+		this.bufferSize = 2048;
 		this.buffers = [new Float32Array(this.bufferSize << 2), new Float32Array(this.bufferSize << 2)];
-		this.sampleMask = (this.bufferSize << 2) - 1;
+		this.maxSamples = this.bufferSize << 2;
+		this.sampleMask = this.maxSamples - 1;
 		if (this.context.createScriptProcessor) {
 			this.jsAudio = this.context.createScriptProcessor(this.bufferSize);
 		} else {
@@ -127,10 +124,14 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.outputPointer = 0;
 	this.samplePointer = 0;
 
+	this.backup = 0;
+	this.totalSamples = 0;
+
+	this.sampleRate = 32768;
+	this.sampleInterval = this.cpuFrequency / this.sampleRate;
+	this.resampleRatio = 1;
 	if (this.context) {
-		this.sampleInterval = this.cpuFrequency / this.context.sampleRate;
-	} else {
-		this.sampleInterval = this.cpuFrequency;
+		this.resampleRatio = this.sampleRate / this.context.sampleRate;
 	}
 
 	this.writeSquareChannelFC(0, 0);
@@ -693,13 +694,22 @@ GameBoyAdvanceAudio.audioProcess = function(self, audioProcessingEvent) {
 	var right = audioProcessingEvent.outputBuffer.getChannelData(1);
 	if (self.masterEnable) {
 		var i;
-		for (i = 0; i < self.bufferSize; ++i) {
-			left[i] = self.buffers[0][self.outputPointer];
-			right[i] = self.buffers[1][self.outputPointer];
-			if (self.outputPointer != self.samplePointer) {
-				self.outputPointer = (self.outputPointer + 1) & self.sampleMask;
+		var o = self.outputPointer;
+		for (i = 0; i < self.bufferSize; ++i, o += self.resampleRatio) {
+			if (o > self.maxSamples) {
+				o -= self.maxSamples;
 			}
+			if ((o | 0) == self.samplePointer) {
+				break;
+			}
+			left[i] = self.buffers[0][o | 0];
+			right[i] = self.buffers[1][o | 0];
 		}
+		for (; i < self.bufferSize; ++i) {
+			left[i] = 0;
+			right[i] = 0;
+		}
+		self.outputPointer = o;
 	} else {
 		for (i = 0; i < self.bufferSize; ++i) {
 			left[i] = 0;
