@@ -18,13 +18,12 @@ function Console(gba) {
 	this.ul = document.getElementById('console');
 	this.gprs = document.getElementById('gprs');
 	this.memory = new Memory(gba.mmu);
-	this.updateGPRs();
-	this.updateCPSR();
 	this.breakpoints = [];
-	this.memory.refreshAll();
 	this.logQueue = [];
 
+	this.activeView = null;
 	this.paletteView = new PaletteViewer(gba.video.renderPath.palette);
+	this.update();
 
 	var self = this;
 	gba.setLogger(function (level, message) { self.log(level, message) });
@@ -134,12 +133,29 @@ Console.prototype.flushLog = function() {
 
 }
 
+Console.prototype.update = function() {
+	this.updateGPRs();
+	this.updateCPSR();
+	this.memory.refreshAll();
+	if (this.activeView) {
+		this.activeView.redraw();
+	}
+}
+
+Console.prototype.setView = function(view) {
+	if (!view) {
+		var canvas = this.activeView.view;
+		canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+	} else {
+		view.redraw();
+	}
+	this.activeView = view;
+}
+
 Console.prototype.step = function() {
 	try {
 		this.cpu.step();
-		this.updateGPRs();
-		this.updateCPSR();
-		this.memory.refreshAll();
+		this.update();
 	} catch (exception) {
 		this.log(this.gba.LOG_DEBUG, exception);
 		throw exception;
@@ -214,9 +230,7 @@ Console.prototype.pause = function() {
 	var mem = document.getElementById('memory');
 	mem.removeAttribute('class');
 	regs.removeAttribute('class');
-	this.updateGPRs();
-	this.updateCPSR();
-	this.memory.refreshAll();
+	this.update();
 	this.flushLog();
 }
 

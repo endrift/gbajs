@@ -50,7 +50,7 @@ ul, ol, #registers, #savestates {
 	padding: 10px;
 }
 
-#devtools, #registers, #savestates {
+#devtools, #registers, #savestates, #display {
 	-webkit-box-orient: vertical;
 	-moz-box-orient: vertical;
 }
@@ -69,6 +69,10 @@ ul, ol, #registers, #savestates {
 	min-width: 300px;
 	display: block;
 	border-right: 1px solid #DADDE1;
+}
+
+#debugViewSelector {
+	display: block;
 }
 
 #memory {
