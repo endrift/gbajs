@@ -463,7 +463,8 @@ GameBoyAdvanceAudio.prototype.writeWaveData = function(offset, data, width) {
 		offset += 16;
 	}
 	if (width == 2) {
-		this.waveData[offset] = (data >> 8) & 0xFF;
+		this.waveData[offset] = data & 0xFF;
+		data >>= 8;
 		++offset;
 	}
 	this.waveData[offset] = data & 0xFF;
