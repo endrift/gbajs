@@ -847,7 +847,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 					op = this.armCompiler.constructSMLALS(rd, rn, rs, rm, condOp);
 					break;
 				}
-				op.touchesPC = rd == this.PC;
+				op.writesPC = rd == this.PC;
 			} else {
 				// Halfword and signed byte data transfer
 				var load = instruction & 0x00100000;
@@ -856,6 +856,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				var loOffset = rm = instruction & 0x0000000F;
 				var h = instruction & 0x00000020;
 				var s = instruction & 0x00000040;
+				var w = instruction & 0x00200000;
 				var i = instruction & 0x00400000;
 
 				var address;
@@ -865,7 +866,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				} else {
 					address = this.armCompiler.constructAddressingMode23Register(instruction, rm, condOp);
 				}
-				address.writesPC = w && rn == this.PC;
+				address.writesPC = !!w && rn == this.PC;
 
 				if ((instruction & 0x00000090) == 0x00000090) {
 					if (load) {
@@ -999,7 +1000,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				} else {
 					op = this.armCompiler.constructLDM(rs, address, condOp);
 				}
-				op.writesPC = rs & (1 << 15);
+				op.writesPC = !!(rs & (1 << 15));
 			} else {
 				// STM
 				if (user) {
@@ -1271,6 +1272,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			op = this.thumbCompiler.constructLDRSH(rd, rn, rm);
 			break;
 		}
+		op.writesPC = false;
 	} else if ((instruction & 0xE000) == 0x6000) {
 		// Load and store with immediate offset
 		var rd = instruction & 0x0007;
@@ -1301,7 +1303,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 		op.writesPC = false;
 	} else if ((instruction & 0xF600) == 0xB400) {
 		// Push and pop registers
-		var r = instruction & 0x0100;
+		var r = !!(instruction & 0x0100);
 		var rs = instruction & 0x00FF;
 		if (instruction & 0x0800) {
 			// POP
