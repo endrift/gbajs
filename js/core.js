@@ -105,7 +105,6 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 				this.instruction = instruction.next;
 			}
 		} else {
-			this.instruction = null;
 			if (this.conditionPassed) {
 				var pc = gprs[this.PC] &= 0xFFFFFFFE;
 				if (this.execMode == this.MODE_ARM) {
@@ -116,6 +115,16 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 					mmu.waitSeq(pc);
 				}
 				gprs[this.PC] += this.instructionWidth;
+				if (!instruction.fixedJump) {
+					this.instruction = null;
+				} else if  (this.instruction != null) {
+					if (instruction.next == null) {
+						instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
+					}
+					this.instruction = instruction.next;
+				}
+			} else {
+				this.instruction = null;
 			}
 		}
 		++this.cycles;
@@ -445,6 +454,7 @@ ARMCore.prototype.badOp = function(instruction) {
 		throw "Illegal instruction: 0x" + instruction.toString(16);
 	};
 	func.writesPC = true;
+	func.fixedJump = false;
 	return func;
 };
 
@@ -596,6 +606,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 		var rm = instruction & 0xF;
 		op = this.armCompiler.constructBX(rm, condOp);
 		op.writesPC = true;
+		op.fixedJump = false;
 	} else if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
 		var opcode = instruction & 0x01E00000;
 		var s = instruction & 0x00100000;
@@ -1025,6 +1036,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				op = this.armCompiler.constructB(immediate, condOp);
 			}
 			op.writesPC = true;
+			op.fixedJump = true;
 			break;
 		case 0x0C000000:
 			// Coprocessor data transfer
@@ -1148,6 +1160,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// BX
 			op = this.thumbCompiler.constructBX(rd, rm);
 			op.writesPC = true;
+			op.fixedJump = false;
 			break;
 		}
 	} else if ((instruction & 0xF800) == 0x1800) {
@@ -1401,6 +1414,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				var condOp = this.conds[cond];
 				op = this.thumbCompiler.constructB1(immediate, condOp);
 				op.writesPC = true;
+				op.fixedJump = true;
 			}
 			break;
 		case 0x6000:
@@ -1417,6 +1431,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				immediate <<= 1;
 				op = this.thumbCompiler.constructB2(immediate);
 				op.writesPC = true;
+				op.fixedJump = true;
 				break;
 			case 0x0800:
 				// BLX (ARMv5T)
@@ -1440,6 +1455,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// BL(2)
 				op = this.thumbCompiler.constructBL2(immediate);
 				op.writesPC = true;
+				op.fixedJump = true;
 				break;
 			}
 			break;
