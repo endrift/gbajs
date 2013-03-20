@@ -3,16 +3,16 @@ function GameBoyAdvanceAudio() {
 		var self = this;
 		this.context = new webkitAudioContext();
 		this.bufferSize = 0;
-		this.bufferSize = 2048;
-		this.buffers = [new Float32Array(this.bufferSize << 2), new Float32Array(this.bufferSize << 2)];
-		this.maxSamples = this.bufferSize << 2;
+		this.bufferSize = 4096;
+		this.maxSamples = this.bufferSize << 4;
+		this.buffers = [new Float32Array(this.maxSamples), new Float32Array(this.maxSamples)];
 		this.sampleMask = this.maxSamples - 1;
 		if (this.context.createScriptProcessor) {
 			this.jsAudio = this.context.createScriptProcessor(this.bufferSize);
 		} else {
 			this.jsAudio = this.context.createJavaScriptNode(this.bufferSize);
 		}
-		this.jsAudio.onaudioprocess = function(e) { GameBoyAdvanceAudio.audioProcess(self, e) };
+		this.jsAudio.onaudioprocess = function(e) { self.audioProcess(e) };
 	} else {
 		this.context = null;
 	}
@@ -700,29 +700,27 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	this.samplePointer = (samplePointer + 1) & this.sampleMask;
 };
 
-GameBoyAdvanceAudio.audioProcess = function(self, audioProcessingEvent) {
+GameBoyAdvanceAudio.prototype.audioProcess = function(audioProcessingEvent) {
 	var left = audioProcessingEvent.outputBuffer.getChannelData(0);
 	var right = audioProcessingEvent.outputBuffer.getChannelData(1);
-	if (self.masterEnable) {
+	if (this.masterEnable) {
 		var i;
-		var o = self.outputPointer;
-		for (i = 0; i < self.bufferSize; ++i, o += self.resampleRatio) {
-			if (o > self.maxSamples) {
-				o -= self.maxSamples;
+		var o = this.outputPointer;
+		for (i = 0; i < this.bufferSize; ++i, o += this.resampleRatio) {
+			if (o > this.maxSamples) {
+				o -= this.maxSamples;
 			}
-			if ((o | 0) == self.samplePointer) {
+			if ((o | 0) == this.samplePointer) {
+				++this.backup;
 				break;
 			}
-			left[i] = self.buffers[0][o | 0];
-			right[i] = self.buffers[1][o | 0];
+			left[i] = this.buffers[0][o | 0];
+			right[i] = this.buffers[1][o | 0];
 		}
-		for (; i < self.bufferSize; ++i) {
-			left[i] = 0;
-			right[i] = 0;
-		}
-		self.outputPointer = o;
+		this.outputPointer = o;
+		++this.totalSamples;
 	} else {
-		for (i = 0; i < self.bufferSize; ++i) {
+		for (i = 0; i < this.bufferSize; ++i) {
 			left[i] = 0;
 			right[i] = 0;
 		}
