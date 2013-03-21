@@ -909,6 +909,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 	}
 
 	op.execMode = this.MODE_ARM;
+	op.fixedJump = op.fixedJump || false;
 	return op;
 };
 
@@ -1307,7 +1308,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// BL(2)
 				op = this.thumbCompiler.constructBL2(immediate);
 				op.writesPC = true;
-				op.fixedJump = true;
+				op.fixedJump = false;
 				break;
 			}
 			break;
@@ -1319,5 +1320,6 @@ ARMCore.prototype.compileThumb = function(instruction) {
 	}
 
 	op.execMode = this.MODE_THUMB;
+	op.fixedJump = op.fixedJump || false;
 	return op;
 };
