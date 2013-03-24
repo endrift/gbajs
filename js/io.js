@@ -215,11 +215,6 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.SOUNDBIAS:
 	case this.BLDCNT:
 
-	// Docs say these are wrong, but games read them
-	case this.MOSAIC:
-	case this.BLDALPHA:
-	case this.BLDY:
-
 	case this.TM0CNT_HI:
 	case this.TM1CNT_HI:
 	case this.TM2CNT_HI:
@@ -310,6 +305,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.WIN1H:
 	case this.WIN0V:
 	case this.WIN1V:
+	case this.BLDY:
 	case this.DMA0SAD_LO:
 	case this.DMA0SAD_HI:
 	case this.DMA0DAD_LO:
@@ -330,6 +326,15 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DMA3DAD_LO:
 	case this.DMA3DAD_HI:
 	case this.DMA3CNT_LO:
+	case this.FIFO_A_LO:
+	case this.FIFO_A_HI:
+	case this.FIFO_B_LO:
+	case this.FIFO_B_HI:
+		this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
+		return this.core.mmu.badMemory.loadU16(0);
+
+	case this.MOSAIC:
+	case this.BLDALPHA:
 		this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
 		return 0;
 
@@ -347,7 +352,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 
 	default:
 		this.core.WARN('Bad I/O register read: 0x' + offset.toString(16));
-		return 0;
+		return this.core.mmu.badMemory.loadU16(0);
 	}
 	return this.registers[offset >> 1];
 };

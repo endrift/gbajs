@@ -278,27 +278,27 @@ GameBoyAdvanceMMU.prototype.mmap = function(region, object) {
 }
 
 GameBoyAdvanceMMU.prototype.clear = function() {
-	var badMemory = new BadMemory(this, this.cpu);
+	this.badMemory = new BadMemory(this, this.cpu);
 	this.memory = [
 		this.bios,
-		badMemory, // Unused
+		this.badMemory, // Unused
 		new MemoryBlock(this.SIZE_WORKING_RAM, 9),
 		new MemoryBlock(this.SIZE_WORKING_IRAM, 7),
 		null, // This is owned by GameBoyAdvanceIO
 		null, // This is owned by GameBoyAdvancePalette
 		null, // This is owned by GameBoyAdvanceVRAM
 		null, // This is owned by GameBoyAdvanceOAM
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory // Unused
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory // Unused
 	];
 	for (var i = 16; i < 256; ++i) {
-		this.memory[i] = badMemory;
+		this.memory[i] = this.badMemory;
 	}
 
 	this.waitstates = this.WAITSTATES.slice(0);
