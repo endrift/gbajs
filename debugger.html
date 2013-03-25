@@ -92,8 +92,9 @@ window.onunload = function() {
 			<select id="debugViewSelector" onchange="gbaCon.setView(gbaCon[this.options[this.selectedIndex].value])">
 				<option>None</option>
 				<option value="paletteView">Palette</option>
+				<option value="tileView">Tile</option>
 			</select>
-			<canvas id="debugViewer" width="240" height="320"></canvas>
+			<div id="debugViewer"></div>
 		</section>
 		<section id="controls">
 			<button onclick="gbaCon.step()">Step</button>

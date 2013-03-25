@@ -23,6 +23,7 @@ function Console(gba) {
 
 	this.activeView = null;
 	this.paletteView = new PaletteViewer(gba.video.renderPath.palette);
+	this.tileView = new TileViewer(gba.video.renderPath.vram, gba.video.renderPath.palette);
 	this.update();
 
 	var self = this;
@@ -143,10 +144,12 @@ Console.prototype.update = function() {
 }
 
 Console.prototype.setView = function(view) {
-	if (!view) {
-		var canvas = this.activeView.view;
-		canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-	} else {
+	var container = document.getElementById('debugViewer');
+	while (container.hasChildNodes()) {
+		container.removeChild(container.lastChild);
+	}
+	if (view) {
+		view.insertChildren(container);
 		view.redraw();
 	}
 	this.activeView = view;
@@ -411,7 +414,14 @@ Memory.prototype.scrollTo = function(offset) {
 
 function PaletteViewer(palette) {
 	this.palette = palette;
-	this.view = document.getElementById('debugViewer');
+	this.view = document.createElement('canvas');
+	this.view.setAttribute('class', 'paletteView');
+	this.view.setAttribute('width', '240');
+	this.view.setAttribute('height', '500');
+}
+
+PaletteViewer.prototype.insertChildren = function(container) {
+	container.appendChild(this.view);
 }
 
 PaletteViewer.prototype.redraw = function() {
@@ -425,8 +435,58 @@ PaletteViewer.prototype.redraw = function() {
 				var g = (color & 0x03E0) >> 2;
 				var b = (color & 0x7C00) >> 7;
 				context.fillStyle = '#' + hex(r, 2, false) + hex(g, 2, false) + hex(b, 2, false);
-				context.fillRect(x * 15 + 1, y * 10 + p * 160 + 1, 13, 8);
+				context.fillRect(x * 15 + 1, y * 15 + p * 255 + 1, 13, 13);
 			}
 		}
 	}
 }
+
+function TileViewer(vram, palette) {
+	this.BG_MAP_WIDTH = 256;
+	this.vram = vram;
+	this.palette = palette;
+
+	this.view = document.createElement('canvas');
+	this.view.setAttribute('class', 'tileView');
+	this.view.setAttribute('width', '256');
+	this.view.setAttribute('height', '512');
+
+	this.activePalette = 0;
+}
+
+TileViewer.prototype.insertChildren = function(container) {
+	container.appendChild(this.view);
+};
+
+TileViewer.prototype.redraw = function() {
+	var context = this.view.getContext('2d');
+	var data = context.createImageData(this.BG_MAP_WIDTH, 512);
+	var t = 0;
+	for (var y = 0; y < 512; y += 8) {
+		for (var x = 0; x < this.BG_MAP_WIDTH; x += 8) {
+			this.drawTile(data.data, t, this.activePalette, x + y * this.BG_MAP_WIDTH, this.BG_MAP_WIDTH);
+			++t;
+		}
+	}
+	context.putImageData(data, 0, 0);
+};
+
+TileViewer.prototype.drawTile = function(data, tile, palette, offset, stride) {
+	for (var j = 0; j < 8; ++j) {
+		var memOffset = tile << 5;
+		memOffset |= j << 2;
+
+		var row = this.vram.load32(memOffset);
+		for (var i = 0; i < 8; ++i) {
+			var index = (row >> (i << 2)) & 0xF;
+			var color = this.palette.loadU16((index << 1) + (palette << 5));
+			var r = (color & 0x001F) << 3;
+			var g = (color & 0x03E0) >> 2;
+			var b = (color & 0x7C00) >> 7;
+			data[(offset + i + stride * j) * 4 + 0] = r;
+			data[(offset + i + stride * j) * 4 + 1] = g;
+			data[(offset + i + stride * j) * 4 + 2] = b;
+			data[(offset + i + stride * j) * 4 + 3] = 255;
+		}
+	}
+};

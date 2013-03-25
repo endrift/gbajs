@@ -16,12 +16,9 @@ h3 {
 	background-color: #2A2F32;
 }
 
-canvas {
-	margin: 40px;
-}
-
 #screen {
 	background-color: gray;
+	margin: 40px;
 }
 
 section {
@@ -69,6 +66,13 @@ ul, ol, #registers, #savestates {
 	min-width: 300px;
 	display: block;
 	border-right: 1px solid #DADDE1;
+}
+
+#debugViewer {
+	text-align: center;
+	margin: 10px;
+	overflow: auto;
+	max-height: 50%;
 }
 
 #debugViewSelector {
