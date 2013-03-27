@@ -1518,24 +1518,30 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 			lastStart = 0;
 			lastEnd = this.HORIZONTAL_PIXELS;
 			if (this.win0 && y >= this.win0Top && y < this.win0Bottom) {
-				firstEnd = Math.min(firstEnd, this.win0Left);
-				lastEnd = Math.min(lastEnd, this.win0Right);
-				lastStart = Math.max(lastStart, this.win0Right);
-				firstStart = Math.max(firstStart, this.win0Left);
 				if (this.windows[0].enabled[layer.index]) {
 					this.setBlendEnabled(layer.index, this.windows[0].special && this.target1[layer.index], this.blendMode);
 					layer.drawScanline(backing, layer, this.win0Left, this.win0Right);
 				}
+				firstStart = Math.max(firstStart, this.win0Left);
+				firstEnd = Math.min(firstEnd, this.win0Left);
+				lastStart = Math.max(lastStart, this.win0Right);
+				lastEnd = Math.min(lastEnd, this.win0Right);
 			}
 			if (this.win1 && y >= this.win1Top && y < this.win1Bottom) {
-				firstEnd = Math.min(firstEnd, this.win1Left);
-				lastEnd = Math.min(lastEnd, this.win1Right);
-				lastStart = Math.max(lastStart, this.win1Right);
-				firstStart = Math.max(firstStart, this.win1Left);
 				if (this.windows[1].enabled[layer.index]) {
 					this.setBlendEnabled(layer.index, this.windows[1].special && this.target1[layer.index], this.blendMode);
-					layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
+					if (!this.windows[0].enabled[layer.index] && (this.win1Left < firstStart || this.win1Right < lastStart)) {
+						// We've been cut in two by window 0!
+						layer.drawScanline(backing, layer, this.win1Left, firstStart);
+						layer.drawScanline(backing, layer, lastEnd, this.win1Right);
+					} else {
+						layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
+					}
 				}
+				firstStart = Math.max(firstStart, this.win1Left);
+				firstEnd = Math.min(firstEnd, this.win1Left);
+				lastStart = Math.max(lastStart, this.win1Right);
+				lastEnd = Math.min(lastEnd, this.win1Right);
 			}
 			// Do last two
 			if (this.windows[2].enabled[layer.index] || (this.objwin && this.windows[3].enabled[layer.index])) {
