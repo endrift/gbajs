@@ -1273,15 +1273,21 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode0 = function(backing,
 	var yBase = (localY << 3) & 0x7C0;
 	if (size == 2) {
 		yBase += (localY << 3) & 0x800;
-	}
-	if (size == 3) {
+	} else if (size == 3) {
 		yBase += (localY << 4) & 0x1000;
 	}
 
-	video.accessMapMode0(screenBase, size, start + xOff, yBase, map);
+	var xMask;
+	if (size & 1) {
+		xMask = 0x1FF;
+	} else {
+		xMask = 0xFF;
+	}
+
+	video.accessMapMode0(screenBase, size, (start + xOff) & xMask, yBase, map);
 	var tileRow = video.accessTile(charBase, map.tile << paletteShift, (!map.vflip ? localYLo : 7 - localYLo) << paletteShift);
 	for (x = start; x < end; ++x) {
-		localX = x + xOff;
+		localX = (x + xOff) & xMask;
 		mosaicX = this.mosaic ? offset % video.bgMosaicX : 0;
 		localX -= mosaicX;
 		localXLo = localX & 0x7;
