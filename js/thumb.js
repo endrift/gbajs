@@ -161,10 +161,10 @@ ARMCoreThumb.prototype.constructB1 = function(immediate, condOp) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		cpu.mmu.wait(gprs[cpu.PC]);
+		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		if (condOp()) {
 			gprs[cpu.PC] += immediate;
-			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[cpu.PC]);
 			cpu.mmu.waitSeq(gprs[cpu.PC]);
 		}
 	};
@@ -174,9 +174,9 @@ ARMCoreThumb.prototype.constructB2 = function(immediate) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		cpu.mmu.wait(gprs[cpu.PC]);
-		gprs[cpu.PC] += immediate;
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		gprs[cpu.PC] += immediate;
+		cpu.mmu.wait(gprs[cpu.PC]);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 	};
 };
@@ -205,11 +205,11 @@ ARMCoreThumb.prototype.constructBL2 = function(immediate) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		cpu.mmu.wait(gprs[cpu.PC]);
+		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		var pc = gprs[cpu.PC];
 		gprs[cpu.PC] = gprs[cpu.LR] + (immediate << 1);
 		gprs[cpu.LR] = pc - 1;
-		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		cpu.mmu.wait(gprs[cpu.PC]);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 	}
 };
@@ -218,7 +218,7 @@ ARMCoreThumb.prototype.constructBX = function(rd, rm) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		cpu.mmu.wait(gprs[cpu.PC]);
+		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		cpu.switchExecMode(gprs[rm] & 0x00000001);
 		var misalign = 0;
 		if (rm == 15) {
@@ -226,10 +226,10 @@ ARMCoreThumb.prototype.constructBX = function(rd, rm) {
 		}
 		gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE - misalign;
 		if (cpu.execMode == cpu.MODE_THUMB) {
-			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[cpu.PC]);
 			cpu.mmu.waitSeq(gprs[cpu.PC]);
 		} else {
-			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			cpu.mmu.wait32(gprs[cpu.PC]);
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 		}
 	};
@@ -308,7 +308,7 @@ ARMCoreThumb.prototype.constructLDMIA = function(rn, rs) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		cpu.mmu.wait(gprs[cpu.PC]);
+		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		var address = gprs[rn];
 		var total = 0;
 		var m, i;
@@ -330,11 +330,11 @@ ARMCoreThumb.prototype.constructLDR1 = function(rd, rn, immediate) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		var n = gprs[rn] + immediate;
-		++cpu.cycles;
-		cpu.mmu.wait32(n);
 		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		var n = gprs[rn] + immediate;
 		gprs[rd] = cpu.mmu.load32(n);
+		cpu.mmu.wait32(n);
+		++cpu.cycles;
 	};
 };
 
@@ -342,10 +342,10 @@ ARMCoreThumb.prototype.constructLDR2 = function(rd, rn, rm) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		++cpu.cycles;
-		cpu.mmu.wait32(gprs[rn] + gprs[rm]);
 		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 		gprs[rd] = cpu.mmu.load32(gprs[rn] + gprs[rm]);
+		cpu.mmu.wait32(gprs[rn] + gprs[rm]);
+		++cpu.cycles;
 	}
 };
 
@@ -353,10 +353,10 @@ ARMCoreThumb.prototype.constructLDR3 = function(rd, immediate) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		++cpu.cycles;
-		cpu.mmu.wait(gprs[cpu.PC]);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		gprs[rd] = cpu.mmu.load32((gprs[cpu.PC] & 0xFFFFFFFC) + immediate);
+		cpu.mmu.wait(gprs[cpu.PC]);
+		++cpu.cycles;
 	};
 };
 
@@ -364,10 +364,10 @@ ARMCoreThumb.prototype.constructLDR4 = function(rd, immediate) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		++cpu.cycles;
-		cpu.mmu.wait(gprs[cpu.PC]);
 		cpu.mmu.waitSeq32(gprs[cpu.SP] + immediate);
 		gprs[rd] = cpu.mmu.load32(gprs[cpu.SP] + immediate);
+		cpu.mmu.wait(gprs[cpu.PC]);
+		++cpu.cycles;
 	};
 };
 
@@ -376,10 +376,10 @@ ARMCoreThumb.prototype.constructLDRB1 = function(rd, rn, immediate) {
 	var gprs = cpu.gprs;
 	return function() {
 		var n = gprs[rn] + immediate;
-		++cpu.cycles;
-		cpu.mmu.wait(n);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		gprs[rd] = cpu.mmu.loadU8(n);
+		cpu.mmu.wait(n);
+		++cpu.cycles;
 	};
 };
 
@@ -387,10 +387,10 @@ ARMCoreThumb.prototype.constructLDRB2 = function(rd, rn, rm) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		++cpu.cycles;
-		cpu.mmu.wait(gprs[rn] + gprs[rm]);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		gprs[rd] = cpu.mmu.loadU8(gprs[rn] + gprs[rm]);
+		cpu.mmu.wait(gprs[rn] + gprs[rm]);
+		++cpu.cycles;
 	};
 };
 
@@ -399,10 +399,10 @@ ARMCoreThumb.prototype.constructLDRH1 = function(rd, rn, immediate) {
 	var gprs = cpu.gprs;
 	return function() {
 		var n = gprs[rn] + immediate;
-		++cpu.cycles;
-		cpu.mmu.wait(n);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		gprs[rd] = cpu.mmu.loadU16(n);
+		cpu.mmu.wait(n);
+		++cpu.cycles;
 	};
 };
 
@@ -410,10 +410,10 @@ ARMCoreThumb.prototype.constructLDRH2 = function(rd, rn, rm) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		++cpu.cycles;
-		cpu.mmu.wait(gprs[rn] + gprs[rm]);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		gprs[rd] = cpu.mmu.loadU16(gprs[rn] + gprs[rm]);
+		cpu.mmu.wait(gprs[rn] + gprs[rm]);
+		++cpu.cycles;
 	};
 };
 
@@ -421,10 +421,10 @@ ARMCoreThumb.prototype.constructLDRSB = function(rd, rn, rm) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		++cpu.cycles;
-		cpu.mmu.wait(gprs[rn] + gprs[rm]);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		gprs[rd] = cpu.mmu.load8(gprs[rn] + gprs[rm]);
+		cpu.mmu.wait(gprs[rn] + gprs[rm]);
+		++cpu.cycles;
 	};
 };
 
@@ -432,10 +432,10 @@ ARMCoreThumb.prototype.constructLDRSH = function(rd, rn, rm) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		++cpu.cycles;
-		cpu.mmu.wait(gprs[rn] + gprs[rm]);
 		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		gprs[rd] = cpu.mmu.load16(gprs[rn] + gprs[rm]);
+		cpu.mmu.wait(gprs[rn] + gprs[rm]);
+		++cpu.cycles;
 	};
 };
 
@@ -613,7 +613,8 @@ ARMCoreThumb.prototype.constructPOP = function(rs, r) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
-		cpu.mmu.wait(gprs[cpu.PC]);
+		cpu.mmu.waitSeq(gprs[cpu.PC]);
+		++cpu.cycles;
 		var address = gprs[cpu.SP];
 		var total = 0;
 		var m, i;
@@ -631,7 +632,6 @@ ARMCoreThumb.prototype.constructPOP = function(rs, r) {
 			++total;
 		}
 		cpu.mmu.waitMulti32(address, total);
-		++cpu.cycles;
 		gprs[cpu.SP] = address;
 	};
 };
@@ -642,6 +642,7 @@ ARMCoreThumb.prototype.constructPUSH = function(rs, r) {
 	return function() {
 		var address = gprs[cpu.SP] - 4;
 		var total = 0;
+		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		if (r) {
 			cpu.mmu.store32(address, gprs[cpu.LR]);
 			address -= 4;
@@ -664,7 +665,6 @@ ARMCoreThumb.prototype.constructPUSH = function(rs, r) {
 			}
 		}
 		cpu.mmu.waitMulti32(address, total);
-		cpu.mmu.wait(gprs[cpu.PC]);
 		gprs[cpu.SP] = address + 4;
 	};
 };
@@ -854,9 +854,9 @@ ARMCoreThumb.prototype.constructSWI = function(immediate) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.irq.swi(immediate);
-		cpu.mmu.wait(gprs[cpu.PC]);
+		cpu.mmu.waitSeq(gprs[cpu.PC]);
 		// Wait on BIOS
-		cpu.mmu.waitSeq32(0);
+		cpu.mmu.wait32(0);
 		cpu.mmu.waitSeq32(0);
 	}
 };
