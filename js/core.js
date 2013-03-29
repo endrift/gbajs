@@ -127,7 +127,6 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 				this.instruction = null;
 			}
 		}
-		++this.cycles;
 		this.irq.updateTimers();
 	};
 };

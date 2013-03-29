@@ -584,9 +584,10 @@ ARMCoreArm.prototype.constructB = function(immediate, condOp) {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
-		cpu.mmu.waitSeq32(gprs[cpu.PC]);
-		gprs[cpu.PC] += immediate;
 		cpu.mmu.wait32(gprs[cpu.PC]);
+		gprs[cpu.PC] += immediate;
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 	};
 };
 
@@ -631,10 +632,11 @@ ARMCoreArm.prototype.constructBL = function(immediate, condOp) {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
-		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		cpu.mmu.wait32(gprs[cpu.PC]);
 		gprs[cpu.LR] = gprs[cpu.PC] - 4;
 		gprs[cpu.PC] += immediate;
-		cpu.mmu.wait32(gprs[cpu.PC]);
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 	};
 };
 
@@ -646,11 +648,16 @@ ARMCoreArm.prototype.constructBX = function(rm, condOp) {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
+		cpu.mmu.wait(gprs[cpu.PC]);
 		cpu.switchExecMode(gprs[rm] & 0x00000001);
-		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 		gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
-		// TODO: is this cycle accurate if we switch modes?
-		cpu.mmu.wait32(gprs[cpu.PC]);
+		if (cpu.execMode == cpu.MODE_THUMB) {
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.waitSeq(gprs[cpu.PC]);
+		} else {
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		}
 	};
 };
 
@@ -729,7 +736,7 @@ ARMCoreArm.prototype.constructLDM = function(rs, address, condOp) {
 	var gprs = cpu.gprs;
 	var mmu = cpu.mmu;
 	return function() {
-		mmu.waitSeq32(gprs[cpu.PC]);
+		mmu.wait32(gprs[cpu.PC]);
 		if (condOp && !condOp()) {
 			return;
 		}
@@ -753,7 +760,7 @@ ARMCoreArm.prototype.constructLDMS = function(rs, address, condOp) {
 	var gprs = cpu.gprs;
 	var mmu = cpu.mmu;
 	return function() {
-		mmu.waitSeq32(gprs[cpu.PC]);
+		mmu.wait32(gprs[cpu.PC]);
 		if (condOp && !condOp()) {
 			return;
 		}
@@ -779,14 +786,13 @@ ARMCoreArm.prototype.constructLDR = function(rd, address, condOp) {
 	var cpu = this.cpu;
 	var gprs = cpu.gprs;
 	return function() {
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 		if (condOp && !condOp()) {
-			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
 		var addr = address();
-		cpu.mmu.wait32(addr);
-		cpu.mmu.wait32(gprs[cpu.PC]);
 		++cpu.cycles;
+		cpu.mmu.wait32(addr);
 		gprs[rd] = cpu.mmu.load32(addr);
 	};
 };
@@ -800,8 +806,8 @@ ARMCoreArm.prototype.constructLDRB = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		cpu.mmu.wait(addr);
 		++cpu.cycles;
+		cpu.mmu.wait(addr);
 		gprs[rd] = cpu.mmu.loadU8(addr);
 	};
 };
@@ -815,8 +821,8 @@ ARMCoreArm.prototype.constructLDRH = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		cpu.mmu.wait(addr);
 		++cpu.cycles;
+		cpu.mmu.wait(addr);
 		gprs[rd] = cpu.mmu.loadU16(addr);
 	};
 };
@@ -830,8 +836,8 @@ ARMCoreArm.prototype.constructLDRSB = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		cpu.mmu.wait(addr);
 		++cpu.cycles;
+		cpu.mmu.wait(addr);
 		gprs[rd] = cpu.mmu.load8(addr);
 	};
 };
@@ -845,8 +851,8 @@ ARMCoreArm.prototype.constructLDRSH = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		cpu.mmu.wait(addr);
 		++cpu.cycles;
+		cpu.mmu.wait(addr);
 		gprs[rd] = cpu.mmu.load16(addr);
 	};
 };
@@ -859,7 +865,8 @@ ARMCoreArm.prototype.constructMLA = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 5; // TODO: better timing
+		++cpu.cycles;
+		cpu.mmu.waitMul(rs);
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
 			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) & 0xFFFFFFFF;
@@ -879,7 +886,8 @@ ARMCoreArm.prototype.constructMLAS = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 5; // TODO: better timing
+		++cpu.cycles;
+		cpu.mmu.waitMul(rs);
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
 			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) & 0xFFFFFFFF;
@@ -992,7 +1000,7 @@ ARMCoreArm.prototype.constructMUL = function(rd, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 4; // TODO: better timing
+		cpu.mmu.waitMul(rs);
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
 			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) | 0;
@@ -1012,7 +1020,7 @@ ARMCoreArm.prototype.constructMULS = function(rd, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 4; // TODO: better timing
+		cpu.mmu.waitMul(rs);
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
 			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) | 0;
@@ -1213,7 +1221,8 @@ ARMCoreArm.prototype.constructSMLAL = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 6; // TODO: better timing
+		cpu.cycles += 2;
+		cpu.mmu.waitMul(rs);
 		var hi = (gprs[rm] & 0xFFFF0000) * gprs[rs];
 		var lo = (gprs[rm] & 0x0000FFFF) * gprs[rs];
 		var carry = (gprs[rn] >>> 0) + hi + lo;
@@ -1231,7 +1240,8 @@ ARMCoreArm.prototype.constructSMLALS = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 6; // TODO: better timing
+		cpu.cycles += 2;
+		cpu.mmu.waitMul(rs);
 		var hi = (gprs[rm] & 0xFFFF0000) * gprs[rs];
 		var lo = (gprs[rm] & 0x0000FFFF) * gprs[rs];
 		var carry = (gprs[rn] >>> 0) + hi + lo;
@@ -1251,7 +1261,8 @@ ARMCoreArm.prototype.constructSMULL = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 5; // TODO: better timing
+		++cpu.cycles;
+		cpu.mmu.waitMul(rs);
 		var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
 		var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
@@ -1268,7 +1279,8 @@ ARMCoreArm.prototype.constructSMULLS = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 5; // TODO: better timing
+		++cpu.cycles;
+		cpu.mmu.waitMul(rs);
 		var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
 		var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
@@ -1419,9 +1431,9 @@ ARMCoreArm.prototype.constructSWI = function(immediate, condOp) {
 			return;
 		}
 		cpu.irq.swi32(immediate);
-		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		cpu.mmu.wait32(gprs[cpu.PC]);
 		// Wait on BIOS
-		cpu.mmu.wait32(0);
+		cpu.mmu.waitSeq32(0);
 		cpu.mmu.waitSeq32(0);
 	};
 };
@@ -1434,7 +1446,8 @@ ARMCoreArm.prototype.constructSWP = function(rd, rn, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.mmu.waitMulti32(gprs[rn], 2);
+		cpu.mmu.wait32(gprs[rn]);
+		cpu.mmu.wait32(gprs[rn]);
 		var d = cpu.mmu.load32(gprs[rn]);
 		cpu.mmu.store32(gprs[rn], gprs[rm]);
 		gprs[rd] = d;
@@ -1450,7 +1463,8 @@ ARMCoreArm.prototype.constructSWPB = function(rd, rn, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.mmu.waitMulti32(gprs[rn], 2);
+		cpu.mmu.wait32(gprs[rn]);
+		cpu.mmu.wait32(gprs[rn]);
 		var d = cpu.mmu.load8(gprs[rn]);
 		cpu.mmu.store8(gprs[rn], gprs[rm]);
 		gprs[rd] = d;
@@ -1499,7 +1513,8 @@ ARMCoreArm.prototype.constructUMLAL = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 6; // TODO: better timing
+		cpu.cycles += 2;
+		cpu.mmu.waitMul(rs);
 		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
 		var lo = (gprs[rm] & 0x0000FFFF) * (gprs[rs] >>> 0);
 		var carry = (gprs[rn] >>> 0) + hi + lo;
@@ -1517,7 +1532,8 @@ ARMCoreArm.prototype.constructUMLALS = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 6; // TODO: better timing
+		cpu.cycles += 2;
+		cpu.mmu.waitMul(rs);
 		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
 		var lo = (gprs[rm] & 0x0000FFFF) * (gprs[rs] >>> 0);
 		var carry = (gprs[rn] >>> 0) + hi + lo;
@@ -1537,7 +1553,8 @@ ARMCoreArm.prototype.constructUMULL = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 5; // TODO: better timing
+		++cpu.cycles;
+		cpu.mmu.waitMul(rs);
 		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
 		var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
@@ -1554,7 +1571,8 @@ ARMCoreArm.prototype.constructUMULLS = function(rd, rn, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.cycles += 5; // TODO: better timing
+		++cpu.cycles;
+		cpu.mmu.waitMul(rs);
 		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
 		var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
