@@ -757,6 +757,7 @@ GameBoyAdvanceInterruptHandler.prototype.timerWriteControl = function(timer, con
 			currentTimer.nextEvent = 0;
 		}
 		this.io.registers[(this.io.TM0CNT_LO + (timer << 2)) >> 1] = currentTimer.reload;
+		currentTimer.oldReload = currentTimer.reload;
 		++this.timersEnabled;
 	} else if (wasEnabled && !currentTimer.enable) {
 		if (!currentTimer.countUp) {
