@@ -584,9 +584,9 @@ ARMCoreArm.prototype.constructB = function(immediate, condOp) {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
-		cpu.mmu.wait32(gprs[cpu.PC]);
-		gprs[cpu.PC] += immediate;
 		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		gprs[cpu.PC] += immediate;
+		cpu.mmu.wait32(gprs[cpu.PC]);
 		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 	};
 };
@@ -632,10 +632,10 @@ ARMCoreArm.prototype.constructBL = function(immediate, condOp) {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
-		cpu.mmu.wait32(gprs[cpu.PC]);
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 		gprs[cpu.LR] = gprs[cpu.PC] - 4;
 		gprs[cpu.PC] += immediate;
-		cpu.mmu.waitSeq32(gprs[cpu.PC]);
+		cpu.mmu.wait32(gprs[cpu.PC]);
 		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 	};
 };
@@ -648,14 +648,14 @@ ARMCoreArm.prototype.constructBX = function(rm, condOp) {
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
-		cpu.mmu.wait(gprs[cpu.PC]);
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 		cpu.switchExecMode(gprs[rm] & 0x00000001);
 		gprs[cpu.PC] = gprs[rm] & 0xFFFFFFFE;
 		if (cpu.execMode == cpu.MODE_THUMB) {
-			cpu.mmu.waitSeq(gprs[cpu.PC]);
+			cpu.mmu.wait(gprs[cpu.PC]);
 			cpu.mmu.waitSeq(gprs[cpu.PC]);
 		} else {
-			cpu.mmu.waitSeq32(gprs[cpu.PC]);
+			cpu.mmu.wait32(gprs[cpu.PC]);
 			cpu.mmu.waitSeq32(gprs[cpu.PC]);
 		}
 	};
@@ -736,7 +736,7 @@ ARMCoreArm.prototype.constructLDM = function(rs, address, condOp) {
 	var gprs = cpu.gprs;
 	var mmu = cpu.mmu;
 	return function() {
-		mmu.wait32(gprs[cpu.PC]);
+		mmu.waitSeq32(gprs[cpu.PC]);
 		if (condOp && !condOp()) {
 			return;
 		}
@@ -760,7 +760,7 @@ ARMCoreArm.prototype.constructLDMS = function(rs, address, condOp) {
 	var gprs = cpu.gprs;
 	var mmu = cpu.mmu;
 	return function() {
-		mmu.wait32(gprs[cpu.PC]);
+		mmu.waitSeq32(gprs[cpu.PC]);
 		if (condOp && !condOp()) {
 			return;
 		}
@@ -791,9 +791,9 @@ ARMCoreArm.prototype.constructLDR = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		++cpu.cycles;
-		cpu.mmu.wait32(addr);
 		gprs[rd] = cpu.mmu.load32(addr);
+		cpu.mmu.wait32(addr);
+		++cpu.cycles;
 	};
 };
 
@@ -806,9 +806,9 @@ ARMCoreArm.prototype.constructLDRB = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		++cpu.cycles;
-		cpu.mmu.wait(addr);
 		gprs[rd] = cpu.mmu.loadU8(addr);
+		cpu.mmu.wait(addr);
+		++cpu.cycles;
 	};
 };
 
@@ -821,9 +821,9 @@ ARMCoreArm.prototype.constructLDRH = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		++cpu.cycles;
-		cpu.mmu.wait(addr);
 		gprs[rd] = cpu.mmu.loadU16(addr);
+		cpu.mmu.wait(addr);
+		++cpu.cycles;
 	};
 };
 
@@ -836,9 +836,9 @@ ARMCoreArm.prototype.constructLDRSB = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		++cpu.cycles;
-		cpu.mmu.wait(addr);
 		gprs[rd] = cpu.mmu.load8(addr);
+		cpu.mmu.wait(addr);
+		++cpu.cycles;
 	};
 };
 
@@ -851,9 +851,9 @@ ARMCoreArm.prototype.constructLDRSH = function(rd, address, condOp) {
 			return;
 		}
 		var addr = address();
-		++cpu.cycles;
-		cpu.mmu.wait(addr);
 		gprs[rd] = cpu.mmu.load16(addr);
+		cpu.mmu.wait(addr);
+		++cpu.cycles;
 	};
 };
 
@@ -1299,6 +1299,7 @@ ARMCoreArm.prototype.constructSTM = function(rs, address, condOp) {
 			mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
+		mmu.wait32(gprs[cpu.PC]);
 		var addr = address(true);
 		var total = 0;
 		var m, i;
@@ -1310,7 +1311,6 @@ ARMCoreArm.prototype.constructSTM = function(rs, address, condOp) {
 			}
 		}
 		mmu.waitMulti32(addr, total);
-		mmu.wait32(gprs[cpu.PC]);
 	};
 };
 
@@ -1323,6 +1323,7 @@ ARMCoreArm.prototype.constructSTMS = function(rs, address, condOp) {
 			mmu.waitSeq32(gprs[cpu.PC]);
 			return;
 		}
+		mmu.wait32(gprs[cpu.PC]);
 		var mode = cpu.mode;
 		var addr = address(true);
 		var total = 0;
@@ -1337,7 +1338,6 @@ ARMCoreArm.prototype.constructSTMS = function(rs, address, condOp) {
 		}
 		cpu.switchMode(mode);
 		mmu.waitMulti32(addr, total);
-		mmu.wait32(gprs[cpu.PC]);
 	};
 };
 
@@ -1431,9 +1431,9 @@ ARMCoreArm.prototype.constructSWI = function(immediate, condOp) {
 			return;
 		}
 		cpu.irq.swi32(immediate);
-		cpu.mmu.wait32(gprs[cpu.PC]);
+		cpu.mmu.waitSeq32(gprs[cpu.PC]);
 		// Wait on BIOS
-		cpu.mmu.waitSeq32(0);
+		cpu.mmu.wait32(0);
 		cpu.mmu.waitSeq32(0);
 	};
 };
