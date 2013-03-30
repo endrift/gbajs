@@ -527,8 +527,6 @@ GameBoyAdvanceInterruptHandler.prototype.setInterruptsEnabled = function(value) 
 		this.core.STUB('Keypad interrupts not implemented');
 	}
 
-	this.dismissIRQs(~value);
-
 	if (this.enable && this.enabledIRQs & this.interruptFlags) {
 		this.cpu.raiseIRQ();
 	}
