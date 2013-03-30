@@ -144,11 +144,9 @@ GameBoyAdvance.prototype.step = function() {
 };
 
 GameBoyAdvance.prototype.waitFrame = function() {
-	if (this.seenFrame) {
-		this.seenFrame = false;
-		return false;
-	}
-	return true;
+	var seen = this.seenFrame;
+	this.seenFrame = false;
+	return !seen;
 };
 
 GameBoyAdvance.prototype.pause = function() {
