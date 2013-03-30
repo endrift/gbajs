@@ -109,10 +109,10 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 				var pc = gprs[this.PC] &= 0xFFFFFFFE;
 				if (this.execMode == this.MODE_ARM) {
 					mmu.wait32(pc);
-					mmu.waitSeq32(pc);
+					mmu.waitPrefetch32(pc);
 				} else {
 					mmu.wait(pc);
-					mmu.waitSeq(pc);
+					mmu.waitPrefetch(pc);
 				}
 				gprs[this.PC] += this.instructionWidth;
 				if (!instruction.fixedJump) {
