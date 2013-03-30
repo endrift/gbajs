@@ -305,6 +305,8 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	this.waitstatesSeq = this.WAITSTATES_SEQ.slice(0);
 	this.waitstates32 = this.WAITSTATES_32.slice(0);
 	this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
+	this.waitstatesPrefetch = this.WAITSTATES_SEQ.slice(0);
+	this.waitstatesPrefetch32 = this.WAITSTATES_SEQ_32.slice(0);
 
 	this.cart = null;
 	this.save = null;
@@ -498,20 +500,28 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	memory.invalidatePage(maskedOffset + 2);
 };
 
+GameBoyAdvanceMMU.prototype.waitPrefetch = function(memory) {
+	this.cpu.cycles += 1 + this.waitstatesPrefetch[memory >>> this.BASE_OFFSET];
+};
+
+GameBoyAdvanceMMU.prototype.waitPrefetch32 = function(memory) {
+	this.cpu.cycles += 1 + this.waitstatesPrefetch32[memory >>> this.BASE_OFFSET];
+};
+
 GameBoyAdvanceMMU.prototype.wait = function(memory) {
-	this.cpu.cycles += this.waitstates[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstates[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.wait32 = function(memory) {
-	this.cpu.cycles += this.waitstates32[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstates32[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.waitSeq = function(memory) {
-	this.cpu.cycles += this.waitstatesSeq[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstatesSeq[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.waitSeq32 = function(memory) {
-	this.cpu.cycles += this.waitstatesSeq32[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstatesSeq32[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.waitMul = function(rs) {
@@ -729,6 +739,7 @@ GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
 	var ws1seq = (word & 0x0080) >> 7;
 	var ws2 = (word & 0x0300) >> 8;
 	var ws2seq = (word & 0x0400) >> 10;
+	var prefetch = word & 0x4000;
 
 	this.waitstates[this.REGION_CART_SRAM] = this.ROM_WS[sram];
 	this.waitstatesSeq[this.REGION_CART_SRAM] = this.ROM_WS[sram];
@@ -750,6 +761,24 @@ GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
 	this.waitstatesSeq32[this.REGION_CART0] = this.waitstatesSeq32[this.REGION_CART0 + 1] = 2 * this.waitstatesSeq[this.REGION_CART0] + 1;
 	this.waitstatesSeq32[this.REGION_CART1] = this.waitstatesSeq32[this.REGION_CART1 + 1] = 2 * this.waitstatesSeq[this.REGION_CART1] + 1;
 	this.waitstatesSeq32[this.REGION_CART2] = this.waitstatesSeq32[this.REGION_CART2 + 1] = 2 * this.waitstatesSeq[this.REGION_CART2] + 1;
+
+	if (prefetch) {
+		this.waitstatesPrefetch[this.REGION_CART0] = this.waitstatesPrefetch[this.REGION_CART0 + 1] = 0;
+		this.waitstatesPrefetch[this.REGION_CART1] = this.waitstatesPrefetch[this.REGION_CART1 + 1] = 0;
+		this.waitstatesPrefetch[this.REGION_CART2] = this.waitstatesPrefetch[this.REGION_CART2 + 1] = 0;
+
+		this.waitstatesPrefetch32[this.REGION_CART0] = this.waitstatesPrefetch32[this.REGION_CART0 + 1] = 0;
+		this.waitstatesPrefetch32[this.REGION_CART1] = this.waitstatesPrefetch32[this.REGION_CART1 + 1] = 0;
+		this.waitstatesPrefetch32[this.REGION_CART2] = this.waitstatesPrefetch32[this.REGION_CART2 + 1] = 0;
+	} else {
+		this.waitstatesPrefetch[this.REGION_CART0] = this.waitstatesPrefetch[this.REGION_CART0 + 1] = this.waitstatesSeq[this.REGION_CART0];
+		this.waitstatesPrefetch[this.REGION_CART1] = this.waitstatesPrefetch[this.REGION_CART1 + 1] = this.waitstatesSeq[this.REGION_CART1];
+		this.waitstatesPrefetch[this.REGION_CART2] = this.waitstatesPrefetch[this.REGION_CART2 + 1] = this.waitstatesSeq[this.REGION_CART2];
+
+		this.waitstatesPrefetch32[this.REGION_CART0] = this.waitstatesPrefetch32[this.REGION_CART0 + 1] = this.waitstatesSeq32[this.REGION_CART0];
+		this.waitstatesPrefetch32[this.REGION_CART1] = this.waitstatesPrefetch32[this.REGION_CART1 + 1] = this.waitstatesSeq32[this.REGION_CART1];
+		this.waitstatesPrefetch32[this.REGION_CART2] = this.waitstatesPrefetch32[this.REGION_CART2 + 1] = this.waitstatesSeq32[this.REGION_CART2];
+	}
 };
 
 GameBoyAdvanceMMU.prototype.saveNeedsFlush = function() {
