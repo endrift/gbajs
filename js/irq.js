@@ -663,6 +663,7 @@ GameBoyAdvanceInterruptHandler.prototype.dmaSetWordCount = function(dma, count) 
 
 GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control) {
 	var currentDma = this.dma[dma];
+	var wasEnabled = currentDma.enable;
 	currentDma.dstControl = (control & 0x0060) >> 5;
 	currentDma.srcControl = (control & 0x0180) >> 7;
 	currentDma.repeat = !!(control & 0x0200);
@@ -677,7 +678,7 @@ GameBoyAdvanceInterruptHandler.prototype.dmaWriteControl = function(dma, control
 		this.core.WARN('DRQ not implemented');
 	}
 
-	if (currentDma.enable) {
+	if (!wasEnabled && currentDma.enable) {
 		currentDma.nextSource = currentDma.source;
 		currentDma.nextDest = currentDma.dest;
 		currentDma.nextCount = currentDma.count;
