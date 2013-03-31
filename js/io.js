@@ -166,6 +166,7 @@ GameBoyAdvanceIO.prototype.load16 = function(offset) {
 }
 
 GameBoyAdvanceIO.prototype.load32 = function(offset) {
+	offset &= 0xFFFFFFFC;
 	switch (offset) {
 	case this.DMA0CNT_LO:
 	case this.DMA1CNT_LO:
@@ -214,6 +215,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
 	case this.BLDCNT:
+	case this.BLDALPHA:
 
 	case this.TM0CNT_HI:
 	case this.TM1CNT_HI:
@@ -334,7 +336,6 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		return this.core.mmu.badMemory.loadU16(0);
 
 	case this.MOSAIC:
-	case this.BLDALPHA:
 		this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
 		return 0;
 
