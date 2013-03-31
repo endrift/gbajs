@@ -131,7 +131,6 @@ GameBoyAdvanceInterruptHandler.prototype.updateTimers = function() {
 	this.video.updateTimers(this.cpu);
 	this.audio.updateTimers();
 	if (this.timersEnabled) {
-		// TODO: ensure incrementing only on read and overflow
 		var timer = this.timers[0];
 		if (timer.enable) {
 			if (this.cpu.cycles >= timer.nextEvent) {

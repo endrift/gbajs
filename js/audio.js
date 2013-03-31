@@ -4,7 +4,7 @@ function GameBoyAdvanceAudio() {
 		this.context = new webkitAudioContext();
 		this.bufferSize = 0;
 		this.bufferSize = 4096;
-		this.maxSamples = this.bufferSize << 4;
+		this.maxSamples = this.bufferSize << 2;
 		this.buffers = [new Float32Array(this.maxSamples), new Float32Array(this.maxSamples)];
 		this.sampleMask = this.maxSamples - 1;
 		if (this.context.createScriptProcessor) {
@@ -568,6 +568,9 @@ GameBoyAdvanceAudio.prototype.updateEnvelope = function(channel, cycles) {
 
 GameBoyAdvanceAudio.prototype.appendToFifoA = function(value) {
 	var b;
+	if (this.fifoA.length > 28) {
+		this.fifoA = this.fifoA.slice(-28);
+	}
 	for (var i = 0; i < 4; ++i) {
 		b = (value & 0xFF) << 24;
 		value >>= 8;
@@ -577,6 +580,9 @@ GameBoyAdvanceAudio.prototype.appendToFifoA = function(value) {
 
 GameBoyAdvanceAudio.prototype.appendToFifoB = function(value) {
 	var b;
+	if (this.fifoB.length > 28) {
+		this.fifoB = this.fifoB.slice(-28);
+	}
 	for (var i = 0; i < 4; ++i) {
 		b = (value & 0xFF) << 24;
 		value >>= 8;
@@ -585,7 +591,7 @@ GameBoyAdvanceAudio.prototype.appendToFifoB = function(value) {
 };
 
 GameBoyAdvanceAudio.prototype.sampleFifoA = function() {
-	if (!this.fifoA.length) {
+	if (this.fifoA.length <= 16) {
 		var dma = this.core.irq.dma[this.dmaA];
 		dma.nextCount = 4;
 		this.core.mmu.serviceDma(this.dmaA, dma);
@@ -594,7 +600,7 @@ GameBoyAdvanceAudio.prototype.sampleFifoA = function() {
 };
 
 GameBoyAdvanceAudio.prototype.sampleFifoB = function() {
-	if (!this.fifoB.length) {
+	if (this.fifoB.length <= 16) {
 		var dma = this.core.irq.dma[this.dmaB];
 		dma.nextCount = 4;
 		this.core.mmu.serviceDma(this.dmaB, dma);
@@ -707,7 +713,7 @@ GameBoyAdvanceAudio.prototype.audioProcess = function(audioProcessingEvent) {
 		var i;
 		var o = this.outputPointer;
 		for (i = 0; i < this.bufferSize; ++i, o += this.resampleRatio) {
-			if (o > this.maxSamples) {
+			if (o >= this.maxSamples) {
 				o -= this.maxSamples;
 			}
 			if ((o | 0) == this.samplePointer) {
@@ -716,6 +722,10 @@ GameBoyAdvanceAudio.prototype.audioProcess = function(audioProcessingEvent) {
 			}
 			left[i] = this.buffers[0][o | 0];
 			right[i] = this.buffers[1][o | 0];
+		}
+		for (; i < this.bufferSize; ++i) {
+			left[i] = 0;
+			right[i] = 0;
 		}
 		this.outputPointer = o;
 		++this.totalSamples;
