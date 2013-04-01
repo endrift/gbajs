@@ -61,12 +61,16 @@ function MemoryBlock(size, cacheBits) {
 	this.ICACHE_PAGE_BITS = cacheBits;
 	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
 	this.icache = new Array(size >> (this.ICACHE_PAGE_BITS + 1));
+	this.invalidationMisses = 0;
 };
 
 MemoryBlock.prototype = Object.create(MemoryView.prototype);
 
 MemoryBlock.prototype.invalidatePage = function(address) {
-	this.icache[(address & this.mask) >> this.ICACHE_PAGE_BITS] = null;
+	var page = this.icache[(address & this.mask) >> this.ICACHE_PAGE_BITS];
+	if (page) {
+		page.invalid = true;
+	}
 };
 
 function ROMView(rom, offset) {
@@ -548,10 +552,11 @@ GameBoyAdvanceMMU.prototype.addressToPage = function(region, address) {
 GameBoyAdvanceMMU.prototype.accessPage = function(region, pageId) {
 	var memory = this.memory[region];
 	var page = memory.icache[pageId];
-	if (!page) {
+	if (!page || page.invalid) {
 		page = {
 			thumb: new Array(1 << (memory.ICACHE_PAGE_BITS)),
-			arm: new Array(1 << memory.ICACHE_PAGE_BITS - 1)
+			arm: new Array(1 << memory.ICACHE_PAGE_BITS - 1),
+			invalid: false
 		}
 		memory.icache[pageId] = page;
 	}
