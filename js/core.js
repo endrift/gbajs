@@ -96,10 +96,10 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 		gprs[this.PC] += this.instructionWidth;
 		this.conditionPassed = true;
 		instruction();
-	
+
 		if (!instruction.writesPC) {
 			if (this.instruction != null) { // We might have gotten an interrupt from the instruction
-				if (instruction.next == null) {
+				if (instruction.next == null || instruction.next.page.invalid) {
 					instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
 				}
 				this.instruction = instruction.next;
@@ -118,7 +118,7 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 				if (!instruction.fixedJump) {
 					this.instruction = null;
 				} else if  (this.instruction != null) {
-					if (instruction.next == null) {
+					if (instruction.next == null || instruction.next.page.invalid) {
 						instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
 					}
 					this.instruction = instruction.next;
@@ -279,12 +279,10 @@ ARMCore.prototype.defrost = function(frost) {
 };
 
 ARMCore.prototype.fetchPage = function(address) {
-	// FIXME: because this page held onto, it won't get invalidated if we're using it, even if
-	// someone else writes over the instructions
 	var region = address >> this.mmu.BASE_OFFSET;
 	var pageId = this.mmu.addressToPage(region, address & this.mmu.OFFSET_MASK);
 	if (region == this.pageRegion) {
-		if (pageId == this.pageId) {
+		if (pageId == this.pageId && !this.page.invalid) {
 			return;
 		}
 		this.pageId = pageId;
@@ -308,6 +306,9 @@ ARMCore.prototype.loadInstructionArm = function(address) {
 	var instruction = this.mmu.load32(address) >>> 0;
 	next = this.compileArm(instruction);
 	next.next = null;
+	next.page = this.page;
+	next.address = address;
+	next.opcode = instruction;
 	this.page.arm[offset] = next;
 	return next;
 };
@@ -323,6 +324,9 @@ ARMCore.prototype.loadInstructionThumb = function(address) {
 	var instruction = this.mmu.load16(address);
 	next = this.compileThumb(instruction);
 	next.next = null;
+	next.page = this.page;
+	next.address = address;
+	next.opcode = instruction;
 	this.page.thumb[offset] = next;
 	return next;
 };
