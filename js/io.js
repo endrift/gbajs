@@ -132,6 +132,9 @@ function GameBoyAdvanceIO() {
 	this.WAITCNT = 0x204;
 	this.IME = 0x208;
 
+	this.POSTFLG = 0x300;
+	this.HALTCNT = 0x301;
+
 	this.DEFAULT_DISPCNT = 0x0080;
 	this.DEFAULT_SOUNDBIAS = 0x200;
 	this.DEFAULT_BGPA = 1;
@@ -219,6 +222,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.IE:
 	case this.IF:
 	case this.IME:
+	case this.POSTFLG:
 		// Handled transparently by the written registers
 		break;
 
@@ -385,10 +389,20 @@ GameBoyAdvanceIO.prototype.store8 = function(offset, value) {
 	case this.SOUNDCNT_LO:
 	case this.SOUNDCNT_LO | 1:
 	case this.SOUNDCNT_X:
+	case this.IF:
+	case this.IME:
 		break;
 	case this.SOUNDBIAS | 1:
 		this.STUB_REG('sound', offset);
 		break;
+	case this.HALTCNT:
+		value &= 0x80;
+		if (!value) {
+			this.core.irq.halt();
+		} else {
+			this.core.STUB('Stop');
+		}
+		return;
 	default:
 		this.STUB_REG('8-bit I/O', offset);
 		break;
