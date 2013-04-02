@@ -288,6 +288,11 @@ GameBoyAdvanceInterruptHandler.prototype.swi32 = function(opcode) {
 };
 
 GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
+	if (this.core.mmu.bios.real) {
+		this.cpu.raiseTrap();
+		return;
+	}
+
 	switch (opcode) {
 	case 0x00:
 		// SoftReset
@@ -326,12 +331,7 @@ GameBoyAdvanceInterruptHandler.prototype.swi = function(opcode) {
 		break;
 	case 0x02:
 		// Halt
-		if (!this.enable) {
-			throw "Requested HALT when interrupts were disabled!";
-		}
-		if (!this.waitForIRQ()) {
-			throw "Waiting on interrupt forever.";
-		}
+		this.halt();
 		break;
 	case 0x05:
 		// VBlankIntrWait
@@ -779,6 +779,15 @@ GameBoyAdvanceInterruptHandler.prototype.timerRead = function(timer) {
 		return this.io.registers[(this.io.TM0CNT_LO + (timer << 2)) >> 1];
 	}
 };
+
+GameBoyAdvanceInterruptHandler.prototype.halt = function() {
+	if (!this.enable) {
+		throw "Requested HALT when interrupts were disabled!";
+	}
+	if (!this.waitForIRQ()) {
+		throw "Waiting on interrupt forever.";
+	}
+}
 
 GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize) {
 	// TODO: move to a different file

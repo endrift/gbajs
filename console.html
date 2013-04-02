@@ -63,7 +63,7 @@ setLogLevel(core.LOG_DEBUG, true);
 var rom = null;
 
 var gbaCon;
-core.cpu.resetCPU(0x08000000);
+core.cpu.resetCPU(0);
 window.onload = function() {
 	var canvas = document.getElementById('screen');
 	core.setCanvas(canvas);
@@ -72,7 +72,7 @@ window.onload = function() {
 	core.DEBUG("Logging begun!");
 	core.DEBUG("Loading BIOS...");
 	loadRom('resources/bios.bin', function(bios) {
-		core.setBios(bios);
+		core.setBios(bios, false);
 		core.DEBUG("BIOS loaded!");
 		gbaCon.memory.refreshAll();
 	});

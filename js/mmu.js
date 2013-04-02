@@ -338,8 +338,9 @@ GameBoyAdvanceMMU.prototype.defrost = function(frost) {
 	this.memory[this.REGION_WORKING_IRAM].replaceData(frost.iram);
 };
 
-GameBoyAdvanceMMU.prototype.loadBios = function(bios) {
+GameBoyAdvanceMMU.prototype.loadBios = function(bios, real) {
 	this.bios = new BIOSView(bios);
+	this.bios.real = !!real;
 };
 
 GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
