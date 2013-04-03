@@ -19,7 +19,9 @@ GameBoyAdvanceSIO.prototype.clear = function() {
 		si: 0,
 		id: 0,
 		error: 0,
-		busy: 0
+		busy: 0,
+
+		states: [ 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF ]
 	};
 
 	this.linkLayer = null;
@@ -107,4 +109,21 @@ GameBoyAdvanceSIO.prototype.readSIOCNT = function() {
 		break;
 	}
 	return value;
-}
+};
+
+GameBoyAdvanceSIO.prototype.read = function(slot) {
+	switch (this.mode) {
+	case this.SIO_NORMAL_32:
+		this.core.STUB('32-bit transfer unsupported');
+		break;
+	case this.SIO_MULTI:
+		return this.multiplayer.states[slot];
+	case this.SIO_UART:
+		this.core.STUB('UART unsupported');
+		break;
+	default:
+		this.core.WARN('Reading from transfer register in unsupported mode');
+		break;
+	}
+	return 0;
+};

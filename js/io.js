@@ -344,6 +344,8 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
  	case this.SIOMULTI1:
  	case this.SIOMULTI2:
  	case this.SIOMULTI3:
+ 		return this.sio.read((offset - this.SIOMULTI0) >> 1);
+
  	case this.SIODATA8:
  		this.core.STUB('Unimplemented SIO register read: 0x' + offset.toString(16));
  		return 0;
