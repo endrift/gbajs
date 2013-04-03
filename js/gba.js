@@ -18,6 +18,7 @@ function GameBoyAdvance() {
 	this.audio = new GameBoyAdvanceAudio();
 	this.video = new GameBoyAdvanceVideo();
 	this.keypad = new GameBoyAdvanceKeypad();
+	this.sio = new GameBoyAdvanceSIO();
 
 	// TODO: simplify this graph
 	this.cpu.mmu = this.mmu;
@@ -36,6 +37,7 @@ function GameBoyAdvance() {
 	this.io.audio = this.audio;
 	this.io.video = this.video;
 	this.io.keypad = this.keypad;
+	this.io.sio = this.sio;
 	this.io.core = this;
 
 	this.audio.cpu = this.cpu;
@@ -45,6 +47,8 @@ function GameBoyAdvance() {
 	this.video.core = this;
 
 	this.keypad.core = this;
+
+	this.sio.core = this;
 
 	this.keypad.registerHandlers();
 	this.doStep = this.waitFrame;
@@ -131,6 +135,7 @@ GameBoyAdvance.prototype.reset = function() {
 	this.io.clear();
 	this.audio.clear();
 	this.video.clear();
+	this.sio.clear();
 
 	this.mmu.mmap(this.mmu.REGION_IO, this.io);
 	this.mmu.mmap(this.mmu.REGION_PALETTE_RAM, this.video.renderPath.palette);

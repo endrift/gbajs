@@ -108,8 +108,9 @@ function GameBoyAdvanceIO() {
 	this.TM3CNT_HI = 0x10E;
 
 	// SIO (note: some of these are repeated)
-	this.SIODATA32 = 0x120;
+	this.SIODATA32_LO = 0x120;
 	this.SIOMULTI0 = 0x120;
+	this.SIODATA32_HI = 0x122;
 	this.SIOMULTI1 = 0x122;
 	this.SIOMULTI2 = 0x124;
 	this.SIOMULTI3 = 0x126;
@@ -139,14 +140,7 @@ function GameBoyAdvanceIO() {
 	this.DEFAULT_SOUNDBIAS = 0x200;
 	this.DEFAULT_BGPA = 1;
 	this.DEFAULT_BGPD = 1;
-};
-
-GameBoyAdvanceIO.prototype.setCPU = function(cpu) {
-	this.cpu = cpu;
-};
-
-GameBoyAdvanceIO.prototype.setVideo = function(video) {
-	this.video = video;
+	this.DEFAULT_RCNT = 0x8000;
 };
 
 GameBoyAdvanceIO.prototype.clear = function() {
@@ -158,6 +152,7 @@ GameBoyAdvanceIO.prototype.clear = function() {
 	this.registers[this.BG2PD >> 1] = this.DEFAULT_BGPD;
 	this.registers[this.BG3PA >> 1] = this.DEFAULT_BGPA;
 	this.registers[this.BG3PD >> 1] = this.DEFAULT_BGPD;
+	this.registers[this.RCNT >> 1] = this.RCNT;
 };
 
 GameBoyAdvanceIO.prototype.freeze = function() {
@@ -232,6 +227,8 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DMA1CNT_HI:
 	case this.DMA2CNT_HI:
 	case this.DMA3CNT_HI:
+	case this.RCNT:
+	case this.SIOCNT:
 	case this.WAITCNT:
 	case this.IE:
 	case this.IF:
@@ -273,13 +270,6 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		return this.cpu.irq.timerRead(2);
 	case this.TM3CNT_LO:
 		return this.cpu.irq.timerRead(3);
-
-	case this.RCNT:
-		this.core.STUB('Reading from unimplemented RCNT');
-		return 0x8000;
-	case this.SIOCNT:
-		this.core.STUB('Reading from unimplemented SIOCNT');
-		return 0;
 
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
@@ -722,10 +712,12 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
  		this.STUB_REG('SIO', offset);
  		break;
 	case this.RCNT:
-		this.STUB_REG('RCNT', offset);
+		this.sio.setMode(((value >> 12) & 0xC) | ((this.registers[this.SIOCNT >> 1] >> 12) & 0x3));
+		this.sio.writeRCNT(value);
 		break;
 	case this.SIOCNT:
-		this.STUB_REG('SIOCNT', offset);
+		this.sio.setMode(((value >> 12) & 0x3) | ((this.registers[this.RCNT >> 1] >> 12) & 0xC));
+		this.sio.writeSIOCNT(value);
 		break;
 	case this.JOYCNT:
 	case this.JOYSTAT:
