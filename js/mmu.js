@@ -61,7 +61,6 @@ function MemoryBlock(size, cacheBits) {
 	this.ICACHE_PAGE_BITS = cacheBits;
 	this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
 	this.icache = new Array(size >> (this.ICACHE_PAGE_BITS + 1));
-	this.invalidationMisses = 0;
 };
 
 MemoryBlock.prototype = Object.create(MemoryView.prototype);

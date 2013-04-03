@@ -184,16 +184,6 @@ GameBoyAdvanceIO.prototype.load32 = function(offset) {
 	return this.loadU16(offset) | (this.loadU16(offset | 2) << 16);
 };
 
-GameBoyAdvanceIO.prototype.forceLoadU8 = function(offset) {
-	try {
-		return this.loadU8(offset) 
-	} catch (exception) {
-		var odd = offset & 0x0001;
-		var value = this.registers[offset >> 1];
-		return (value >>> (odd << 3)) & 0xFF;
-	}
-}
-
 GameBoyAdvanceIO.prototype.loadU8 = function(offset) {
 	var odd = offset & 0x0001;
 	var value = this.loadU16(offset & 0xFFFE);
@@ -215,7 +205,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
 	case this.BLDCNT:
-	case this.BLDALPHA:
+	case this.BLDALPHA: // Spec says this is wrong, but some games (e.g. A5NE) seem to rely on it.
 
 	case this.TM0CNT_HI:
 	case this.TM1CNT_HI:

@@ -1178,6 +1178,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// POP
 			op = this.thumbCompiler.constructPOP(rs, r);
 			op.writesPC = r;
+			op.fixedJump = false;
 		} else {
 			// PUSH
 			op = this.thumbCompiler.constructPUSH(rs, r);
