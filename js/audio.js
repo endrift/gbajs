@@ -631,7 +631,6 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	var sample;
 	var channel;
 
-	// TODO: left and right
 	channel = this.squareChannels[0];
 	if (channel.playing) {
 		sample = channel.sample * this.soundRatio * this.PSG_MAX;
