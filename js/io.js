@@ -228,7 +228,6 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.DMA2CNT_HI:
 	case this.DMA3CNT_HI:
 	case this.RCNT:
-	case this.SIOCNT:
 	case this.WAITCNT:
 	case this.IE:
 	case this.IF:
@@ -270,6 +269,10 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 		return this.cpu.irq.timerRead(2);
 	case this.TM3CNT_LO:
 		return this.cpu.irq.timerRead(3);
+
+	// SIO
+	case this.SIOCNT:
+		return this.sio.readSIOCNT();
 
 	case this.KEYINPUT:
 		return this.keypad.currentDown;
@@ -718,7 +721,7 @@ GameBoyAdvanceIO.prototype.store16 = function(offset, value) {
 	case this.SIOCNT:
 		this.sio.setMode(((value >> 12) & 0x3) | ((this.registers[this.RCNT >> 1] >> 12) & 0xC));
 		this.sio.writeSIOCNT(value);
-		break;
+		return;
 	case this.JOYCNT:
 	case this.JOYSTAT:
 		this.STUB_REG('JOY', offset);
