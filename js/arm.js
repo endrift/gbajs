@@ -421,7 +421,7 @@ ARMCoreArm.prototype.constructAddressingMode1ROR = function(rs, rm) {
 			cpu.shifterOperand = shiftVal;
 			cpu.shifterCarryOut = cpu.cpsrC;
 		} else if (rotate) {
-			cpu.shifterOperand = (rm >>> rotate) | (gprs[rm] << (32 - rotate));
+			cpu.shifterOperand = (gprs[rm] >>> rotate) | (gprs[rm] << (32 - rotate));
 			cpu.shifterCarryOut = shiftVal & (1 << (rotate - 1));
 		} else {
 			cpu.shifterOperand = shiftVal;
