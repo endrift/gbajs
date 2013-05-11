@@ -989,7 +989,7 @@ ARMCoreArm.prototype.constructMUL = function(rd, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.mmu.waitMul(rs);
+		cpu.mmu.waitMul(gprs[rs]);
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
 			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) | 0;
@@ -1009,7 +1009,7 @@ ARMCoreArm.prototype.constructMULS = function(rd, rs, rm, condOp) {
 		if (condOp && !condOp()) {
 			return;
 		}
-		cpu.mmu.waitMul(rs);
+		cpu.mmu.waitMul(gprs[rs]);
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rs] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
 			var hi = ((gprs[rm] & 0xFFFF0000) * gprs[rs]) | 0;
@@ -1251,7 +1251,7 @@ ARMCoreArm.prototype.constructSMULL = function(rd, rn, rs, rm, condOp) {
 			return;
 		}
 		++cpu.cycles;
-		cpu.mmu.waitMul(rs);
+		cpu.mmu.waitMul(gprs[rs]);
 		var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
 		var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
@@ -1269,7 +1269,7 @@ ARMCoreArm.prototype.constructSMULLS = function(rd, rn, rs, rm, condOp) {
 			return;
 		}
 		++cpu.cycles;
-		cpu.mmu.waitMul(rs);
+		cpu.mmu.waitMul(gprs[rs]);
 		var hi = ((gprs[rm] & 0xFFFF0000) >> 0) * (gprs[rs] >> 0);
 		var lo = ((gprs[rm] & 0x0000FFFF) >> 0) * (gprs[rs] >> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
@@ -1540,7 +1540,7 @@ ARMCoreArm.prototype.constructUMULL = function(rd, rn, rs, rm, condOp) {
 			return;
 		}
 		++cpu.cycles;
-		cpu.mmu.waitMul(rs);
+		cpu.mmu.waitMul(gprs[rs]);
 		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
 		var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;
@@ -1558,7 +1558,7 @@ ARMCoreArm.prototype.constructUMULLS = function(rd, rn, rs, rm, condOp) {
 			return;
 		}
 		++cpu.cycles;
-		cpu.mmu.waitMul(rs);
+		cpu.mmu.waitMul(gprs[rs]);
 		var hi = ((gprs[rm] & 0xFFFF0000) >>> 0) * (gprs[rs] >>> 0);
 		var lo = ((gprs[rm] & 0x0000FFFF) >>> 0) * (gprs[rs] >>> 0);
 		gprs[rn] = ((hi & 0xFFFFFFFF) + (lo & 0xFFFFFFFF)) & 0xFFFFFFFF;

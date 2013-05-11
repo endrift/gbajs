@@ -544,7 +544,7 @@ ARMCoreThumb.prototype.constructMUL = function(rd, rm) {
 	var gprs = cpu.gprs;
 	return function() {
 		cpu.mmu.waitPrefetch(gprs[cpu.PC]);
-		cpu.mmu.waitMul(rm);
+		cpu.mmu.waitMul(gprs[rm]);
 		if ((gprs[rm] & 0xFFFF0000) && (gprs[rd] & 0xFFFF0000)) {
 			// Our data type is a double--we'll lose bits if we do it all at once!
 			var hi = ((gprs[rd] & 0xFFFF0000) * gprs[rm]) & 0xFFFFFFFF;
