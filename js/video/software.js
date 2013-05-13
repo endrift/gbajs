@@ -428,13 +428,14 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	var localYLo = localY & 0x7;
 	var mosaicX;
 	var tileOffset;
+
+	var paletteShift = this.multipalette ? 1 : 0;
+
 	if (video.objCharacterMapping) {
 		tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
 	} else {
-		tileOffset = (localY & 0x01F8) << 2;
+		tileOffset = (localY & 0x01F8) << (2 - paletteShift);
 	}
-
-	var paletteShift = this.multipalette ? 1 : 0;
 
 	if (this.mosaic) {
 		mosaicX = video.objMosaicX - 1 - (video.objMosaicX + offset - 1) % video.objMosaicX;
@@ -530,7 +531,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 		if (video.objCharacterMapping) {
 			tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
 		} else {
-			tileOffset = (localY & 0x01F8) << 2;
+			tileOffset = (localY & 0x01F8) << (2 - paletteShift);
 		}
 		tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), (localY & 0x7) << paletteShift);
 		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask, false);
