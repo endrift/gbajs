@@ -1,7 +1,8 @@
 function GameBoyAdvanceAudio() {
-	if (window.webkitAudioContext) {
+	window.AudioContext = window.AudioContext || window.webkitAudioContext;
+	if (window.AudioContext) {
 		var self = this;
-		this.context = new webkitAudioContext();
+		this.context = new AudioContext();
 		this.bufferSize = 0;
 		this.bufferSize = 4096;
 		this.maxSamples = this.bufferSize << 2;
