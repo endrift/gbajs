@@ -4,6 +4,20 @@ Object.prototype.inherit = function() {
 	}
 };
 
+function hex(number, leading, usePrefix) {
+	if (typeof(usePrefix) === 'undefined') {
+		usePrefix = true;
+	}
+	if (typeof(leading) === 'undefined') {
+		leading = 8;
+	}
+	var string = (number >>> 0).toString(16).toUpperCase();
+	leading -= string.length;
+	if (leading < 0)
+		return string;
+	return (usePrefix ? '0x' : '') + new Array(leading + 1).join('0') + string;
+}
+
 Serializer = {
 	TAG_INT: 1,
 	TAG_STRING: 2,
