@@ -39,7 +39,7 @@ GameBoyAdvanceSIO.prototype.setMode = function(mode) {
 };
 
 GameBoyAdvanceSIO.prototype.writeRCNT = function(value) {
-	if (mode != this.SIO_GPIO) {
+	if (this.mode != this.SIO_GPIO) {
 		return;
 	}
 
