@@ -40,7 +40,8 @@ MemoryProxy.prototype.store8 = function(offset, value) {
 		return;
 	}
 	this.owner.memoryDirtied(this, offset >> this.blockSize);
-	return this.blocks[offset >> this.blockSize].store8(offset & this.mask, value);
+	this.blocks[offset >> this.blockSize].store8(offset & this.mask, value);
+	this.blocks[offset >> this.blockSize].store8((offset & this.mask) ^ 1, value);
 };
 
 MemoryProxy.prototype.store16 = function(offset, value) {
