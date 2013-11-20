@@ -29,11 +29,7 @@ MemoryAligned16.prototype.load32 = function(offset) {
 
 MemoryAligned16.prototype.store8 = function(offset, value) {
 	var index = offset >> 1;
-	if (offset & 1) {
-		this.store16(offset, (this.buffer[index] & 0x00FF) | (value << 8));
-	} else {
-		this.store16(offset, this.buffer[index] = (this.buffer[index] & 0xFF00) | value);
-	}
+	this.store16(offset, (value << 8) | value);
 };
 
 MemoryAligned16.prototype.store16 = function(offset, value) {
