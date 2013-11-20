@@ -152,7 +152,7 @@ GameBoyAdvanceIO.prototype.clear = function() {
 	this.registers[this.BG2PD >> 1] = this.DEFAULT_BGPD;
 	this.registers[this.BG3PA >> 1] = this.DEFAULT_BGPA;
 	this.registers[this.BG3PD >> 1] = this.DEFAULT_BGPD;
-	this.registers[this.RCNT >> 1] = this.RCNT;
+	this.registers[this.RCNT >> 1] = this.DEFAULT_RCNT;
 };
 
 GameBoyAdvanceIO.prototype.freeze = function() {
