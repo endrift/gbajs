@@ -800,6 +800,8 @@ GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize)
 	var block;
 	var disp;
 	var bytes;
+	var buffer = 0;
+	var loaded;
 	while (remaining > 0) {
 		if (blocksRemaining) {
 			if (blockheader & 0x80) {
@@ -809,13 +811,33 @@ GameBoyAdvanceInterruptHandler.prototype.lz77 = function(source, dest, unitsize)
 				disp = dPointer - (((block & 0x000F) << 8) | ((block & 0xFF00) >> 8)) - 1;
 				bytes = ((block & 0x00F0) >> 4) + 3;
 				while (bytes-- && remaining) {
+					loaded = this.cpu.mmu.loadU8(disp++);
+					if (unitsize == 2) {
+						buffer >>= 8;
+						buffer |= loaded << 8;
+						if (dPointer & 1) {
+							this.cpu.mmu.store16(dPointer - 1, buffer);
+						}
+					} else {
+						this.cpu.mmu.store8(dPointer, loaded);
+					}
 					--remaining;
-					this.cpu.mmu.store8(dPointer++, this.cpu.mmu.loadU8(disp++));
+					++dPointer;
 				}
 			} else {
 				// Uncompressed
-				this.cpu.mmu.store8(dPointer++, this.cpu.mmu.loadU8(sPointer++));
+				loaded = this.cpu.mmu.loadU8(sPointer++);
+				if (unitsize == 2) {
+					buffer >>= 8;
+					buffer |= loaded << 8;
+					if (dPointer & 1) {
+						this.cpu.mmu.store16(dPointer - 1, buffer);
+					}
+				} else {
+					this.cpu.mmu.store8(dPointer, loaded);
+				}
 				--remaining;
+				++dPointer;
 			}
 			blockheader <<= 1;
 			--blocksRemaining;
@@ -916,6 +938,7 @@ GameBoyAdvanceInterruptHandler.prototype.rl = function(source, dest, unitsize) {
 	var block;
 	var sPointer = source + 4;
 	var dPointer = dest;
+	var buffer = 0;
 	while (remaining > 0) {
 		blockheader = this.cpu.mmu.loadU8(sPointer++);
 		if (blockheader & 0x80) {
@@ -925,14 +948,33 @@ GameBoyAdvanceInterruptHandler.prototype.rl = function(source, dest, unitsize) {
 			block = this.cpu.mmu.loadU8(sPointer++);
 			while (blockheader-- && remaining) {
 				--remaining;
-				this.cpu.mmu.store8(dPointer++, block);
+				if (uintsize == 2) {
+					buffer >>= 8;
+					buffer |= block << 8;
+					if (dPointer & 1) {
+						this.cpu.mmu.store16(dPointer - 1, buffer);
+					}
+				} else {
+					this.cpu.mmu.store8(dPointer, block);
+				}
+				++dPointer;
 			}
 		} else {
 			// Uncompressed
 			blockheader++;
 			while (blockheader-- && remaining) {
 				--remaining;
-				this.cpu.mmu.store8(dPointer++, this.cpu.mmu.loadU8(sPointer++));
+				block = this.cpu.mmu.loadU8(sPointer++);
+				if (uintsize == 2) {
+					buffer >>= 8;
+					buffer |= block << 8;
+					if (dPointer & 1) {
+						this.cpu.mmu.store16(dPointer - 1, buffer);
+					}
+				} else {
+					this.cpu.mmu.store8(dPointer, block);
+				}
+				++dPointer;
 			}
 		}
 	}
