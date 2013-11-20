@@ -97,40 +97,46 @@ ARMCore.prototype.resetCPU = function(startOffset) {
 		gprs[this.PC] += this.instructionWidth;
 		this.conditionPassed = true;
 		instruction();
-	
+
 		if (!instruction.writesPC) {
 			if (this.instruction != null) { // We might have gotten an interrupt from the instruction
-				if (instruction.next == null) {
+				if (instruction.next == null || instruction.next.page.invalid) {
 					instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
 				}
 				this.instruction = instruction.next;
 			}
 		} else {
-			this.instruction = null;
 			if (this.conditionPassed) {
 				var pc = gprs[this.PC] &= 0xFFFFFFFE;
 				if (this.execMode == this.MODE_ARM) {
 					mmu.wait32(pc);
-					mmu.waitSeq32(pc);
+					mmu.waitPrefetch32(pc);
 				} else {
 					mmu.wait(pc);
-					mmu.waitSeq(pc);
+					mmu.waitPrefetch(pc);
 				}
 				gprs[this.PC] += this.instructionWidth;
+				if (!instruction.fixedJump) {
+					this.instruction = null;
+				} else if  (this.instruction != null) {
+					if (instruction.next == null || instruction.next.page.invalid) {
+						instruction.next = this.loadInstruction(gprs[this.PC] - this.instructionWidth);
+					}
+					this.instruction = instruction.next;
+				}
+			} else {
+				this.instruction = null;
 			}
 		}
-		++this.cycles;
 		this.irq.updateTimers();
 	};
 };
 
 ARMCore.prototype.fetchPage = function(address) {
-	// FIXME: because this page held onto, it won't get invalidated if we're using it, even if
-	// someone else writes over the instructions
 	var region = address >> this.mmu.BASE_OFFSET;
 	var pageId = this.mmu.addressToPage(region, address & this.mmu.OFFSET_MASK);
 	if (region == this.pageRegion) {
-		if (pageId == this.pageId) {
+		if (pageId == this.pageId && !this.page.invalid) {
 			return;
 		}
 		this.pageId = pageId;
@@ -154,6 +160,9 @@ ARMCore.prototype.loadInstructionArm = function(address) {
 	var instruction = this.mmu.load32(address) >>> 0;
 	next = this.compileArm(instruction);
 	next.next = null;
+	next.page = this.page;
+	next.address = address;
+	next.opcode = instruction;
 	this.page.arm[offset] = next;
 	return next;
 };
@@ -169,6 +178,9 @@ ARMCore.prototype.loadInstructionThumb = function(address) {
 	var instruction = this.mmu.load16(address);
 	next = this.compileThumb(instruction);
 	next.next = null;
+	next.page = this.page;
+	next.address = address;
+	next.opcode = instruction;
 	this.page.thumb[offset] = next;
 	return next;
 };
@@ -299,6 +311,7 @@ ARMCore.prototype.badOp = function(instruction) {
 		throw "Illegal instruction: 0x" + instruction.toString(16);
 	};
 	func.writesPC = true;
+	func.fixedJump = false;
 	return func;
 };
 
@@ -450,6 +463,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 		var rm = instruction & 0xF;
 		op = this.armCompiler.constructBX(rm, condOp);
 		op.writesPC = true;
+		op.fixedJump = false;
 	} else if (!(instruction & 0x0C000000) && (i == 0x02000000 || (instruction & 0x00000090) != 0x00000090)) {
 		var opcode = instruction & 0x01E00000;
 		var s = instruction & 0x00100000;
@@ -878,6 +892,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 				op = this.armCompiler.constructB(immediate, condOp);
 			}
 			op.writesPC = true;
+			op.fixedJump = true;
 			break;
 		case 0x0C000000:
 			// Coprocessor data transfer
@@ -897,6 +912,7 @@ ARMCore.prototype.compileArm = function(instruction) {
 	}
 
 	op.execMode = this.MODE_ARM;
+	op.fixedJump = op.fixedJump || false;
 	return op;
 };
 
@@ -1001,6 +1017,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// BX
 			op = this.thumbCompiler.constructBX(rd, rm);
 			op.writesPC = true;
+			op.fixedJump = false;
 			break;
 		}
 	} else if ((instruction & 0xF800) == 0x1800) {
@@ -1161,6 +1178,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 			// POP
 			op = this.thumbCompiler.constructPOP(rs, r);
 			op.writesPC = r;
+			op.fixedJump = false;
 		} else {
 			// PUSH
 			op = this.thumbCompiler.constructPUSH(rs, r);
@@ -1253,6 +1271,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				var condOp = this.conds[cond];
 				op = this.thumbCompiler.constructB1(immediate, condOp);
 				op.writesPC = true;
+				op.fixedJump = true;
 			}
 			break;
 		case 0x6000:
@@ -1269,6 +1288,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				immediate <<= 1;
 				op = this.thumbCompiler.constructB2(immediate);
 				op.writesPC = true;
+				op.fixedJump = true;
 				break;
 			case 0x0800:
 				// BLX (ARMv5T)
@@ -1292,6 +1312,7 @@ ARMCore.prototype.compileThumb = function(instruction) {
 				// BL(2)
 				op = this.thumbCompiler.constructBL2(immediate);
 				op.writesPC = true;
+				op.fixedJump = false;
 				break;
 			}
 			break;
@@ -1303,5 +1324,6 @@ ARMCore.prototype.compileThumb = function(instruction) {
 	}
 
 	op.execMode = this.MODE_THUMB;
+	op.fixedJump = op.fixedJump || false;
 	return op;
 };

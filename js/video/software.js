@@ -29,11 +29,7 @@ MemoryAligned16.prototype.load32 = function(offset) {
 
 MemoryAligned16.prototype.store8 = function(offset, value) {
 	var index = offset >> 1;
-	if (offset & 1) {
-		this.store16(offset, (this.buffer[index] & 0x00FF) | (value << 8));
-	} else {
-		this.store16(offset, this.buffer[index] = (this.buffer[index] & 0xFF00) | value);
-	}
+	this.store16(offset, (value << 8) | value);
 };
 
 MemoryAligned16.prototype.store16 = function(offset, value) {
@@ -428,13 +424,14 @@ GameBoyAdvanceOBJ.prototype.drawScanlineNormal = function(backing, y, yOff, star
 	var localYLo = localY & 0x7;
 	var mosaicX;
 	var tileOffset;
+
+	var paletteShift = this.multipalette ? 1 : 0;
+
 	if (video.objCharacterMapping) {
 		tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
 	} else {
-		tileOffset = (localY & 0x01F8) << 2;
+		tileOffset = (localY & 0x01F8) << (2 - paletteShift);
 	}
-
-	var paletteShift = this.multipalette ? 1 : 0;
 
 	if (this.mosaic) {
 		mosaicX = video.objMosaicX - 1 - (video.objMosaicX + offset - 1) % video.objMosaicX;
@@ -530,7 +527,7 @@ GameBoyAdvanceOBJ.prototype.drawScanlineAffine = function(backing, y, yOff, star
 		if (video.objCharacterMapping) {
 			tileOffset = ((localY & 0x01F8) * this.cachedWidth) >> 6;
 		} else {
-			tileOffset = (localY & 0x01F8) << 2;
+			tileOffset = (localY & 0x01F8) << (2 - paletteShift);
 		}
 		tileRow = video.accessTile(this.TILE_OFFSET + (localX & 0x4) * paletteShift, this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01F8) >> (3 - paletteShift)), (localY & 0x7) << paletteShift);
 		this.pushPixel(video.LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask, false);
@@ -857,8 +854,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.clearSubsets = function(mmu, regions) {
 }
 
 GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {
-	this.pixelData = backing.createImageData(this.HORIZONTAL_PIXELS, this.VERTICAL_PIXELS);
-	this.context = backing;
+	this.pixelData = backing;
 
 	// Clear backing first
 	for (var offset = 0; offset < this.HORIZONTAL_PIXELS * this.VERTICAL_PIXELS * 4;) {
@@ -867,9 +863,7 @@ GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {
 		this.pixelData.data[offset++] = 0xFF;
 		this.pixelData.data[offset++] = 0xFF;
 	}
-
-	this.platformBacking = this.scanline;
-}
+};
 
 GameBoyAdvanceSoftwareRenderer.prototype.writeDisplayControl = function(value) {
 	this.backgroundMode = value & 0x0007;
@@ -1276,15 +1270,21 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode0 = function(backing,
 	var yBase = (localY << 3) & 0x7C0;
 	if (size == 2) {
 		yBase += (localY << 3) & 0x800;
-	}
-	if (size == 3) {
+	} else if (size == 3) {
 		yBase += (localY << 4) & 0x1000;
 	}
 
-	video.accessMapMode0(screenBase, size, start + xOff, yBase, map);
+	var xMask;
+	if (size & 1) {
+		xMask = 0x1FF;
+	} else {
+		xMask = 0xFF;
+	}
+
+	video.accessMapMode0(screenBase, size, (start + xOff) & xMask, yBase, map);
 	var tileRow = video.accessTile(charBase, map.tile << paletteShift, (!map.vflip ? localYLo : 7 - localYLo) << paletteShift);
 	for (x = start; x < end; ++x) {
-		localX = x + xOff;
+		localX = (x + xOff) & xMask;
 		mosaicX = this.mosaic ? offset % video.bgMosaicX : 0;
 		localX -= mosaicX;
 		localXLo = localX & 0x7;
@@ -1480,10 +1480,6 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanlineBGMode5 = function(backing,
 	}
 };
 
-GameBoyAdvanceSoftwareRenderer.prototype.setBacking = function(backing) {
-	this.pixelData = backing;
-};
-
 GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 	var backing = this.scanline;
 	if (this.forcedBlank) {
@@ -1513,24 +1509,30 @@ GameBoyAdvanceSoftwareRenderer.prototype.drawScanline = function(y) {
 			lastStart = 0;
 			lastEnd = this.HORIZONTAL_PIXELS;
 			if (this.win0 && y >= this.win0Top && y < this.win0Bottom) {
-				firstEnd = Math.min(firstEnd, this.win0Left);
-				lastEnd = Math.min(lastEnd, this.win0Right);
-				lastStart = Math.max(lastStart, this.win0Right);
-				firstStart = Math.max(firstStart, this.win0Left);
 				if (this.windows[0].enabled[layer.index]) {
 					this.setBlendEnabled(layer.index, this.windows[0].special && this.target1[layer.index], this.blendMode);
 					layer.drawScanline(backing, layer, this.win0Left, this.win0Right);
 				}
+				firstStart = Math.max(firstStart, this.win0Left);
+				firstEnd = Math.min(firstEnd, this.win0Left);
+				lastStart = Math.max(lastStart, this.win0Right);
+				lastEnd = Math.min(lastEnd, this.win0Right);
 			}
 			if (this.win1 && y >= this.win1Top && y < this.win1Bottom) {
-				firstEnd = Math.min(firstEnd, this.win1Left);
-				lastEnd = Math.min(lastEnd, this.win1Right);
-				lastStart = Math.max(lastStart, this.win1Right);
-				firstStart = Math.max(firstStart, this.win1Left);
 				if (this.windows[1].enabled[layer.index]) {
 					this.setBlendEnabled(layer.index, this.windows[1].special && this.target1[layer.index], this.blendMode);
-					layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
+					if (!this.windows[0].enabled[layer.index] && (this.win1Left < firstStart || this.win1Right < lastStart)) {
+						// We've been cut in two by window 0!
+						layer.drawScanline(backing, layer, this.win1Left, firstStart);
+						layer.drawScanline(backing, layer, lastEnd, this.win1Right);
+					} else {
+						layer.drawScanline(backing, layer, this.win1Left, this.win1Right);
+					}
 				}
+				firstStart = Math.max(firstStart, this.win1Left);
+				firstEnd = Math.min(firstEnd, this.win1Left);
+				lastStart = Math.max(lastStart, this.win1Right);
+				lastEnd = Math.min(lastEnd, this.win1Right);
 			}
 			// Do last two
 			if (this.windows[2].enabled[layer.index] || (this.objwin && this.windows[3].enabled[layer.index])) {

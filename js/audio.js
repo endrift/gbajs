@@ -1,17 +1,19 @@
 function GameBoyAdvanceAudio() {
-	if (window.webkitAudioContext) {
+	window.AudioContext = window.AudioContext || window.webkitAudioContext;
+	if (window.AudioContext) {
 		var self = this;
-		this.context = new webkitAudioContext();
+		this.context = new AudioContext();
 		this.bufferSize = 0;
-		if (this.context.sampleRate >= 44100) {
-			this.bufferSize = 2048;
+		this.bufferSize = 4096;
+		this.maxSamples = this.bufferSize << 2;
+		this.buffers = [new Float32Array(this.maxSamples), new Float32Array(this.maxSamples)];
+		this.sampleMask = this.maxSamples - 1;
+		if (this.context.createScriptProcessor) {
+			this.jsAudio = this.context.createScriptProcessor(this.bufferSize);
 		} else {
-			this.bufferSize = 1024;
+			this.jsAudio = this.context.createJavaScriptNode(this.bufferSize);
 		}
-		this.buffers = [new Float32Array(this.bufferSize << 2), new Float32Array(this.bufferSize << 2)];
-		this.sampleMask = (this.bufferSize << 2) - 1;
-		this.jsAudio = this.context.createJavaScriptNode(this.bufferSize);
-		this.jsAudio.onaudioprocess = function(e) { GameBoyAdvanceAudio.audioProcess(self, e) };
+		this.jsAudio.onaudioprocess = function(e) { self.audioProcess(e) };
 	} else {
 		this.context = null;
 	}
@@ -123,10 +125,14 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 	this.outputPointer = 0;
 	this.samplePointer = 0;
 
+	this.backup = 0;
+	this.totalSamples = 0;
+
+	this.sampleRate = 32768;
+	this.sampleInterval = this.cpuFrequency / this.sampleRate;
+	this.resampleRatio = 1;
 	if (this.context) {
-		this.sampleInterval = this.cpuFrequency / this.context.sampleRate;
-	} else {
-		this.sampleInterval = this.cpuFrequency;
+		this.resampleRatio = this.sampleRate / this.context.sampleRate;
 	}
 
 	this.writeSquareChannelFC(0, 0);
@@ -448,7 +454,8 @@ GameBoyAdvanceAudio.prototype.writeWaveData = function(offset, data, width) {
 		offset += 16;
 	}
 	if (width == 2) {
-		this.waveData[offset] = (data >> 8) & 0xFF;
+		this.waveData[offset] = data & 0xFF;
+		data >>= 8;
 		++offset;
 	}
 	this.waveData[offset] = data & 0xFF;
@@ -551,6 +558,9 @@ GameBoyAdvanceAudio.prototype.updateEnvelope = function(channel, cycles) {
 
 GameBoyAdvanceAudio.prototype.appendToFifoA = function(value) {
 	var b;
+	if (this.fifoA.length > 28) {
+		this.fifoA = this.fifoA.slice(-28);
+	}
 	for (var i = 0; i < 4; ++i) {
 		b = (value & 0xFF) << 24;
 		value >>= 8;
@@ -560,6 +570,9 @@ GameBoyAdvanceAudio.prototype.appendToFifoA = function(value) {
 
 GameBoyAdvanceAudio.prototype.appendToFifoB = function(value) {
 	var b;
+	if (this.fifoB.length > 28) {
+		this.fifoB = this.fifoB.slice(-28);
+	}
 	for (var i = 0; i < 4; ++i) {
 		b = (value & 0xFF) << 24;
 		value >>= 8;
@@ -568,7 +581,7 @@ GameBoyAdvanceAudio.prototype.appendToFifoB = function(value) {
 };
 
 GameBoyAdvanceAudio.prototype.sampleFifoA = function() {
-	if (!this.fifoA.length) {
+	if (this.fifoA.length <= 16) {
 		var dma = this.core.irq.dma[this.dmaA];
 		dma.nextCount = 4;
 		this.core.mmu.serviceDma(this.dmaA, dma);
@@ -577,7 +590,7 @@ GameBoyAdvanceAudio.prototype.sampleFifoA = function() {
 };
 
 GameBoyAdvanceAudio.prototype.sampleFifoB = function() {
-	if (!this.fifoB.length) {
+	if (this.fifoB.length <= 16) {
 		var dma = this.core.irq.dma[this.dmaB];
 		dma.nextCount = 4;
 		this.core.mmu.serviceDma(this.dmaB, dma);
@@ -608,7 +621,6 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	var sample;
 	var channel;
 
-	// TODO: left and right
 	channel = this.squareChannels[0];
 	if (channel.playing) {
 		sample = channel.sample * this.soundRatio * this.PSG_MAX;
@@ -683,20 +695,31 @@ GameBoyAdvanceAudio.prototype.sample = function() {
 	this.samplePointer = (samplePointer + 1) & this.sampleMask;
 };
 
-GameBoyAdvanceAudio.audioProcess = function(self, audioProcessingEvent) {
+GameBoyAdvanceAudio.prototype.audioProcess = function(audioProcessingEvent) {
 	var left = audioProcessingEvent.outputBuffer.getChannelData(0);
 	var right = audioProcessingEvent.outputBuffer.getChannelData(1);
-	if (self.masterEnable) {
+	if (this.masterEnable) {
 		var i;
-		for (i = 0; i < self.bufferSize; ++i) {
-			left[i] = self.buffers[0][self.outputPointer];
-			right[i] = self.buffers[1][self.outputPointer];
-			if (self.outputPointer != self.samplePointer) {
-				self.outputPointer = (self.outputPointer + 1) & self.sampleMask;
+		var o = this.outputPointer;
+		for (i = 0; i < this.bufferSize; ++i, o += this.resampleRatio) {
+			if (o >= this.maxSamples) {
+				o -= this.maxSamples;
 			}
+			if ((o | 0) == this.samplePointer) {
+				++this.backup;
+				break;
+			}
+			left[i] = this.buffers[0][o | 0];
+			right[i] = this.buffers[1][o | 0];
 		}
+		for (; i < this.bufferSize; ++i) {
+			left[i] = 0;
+			right[i] = 0;
+		}
+		this.outputPointer = o;
+		++this.totalSamples;
 	} else {
-		for (i = 0; i < self.bufferSize; ++i) {
+		for (i = 0; i < this.bufferSize; ++i) {
 			left[i] = 0;
 			right[i] = 0;
 		}

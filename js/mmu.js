@@ -66,7 +66,10 @@ function MemoryBlock(size, cacheBits) {
 MemoryBlock.prototype = Object.create(MemoryView.prototype);
 
 MemoryBlock.prototype.invalidatePage = function(address) {
-	this.icache[(address & this.mask) >> this.ICACHE_PAGE_BITS] = null;
+	var page = this.icache[(address & this.mask) >> this.ICACHE_PAGE_BITS];
+	if (page) {
+		page.invalid = true;
+	}
 };
 
 function ROMView(rom, offset) {
@@ -278,33 +281,35 @@ GameBoyAdvanceMMU.prototype.mmap = function(region, object) {
 }
 
 GameBoyAdvanceMMU.prototype.clear = function() {
-	var badMemory = new BadMemory(this, this.cpu);
+	this.badMemory = new BadMemory(this, this.cpu);
 	this.memory = [
 		this.bios,
-		badMemory, // Unused
+		this.badMemory, // Unused
 		new MemoryBlock(this.SIZE_WORKING_RAM, 9),
 		new MemoryBlock(this.SIZE_WORKING_IRAM, 7),
 		null, // This is owned by GameBoyAdvanceIO
 		null, // This is owned by GameBoyAdvancePalette
 		null, // This is owned by GameBoyAdvanceVRAM
 		null, // This is owned by GameBoyAdvanceOAM
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory,
-		badMemory // Unused
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory,
+		this.badMemory // Unused
 	];
 	for (var i = 16; i < 256; ++i) {
-		this.memory[i] = badMemory;
+		this.memory[i] = this.badMemory;
 	}
 
 	this.waitstates = this.WAITSTATES.slice(0);
 	this.waitstatesSeq = this.WAITSTATES_SEQ.slice(0);
 	this.waitstates32 = this.WAITSTATES_32.slice(0);
 	this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
+	this.waitstatesPrefetch = this.WAITSTATES_SEQ.slice(0);
+	this.waitstatesPrefetch32 = this.WAITSTATES_SEQ_32.slice(0);
 
 	this.cart = null;
 	this.save = null;
@@ -498,30 +503,45 @@ GameBoyAdvanceMMU.prototype.store32 = function(offset, value) {
 	memory.invalidatePage(maskedOffset + 2);
 };
 
+GameBoyAdvanceMMU.prototype.waitPrefetch = function(memory) {
+	this.cpu.cycles += 1 + this.waitstatesPrefetch[memory >>> this.BASE_OFFSET];
+};
+
+GameBoyAdvanceMMU.prototype.waitPrefetch32 = function(memory) {
+	this.cpu.cycles += 1 + this.waitstatesPrefetch32[memory >>> this.BASE_OFFSET];
+};
+
 GameBoyAdvanceMMU.prototype.wait = function(memory) {
-	this.cpu.cycles += this.waitstates[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstates[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.wait32 = function(memory) {
-	this.cpu.cycles += this.waitstates32[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstates32[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.waitSeq = function(memory) {
-	this.cpu.cycles += this.waitstatesSeq[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstatesSeq[memory >>> this.BASE_OFFSET];
 };
 
 GameBoyAdvanceMMU.prototype.waitSeq32 = function(memory) {
-	this.cpu.cycles += this.waitstatesSeq32[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += 1 + this.waitstatesSeq32[memory >>> this.BASE_OFFSET];
 };
 
-GameBoyAdvanceMMU.prototype.waitMulti = function(memory, seq) {
-	this.cpu.cycles += this.waitstates[memory >>> this.BASE_OFFSET];
-	this.cpu.cycles += this.waitstatesSeq[memory >>> this.BASE_OFFSET] * (seq - 1);
-};
+GameBoyAdvanceMMU.prototype.waitMul = function(rs) {
+	if ((rs & 0xFFFFFF00 == 0xFFFFFF00) || !(rs & 0xFFFFFF00)) {
+		this.cpu.cycles += 1;
+	} else if ((rs & 0xFFFF0000 == 0xFFFF0000) || !(rs & 0xFFFF0000)) {
+		this.cpu.cycles += 2;
+	} else if ((rs & 0xFF000000 == 0xFF000000) || !(rs & 0xFF000000)) {
+		this.cpu.cycles += 3;
+	} else {
+		this.cpu.cycles += 4;
+	}
+}
 
 GameBoyAdvanceMMU.prototype.waitMulti32 = function(memory, seq) {
-	this.cpu.cycles += this.waitstates32[memory >>> this.BASE_OFFSET];
-	this.cpu.cycles += this.waitstatesSeq32[memory >>> this.BASE_OFFSET] * (seq - 1);
+	this.cpu.cycles += 1 + this.waitstates32[memory >>> this.BASE_OFFSET];
+	this.cpu.cycles += (1 + this.waitstatesSeq32[memory >>> this.BASE_OFFSET]) * (seq - 1);
 };
 
 GameBoyAdvanceMMU.prototype.addressToPage = function(region, address) {
@@ -531,10 +551,11 @@ GameBoyAdvanceMMU.prototype.addressToPage = function(region, address) {
 GameBoyAdvanceMMU.prototype.accessPage = function(region, pageId) {
 	var memory = this.memory[region];
 	var page = memory.icache[pageId];
-	if (!page) {
+	if (!page || page.invalid) {
 		page = {
 			thumb: new Array(1 << (memory.ICACHE_PAGE_BITS)),
-			arm: new Array(1 << memory.ICACHE_PAGE_BITS - 1)
+			arm: new Array(1 << memory.ICACHE_PAGE_BITS - 1),
+			invalid: false
 		}
 		memory.icache[pageId] = page;
 	}
@@ -722,8 +743,8 @@ GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
 	var ws1seq = (word & 0x0080) >> 7;
 	var ws2 = (word & 0x0300) >> 8;
 	var ws2seq = (word & 0x0400) >> 10;
+	var prefetch = word & 0x4000;
 
-	// FIXME: are these seq and 32-bit correct?
 	this.waitstates[this.REGION_CART_SRAM] = this.ROM_WS[sram];
 	this.waitstatesSeq[this.REGION_CART_SRAM] = this.ROM_WS[sram];
 	this.waitstates32[this.REGION_CART_SRAM] = this.ROM_WS[sram];
@@ -744,6 +765,24 @@ GameBoyAdvanceMMU.prototype.adjustTimings = function(word) {
 	this.waitstatesSeq32[this.REGION_CART0] = this.waitstatesSeq32[this.REGION_CART0 + 1] = 2 * this.waitstatesSeq[this.REGION_CART0] + 1;
 	this.waitstatesSeq32[this.REGION_CART1] = this.waitstatesSeq32[this.REGION_CART1 + 1] = 2 * this.waitstatesSeq[this.REGION_CART1] + 1;
 	this.waitstatesSeq32[this.REGION_CART2] = this.waitstatesSeq32[this.REGION_CART2 + 1] = 2 * this.waitstatesSeq[this.REGION_CART2] + 1;
+
+	if (prefetch) {
+		this.waitstatesPrefetch[this.REGION_CART0] = this.waitstatesPrefetch[this.REGION_CART0 + 1] = 0;
+		this.waitstatesPrefetch[this.REGION_CART1] = this.waitstatesPrefetch[this.REGION_CART1 + 1] = 0;
+		this.waitstatesPrefetch[this.REGION_CART2] = this.waitstatesPrefetch[this.REGION_CART2 + 1] = 0;
+
+		this.waitstatesPrefetch32[this.REGION_CART0] = this.waitstatesPrefetch32[this.REGION_CART0 + 1] = 0;
+		this.waitstatesPrefetch32[this.REGION_CART1] = this.waitstatesPrefetch32[this.REGION_CART1 + 1] = 0;
+		this.waitstatesPrefetch32[this.REGION_CART2] = this.waitstatesPrefetch32[this.REGION_CART2 + 1] = 0;
+	} else {
+		this.waitstatesPrefetch[this.REGION_CART0] = this.waitstatesPrefetch[this.REGION_CART0 + 1] = this.waitstatesSeq[this.REGION_CART0];
+		this.waitstatesPrefetch[this.REGION_CART1] = this.waitstatesPrefetch[this.REGION_CART1 + 1] = this.waitstatesSeq[this.REGION_CART1];
+		this.waitstatesPrefetch[this.REGION_CART2] = this.waitstatesPrefetch[this.REGION_CART2 + 1] = this.waitstatesSeq[this.REGION_CART2];
+
+		this.waitstatesPrefetch32[this.REGION_CART0] = this.waitstatesPrefetch32[this.REGION_CART0 + 1] = this.waitstatesSeq32[this.REGION_CART0];
+		this.waitstatesPrefetch32[this.REGION_CART1] = this.waitstatesPrefetch32[this.REGION_CART1 + 1] = this.waitstatesSeq32[this.REGION_CART1];
+		this.waitstatesPrefetch32[this.REGION_CART2] = this.waitstatesPrefetch32[this.REGION_CART2 + 1] = this.waitstatesSeq32[this.REGION_CART2];
+	}
 };
 
 GameBoyAdvanceMMU.prototype.saveNeedsFlush = function() {
