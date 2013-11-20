@@ -90,8 +90,8 @@ GameBoyAdvance.prototype.setCanvasDirect = function(canvas) {
 	this.video.setBacking(this.context);
 };
 
-GameBoyAdvance.prototype.setBios = function(bios) {
-	this.mmu.loadBios(bios);
+GameBoyAdvance.prototype.setBios = function(bios, real) {
+	this.mmu.loadBios(bios, real);
 };
 
 GameBoyAdvance.prototype.setRom = function(rom) {
@@ -134,7 +134,7 @@ GameBoyAdvance.prototype.reset = function() {
 	this.mmu.mmap(this.mmu.REGION_VRAM, this.video.renderPath.vram);
 	this.mmu.mmap(this.mmu.REGION_OAM, this.video.renderPath.oam);
 
-	this.cpu.resetCPU(0x08000000);
+	this.cpu.resetCPU(0);
 };
 
 GameBoyAdvance.prototype.step = function() {

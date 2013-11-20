@@ -322,8 +322,9 @@ GameBoyAdvanceMMU.prototype.clear = function() {
 	];
 };
 
-GameBoyAdvanceMMU.prototype.loadBios = function(bios) {
+GameBoyAdvanceMMU.prototype.loadBios = function(bios, real) {
 	this.bios = new BIOSView(bios);
+	this.bios.real = !!real;
 };
 
 GameBoyAdvanceMMU.prototype.loadRom = function(rom, process) {
