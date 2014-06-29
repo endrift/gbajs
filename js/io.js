@@ -208,7 +208,7 @@ GameBoyAdvanceIO.prototype.loadU16 = function(offset) {
 	case this.SOUNDCNT_HI:
 	case this.SOUNDBIAS:
 	case this.BLDCNT:
-	case this.BLDALPHA: // Spec says this is wrong, but some games (e.g. A5NE) seem to rely on it.
+	case this.BLDALPHA:
 
 	case this.TM0CNT_HI:
 	case this.TM1CNT_HI:
