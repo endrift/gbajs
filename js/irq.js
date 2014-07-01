@@ -913,7 +913,7 @@ GameBoyAdvanceInterruptHandler.prototype.rl = function(source, dest, unitsize) {
 			block = this.cpu.mmu.loadU8(sPointer++);
 			while (blockheader-- && remaining) {
 				--remaining;
-				if (uintsize == 2) {
+				if (unitsize == 2) {
 					buffer >>= 8;
 					buffer |= block << 8;
 					if (dPointer & 1) {
@@ -930,7 +930,7 @@ GameBoyAdvanceInterruptHandler.prototype.rl = function(source, dest, unitsize) {
 			while (blockheader-- && remaining) {
 				--remaining;
 				block = this.cpu.mmu.loadU8(sPointer++);
-				if (uintsize == 2) {
+				if (unitsize == 2) {
 					buffer >>= 8;
 					buffer |= block << 8;
 					if (dPointer & 1) {

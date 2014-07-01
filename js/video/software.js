@@ -24,7 +24,7 @@ MemoryAligned16.prototype.loadU16 = function(offset) {
 };
 
 MemoryAligned16.prototype.load32 = function(offset) {
-	return this.buffer[offset >> 1] | (this.vram[(offset >> 1) | 1] << 16);
+	return this.buffer[(offset >> 1) & ~1] | (this.buffer[(offset >> 1) | 1] << 16);
 };
 
 MemoryAligned16.prototype.store8 = function(offset, value) {
