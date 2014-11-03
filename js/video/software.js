@@ -902,8 +902,8 @@ GameBoyAdvanceSoftwareRenderer.prototype.writeBackgroundControl = function(bg, v
 	bgData.priority = value & 0x0003;
 	bgData.charBase = (value & 0x000C) << 12;
 	bgData.mosaic = value & 0x0040;
+	bgData.multipalette &= ~0x0080;
 	if (bg < 2 || this.backgroundMode == 0) {
-		bgData.multipalette &= ~0x0080;
 		bgData.multipalette |= value & 0x0080;
 	}
 	bgData.screenBase = (value & 0x1F00) << 3;
