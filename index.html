@@ -289,7 +289,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 <section id="controls">
 	<div id="preload">
 		<button class="bigbutton" id="select" onclick="document.getElementById('loader').click()">SELECT</button>
-		<input id="loader" type="file" onchange="run(this.files[0]);">
+		<input id="loader" type="file" accept=".gba" onchange="run(this.files[0]);">
 		<button onclick="document.getElementById('saveloader').click()">Upload Savegame</button>
 		<input id="saveloader" type="file" onchange="uploadSavedataPending(this.files[0]);">
 	</div>
