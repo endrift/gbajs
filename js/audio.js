@@ -34,7 +34,10 @@ GameBoyAdvanceAudio.prototype.clear = function() {
 
 	this.enabled = false;
 	if (this.context) {
-		this.jsAudio.disconnect(this.context.destination);
+		try {
+			this.jsAudio.disconnect(this.context.destination);
+		} catch (e) {
+		}
 	}
 
 	this.enableChannel3 = false;
