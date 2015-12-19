@@ -303,7 +303,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<div id="sound">
 			<p>Sound</p>
 			<input type="checkbox" checked onchange="gba.audio.masterEnable = this.checked">
-			<input type="range" min="0" max="1" value="1" step="any" onchange="setVolume(this.value)">
+			<input type="range" min="0" max="1" value="1" step="any" onchange="setVolume(this.value)" oninput="setVolume(this.value)">
 		</div>
 	</div>
 </section>
