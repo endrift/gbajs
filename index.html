@@ -290,7 +290,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 <section id="controls">
 	<div id="preload">
 		<button class="bigbutton" id="select" onclick="document.getElementById('loader').click()">SELECT</button>
-		<input id="loader" type="file" onchange="run(this.files[0]);">
+		<input id="loader" type="file" accept=".gba" onchange="run(this.files[0]);">
 		<button onclick="document.getElementById('saveloader').click()">Upload Savegame</button>
 		<input id="saveloader" type="file" onchange="uploadSavedataPending(this.files[0]);">
 	</div>
@@ -303,7 +303,7 @@ document.addEventListener('webkitfullscreenchange', function() {
 		<div id="sound">
 			<p>Sound</p>
 			<input type="checkbox" checked onchange="gba.audio.masterEnable = this.checked">
-			<input type="range" min="0" max="1" value="1" step="any" onchange="setVolume(this.value)">
+			<input type="range" min="0" max="1" value="1" step="any" onchange="setVolume(this.value)" oninput="setVolume(this.value)">
 		</div>
 	</div>
 </section>
